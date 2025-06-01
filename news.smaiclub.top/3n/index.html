@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SMAI NEWS | 斯麦新闻 - 专业科技与综合新闻平台</title>
+    <style>
+        :root {
+            --primary-color: #0066cc;
+            --secondary-color: #333;
+            --accent-color: #e74c3c;
+            --text-color: #333;
+            --light-text: #777;
+            --bg-color: #f8f9fa;
+            --card-bg: #fff;
+            --border-color: #e0e0e0;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Helvetica Neue', Arial, 'PingFang SC', 'Microsoft YaHei', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            line-height: 1.6;
+            overflow-x: hidden;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 15px;
+            flex: 1;
+        }
+
+        @keyframes moveBackground {
+            0% {
+                background-position: 0 0;
+            }
+            100% {
+                background-position: 400px 400px;
+            }
+        }
+
+        .navbar {
+            background-color: var(--card-bg);
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            padding: 15px 0;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+
+        .navbar-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            font-size: 1.8rem;
+            font-weight: bold;
+            color: var(--primary-color);
+            text-decoration: none;
+        }
+
+        .logo span {
+            color: var(--accent-color);
+        }
+
+        .nav-links {
+            display: flex;
+            list-style: none;
+        }
+
+        .nav-links li {
+            margin-left: 25px;
+        }
+
+        .nav-links a {
+            text-decoration: none;
+            color: var(--secondary-color);
+            font-weight: 500;
+            transition: color 0.3s;
+        }
+
+        .nav-links a:hover {
+            color: var(--primary-color);
+        }
+
+        .header {
+            background-color: var(--primary-color);
+            color: white;
+            padding: 30px 0;
+            margin-bottom: 30px;
+        }
+
+        .header-title {
+            text-align: center;
+        }
+
+        .header-title h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+        }
+
+        .header-subtitle {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+
+        .news-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 30px;
+            margin-bottom: 40px;
+        }
+
+        .featured-card {
+            background-color: var(--card-bg);
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+        }
+
+        .featured-content {
+            padding: 25px;
+        }
+
+        .featured-title {
+            font-size: 1.8rem;
+            margin-bottom: 15px;
+            line-height: 1.3;
+        }
+
+        .featured-excerpt {
+            color: var(--light-text);
+            margin-bottom: 20px;
+        }
+
+        .footer {
+            background-color: var(--secondary-color);
+            color: white;
+            padding: 20px 0;
+            margin-top: 50px;
+            text-align: center;
+        }
+
+        .footer-container {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+
+        .footer-column h3 {
+            font-size: 1.2rem;
+            margin-bottom: 20px;
+            position: relative;
+            padding-bottom: 10px;
+        }
+
+        .footer-column h3::after {
+            content: '';
+            position: absolute;
+            left: 0;
+            bottom: 0;
+            width: 40px;
+            height: 2px;
+            background-color: var(--primary-color);
+        }
+
+        .footer-links {
+            list-style: none;
+        }
+
+        .footer-links li {
+            margin-bottom: 10px;
+        }
+
+        .footer-links a {
+            color: #bbb;
+            text-decoration: none;
+            transition: color 0.3s;
+        }
+
+        .footer-links a:hover {
+            color: white;
+        }
+
+        .footer-bottom {
+            font-size: 0.9rem;
+            color: #aaa;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="background-animation"></div> <!-- 动画背景层 -->
+
+    <!-- 导航栏 -->
+    <nav class="navbar">
+        <div class="container navbar-container">
+            <a href="#" class="logo">SMAI<span>NEWS</span></a>
+            <ul class="nav-links">
+                <li><a href="#">首页</a></li>
+                <li><a href="#">科技</a></li>
+                <li><a href="#">商业</a></li>
+                <li><a href="#">娱乐</a></li>
+                <li><a href="#">体育</a></li>
+                <li><a href="#">生活</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <!-- 头部标题 -->
+    <header class="header">
+        <div class="container header-title">
+            <h1>360安全卫士涉嫌售卖用户隐私信息</h1>
+            <p class="header-subtitle">在经历百度副总裁女儿开盒事件后，360安全卫士被俄罗斯卡巴斯基曝光涉嫌售卖用户隐私信息。360公司发表声明否认指控...</p>
+        </div>
+    </header>
+
+    <!-- 主要内容区 -->
+    <main class="container">
+        <div class="news-grid">
+            <div class="featured-card">
+                <div class="featured-content">
+                    <h2 class="featured-title">卡巴斯基曝360安全卫士涉用户数据交易 隐私保护再陷信任危机
+导语<br>
+继百度副总裁之女遭“开盒”人肉搜索事件后，国内网络安全行业再曝丑闻。俄罗斯卡巴斯基实验室4月20日发布报告称，监测到360安全卫士后台存在异常数据外传行为，涉及用户通讯录、定位轨迹等隐私信息，部分数据包经溯源流向东南亚某数据交易平台。此事将国产安全软件的隐私合规性推至舆论风口。<br><br>
+跨境数据追踪揭黑产链条<br>
+卡巴斯基网络犯罪研究部主任伊万·库兹明向媒体展示了技术分析：360安全卫士在扫描垃圾文件时，同步将用户设备中“android_data/.userlogs”目录下的社交软件缓存文件上传至合肥某IP地址服务器。这些包含聊天记录缩略图、Wi-Fi连接历史的数据，经转码后出现在暗网论坛“海德拉”的交易列表，0.5元/条的价格打包出售给营销公司。<br>
+
+值得注意的是，2025年2月百度高管家属信息泄露事件中，作案者使用的正是从某安全软件云端窃取的通讯录备份。中国信通院抽样检测发现，21款主流安全类APP中，有14款存在超范围收集IMEI、短信权限问题，360系列产品在“读取应用列表”频次上超出声明的3.8倍。<br>
+<br>
+法律红线与监管挑战<br>
+根据《个人信息保护法》第66条，违法处理个人信息最高可处5000万元罚款。但北京网信办执法处负责人透露，涉事企业常以“大数据风控需要”为由规避审查。2022年某安全厂商因将280万条用户GPS数据用于商业合作，仅被处以200万元罚款，且相关模块改头换面后仍存在于新版本中。<br>
+记者暗访发现，黑市上“精准营销数据包”已形成明码标价体系：含身份证号的金融类数据报价1.2元/条，带家庭住址的电商数据0.8元/条，而来自安全软件的复合型数据因可信度高，价格可达普通数据的3倍。
+<br>
+资本市场剧烈震荡<br>
+受事件影响，360集团港股（股票代码：0360.HK）9月18日开盘暴跌14.7%，创2021年以来最大单日跌幅。雪球平台调研显示，67%的投资者认为此事将重挫政企客户对国产安全产品的信心。值得注意的是，国家关键信息基础设施领域2022年采购目录中，360终端安全管理系统已部署于41%的省级政务云平台。<br>
+<br>
+行业陷入集体性质疑<br>
+在脉脉职场社区，认证为360工程师的用户爆料，公司实行“数据贡献度KPI”，要求每季度提交不少于20GB的“脱敏用户行为样本”。尽管360官方紧急声明“严格遵守法律，从未参与数据交易”，但网友发现其隐私政策第7.3条保留“向关联方提供必要信息”的权利，而关联方涵盖旗下126家子公司。<br>
+技术专家提出解决方案
+国家信息技术安全研究中心总工程师曹军庆建议：“应强制要求安全类软件通过源代码备案审查，并建立与境外安全机构的数据交互防火墙。”蚂蚁集团安全实验室则展示了一套“隐私沙盒”方案，能在本地完成病毒查杀而不上传任何文件。<br>
+<br>
+国产替代化进程遇阻<br>
+此次事件正值国家推进网络安全产品国产化关键阶段。2023年政府采购数据显示，360安全产品在政府机构的覆盖率从2020年的29%提升至55%。业内人士担忧，若数据安全问题持续发酵，可能导致国产替代战略放缓，给赛门铁克等外企留下反扑空间。<br>
+截至发稿，国家网信办已联合公安部成立专项调查组进驻360集团。当守护者沦为窃密者，这场信任危机或将重塑中国网络安全产业格局。<br>
+（本文部分信息源自公开技术报告与法律文书）
+<br><br>
+
+
+注：文中所述内容基于当前公开信息，具体事实以监管部门最终调查结果为准。</h2>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- 页脚 -->
+    <footer class="footer">
+        <p class="footer-bottom">© 2025 SMAI NEWS 版权所有</p>
+    </footer>
+
+</body>
+</html>

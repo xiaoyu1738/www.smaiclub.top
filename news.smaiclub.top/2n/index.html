@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SMAI NEWS | 斯麦新闻 - 专业科技与综合新闻平台</title>
+    <style>
+        :root {
+            --primary-color: #0066cc;
+            --secondary-color: #333;
+            --accent-color: #e74c3c;
+            --text-color: #333;
+            --light-text: #777;
+            --bg-color: #f8f9fa;
+            --card-bg: #fff;
+            --border-color: #e0e0e0;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Helvetica Neue', Arial, 'PingFang SC', 'Microsoft YaHei', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            line-height: 1.6;
+            overflow-x: hidden;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 15px;
+            flex: 1;
+        }
+
+        @keyframes moveBackground {
+            0% {
+                background-position: 0 0;
+            }
+            100% {
+                background-position: 400px 400px;
+            }
+        }
+
+        .navbar {
+            background-color: var(--card-bg);
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            padding: 15px 0;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+
+        .navbar-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            font-size: 1.8rem;
+            font-weight: bold;
+            color: var(--primary-color);
+            text-decoration: none;
+        }
+
+        .logo span {
+            color: var(--accent-color);
+        }
+
+        .nav-links {
+            display: flex;
+            list-style: none;
+        }
+
+        .nav-links li {
+            margin-left: 25px;
+        }
+
+        .nav-links a {
+            text-decoration: none;
+            color: var(--secondary-color);
+            font-weight: 500;
+            transition: color 0.3s;
+        }
+
+        .nav-links a:hover {
+            color: var(--primary-color);
+        }
+
+        .header {
+            background-color: var(--primary-color);
+            color: white;
+            padding: 30px 0;
+            margin-bottom: 30px;
+        }
+
+        .header-title {
+            text-align: center;
+        }
+
+        .header-title h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+        }
+
+        .header-subtitle {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+
+        .news-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 30px;
+            margin-bottom: 40px;
+        }
+
+        .featured-card {
+            background-color: var(--card-bg);
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+        }
+
+        .featured-content {
+            padding: 25px;
+        }
+
+        .featured-title {
+            font-size: 1.8rem;
+            margin-bottom: 15px;
+            line-height: 1.3;
+        }
+
+        .featured-excerpt {
+            color: var(--light-text);
+            margin-bottom: 20px;
+        }
+
+        .footer {
+            background-color: var(--secondary-color);
+            color: white;
+            padding: 20px 0;
+            margin-top: 50px;
+            text-align: center;
+        }
+
+        .footer-container {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+
+        .footer-column h3 {
+            font-size: 1.2rem;
+            margin-bottom: 20px;
+            position: relative;
+            padding-bottom: 10px;
+        }
+
+        .footer-column h3::after {
+            content: '';
+            position: absolute;
+            left: 0;
+            bottom: 0;
+            width: 40px;
+            height: 2px;
+            background-color: var(--primary-color);
+        }
+
+        .footer-links {
+            list-style: none;
+        }
+
+        .footer-links li {
+            margin-bottom: 10px;
+        }
+
+        .footer-links a {
+            color: #bbb;
+            text-decoration: none;
+            transition: color 0.3s;
+        }
+
+        .footer-links a:hover {
+            color: white;
+        }
+
+        .footer-bottom {
+            font-size: 0.9rem;
+            color: #aaa;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="background-animation"></div> <!-- 动画背景层 -->
+
+    <!-- 导航栏 -->
+    <nav class="navbar">
+        <div class="container navbar-container">
+            <a href="#" class="logo">SMAI<span>NEWS</span></a>
+            <ul class="nav-links">
+                <li><a href="#">首页</a></li>
+                <li><a href="#">科技</a></li>
+                <li><a href="#">商业</a></li>
+                <li><a href="#">娱乐</a></li>
+                <li><a href="#">体育</a></li>
+                <li><a href="#">生活</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <!-- 头部标题 -->
+    <header class="header">
+        <div class="container header-title">
+            <h1>哪吒2票房被质疑造假？有关专家发表回应</h1>
+            <p class="header-subtitle">《哪吒之魔童闹海》票房被影院工作人员实锤有造假行为，真实票房将石沉大海？</p>
+        </div>
+    </header>
+
+    <!-- 主要内容区 -->
+    <main class="container">
+        <div class="news-grid">
+            <div class="featured-card">
+                <div class="featured-content">
+                    <h2 class="featured-title">标题：业内人士曝票房造假乱象 中国电影市场真实票房成谜<br><br>
+
+导语<br>
+近日，多位影院管理人士向媒体透露，当前电影市场存在系统性票房造假行为，包括“幽灵场”“包场注水”“票房回流”等操作。有匿名从业者估算，部分影片的真实票房占比或不足60%，这一说法引发行业对市场数据透明度的激烈讨论。<br>
+<br>
+
+行业潜规则浮出水面<br>
+华北地区某影城经理张华（化名）向记者披露，票房造假已成利益链：“片方通过第三方公司包场购票，影院在午夜开设无人观影场次，再以‘服务费’名义将85%的票房返还款回流给片方。”这种操作既能拉高排片率，又可制造市场热度吸引真实观众。<br>
+数据显示，2025年暑期档总票房突破250亿，但中国电影评论学会调查发现，超过43%的观众认为热门影片存在“票房与口碑不符”现象。某数据分析机构通过比对售票系统与红外线入座监测，发现部分影片的实际上座率比公示数据低25-40%。<br>
+<br>
+
+法律利剑与监管困境<br>
+尽管《电影产业促进法》明确规定篡改票房数据可处5-50万元罚款及停业整顿，但北京文化执法总队工作人员坦言，跨地域作案的取证难度较大。2022年某古装片被查实通过532家影院虚增票房1.2亿元，最终仅追缴违法所得，涉事方未承担刑事责任。<br>
+<br>
+资本市场连锁反应<br>
+票房注水已形成完整产业链。记者暗访发现，某文化传媒公司公然提供“票房优化服务”，承诺每投入100万元营销费用可撬动300-500万元票房。这种操作直接影响二级市场，2023年暑期档某科幻片上映期间，相关上市公司股价三天暴涨28%，后被证实32%的票房来自关联方购买。<br>
+<br>
+行业自净机制启动<br>
+中国电影发行放映协会秘书长王强表示，正在推进“区块链电子票务系统”建设，未来将实现从购票到分账的全流程可追溯。万达院线等头部企业已开始使用AI监控系统，实时分析影厅热力图识别异常场次。<br>
+<br>
+
+
+专家呼吁深度改革<br>
+清华大学影视传播研究中心主任尹鸿指出：“单纯打击造假治标不治本，需改革以票房为单一指标的考核体系。”他建议引入观看完成率、二次观影率等新维度，同时建立制片方与院线之间的票房对赌机制，从根本上遏制造假动机。<br>
+目前，国家电影局已就相关爆料展开调查。本事件不仅关乎行业公平，更影响着每年600亿规模的市场健康发展，本报将持续跟踪报道。<br>
+（应受访者要求，部分人物为化名）</h2>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- 页脚 -->
+    <footer class="footer">
+        <p class="footer-bottom">© 2025 SMAI NEWS 版权所有</p>
+    </footer>
+
+</body>
+</html>

@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>文章已下架 - 抱歉</title>
+    <!-- 引入 Font Awesome 图标库，用于显示图标 -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        /* 引入 Google Fonts (可选，如果不需要特定字体可删除) */
+        /* @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;700&display=swap'); */
+
+        :root {
+            /* 亮色模式变量 */
+            --bg-color: #f8f8f8;
+            --text-color: #333;
+            --secondary-text-color: #666;
+            --accent-color: #4a5568; /* 偏深的灰色调，专业而内敛 */
+            --button-hover-bg: #6a778c;
+            --border-color: #e0e0e0;
+            --container-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+        }
+
+        @media (prefers-color-scheme: dark) {
+            :root {
+                /* 暗色模式变量 */
+                --bg-color: #2c2c2c;
+                --text-color: #e0e0e0;
+                --secondary-text-color: #b0b0b0;
+                --accent-color: #9ab3cd; /* 浅蓝色，在暗色背景下更醒目 */
+                --button-hover-bg: #809bb9;
+                --border-color: #444;
+                --container-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+            }
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Inter', 'Noto Sans SC', system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, "Open Sans", "Helvetica Neue", sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            text-align: center;
+            box-sizing: border-box; /* 确保 padding 和 border 包含在元素的总宽度和高度内 */
+        }
+
+        .container {
+            max-width: 500px;
+            width: 90%;
+            padding: 40px 30px;
+            background-color: var(--bg-color); /* 确保容器背景色与 body 一致，以便阴影效果更自然 */
+            border-radius: 12px;
+            box-shadow: var(--container-shadow);
+            border: 1px solid var(--border-color); /* 增加一个细边框 */
+            box-sizing: border-box;
+        }
+
+        .icon {
+            font-size: 6rem; /* 图标大小 */
+            color: var(--accent-color);
+            margin-bottom: 25px;
+            opacity: 0.85; /* 略微降低透明度，更柔和 */
+        }
+
+        h1 {
+            font-size: 2.5rem; /* 主标题 */
+            margin-bottom: 15px;
+            color: var(--text-color);
+            font-weight: 700; /* 加粗 */
+            line-height: 1.3;
+        }
+
+        p {
+            font-size: 1.1rem; /* 段落文本 */
+            color: var(--secondary-text-color);
+            margin-bottom: 10px;
+            line-height: 1.6;
+        }
+
+        .cta-button {
+            display: inline-block;
+            margin-top: 30px;
+            padding: 14px 28px;
+            background-color: var(--accent-color);
+            color: #fff;
+            text-decoration: none;
+            border-radius: 8px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            transition: background-color 0.3s ease, transform 0.2s ease;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .cta-button:hover {
+            background-color: var(--button-hover-bg);
+            transform: translateY(-2px); /* 悬停时轻微上浮 */
+            box-shadow: 0 6px 15px rgba(0, 0, 0, 0.15);
+        }
+
+        /* 响应式调整 */
+        @media (max-width: 600px) {
+            .container {
+                padding: 30px 20px;
+                width: 95%; /* 小屏幕下更宽 */
+            }
+
+            .icon {
+                font-size: 5rem;
+                margin-bottom: 20px;
+            }
+
+            h1 {
+                font-size: 2rem;
+            }
+
+            p {
+                font-size: 1rem;
+            }
+
+            .cta-button {
+                padding: 12px 24px;
+                font-size: 1rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- 图标：更符合“文章”或“内容”的图标 -->
+        <!-- 选项1: 文档带叉号，表示内容被移除或不可用 -->
+        <i class="fas fa-file-circle-xmark icon"></i> 
+        <!-- 选项2: 破损的链接，表示链接失效 -->
+        <!-- <i class="fas fa-unlink icon"></i> -->
+        <!-- 选项3: 通用的幽灵图标，表示内容“消失”了 -->
+        <!-- <i class="fas fa-ghost icon"></i> -->
+
+        <h1>文章已下架</h1>
+        <p>很抱歉，您访问的文章已下架或已被移除。</p>
+        <p>感谢您的关注，您可以返回首页浏览其他精彩内容，或查看我们的最新文章。</p>
+        <a href="/" class="cta-button">返回首页</a>
+    </div>
+</body>
+</html>

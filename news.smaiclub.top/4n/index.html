@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SMAI NEWS | 斯麦新闻 - 专业科技与综合新闻平台</title>
+    <style>
+        :root {
+            --primary-color: #0066cc;
+            --secondary-color: #333;
+            --accent-color: #e74c3c;
+            --text-color: #333;
+            --light-text: #777;
+            --bg-color: #f8f9fa;
+            --card-bg: #fff;
+            --border-color: #e0e0e0;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Helvetica Neue', Arial, 'PingFang SC', 'Microsoft YaHei', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            line-height: 1.6;
+            overflow-x: hidden;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 15px;
+            flex: 1;
+        }
+
+        @keyframes moveBackground {
+            0% {
+                background-position: 0 0;
+            }
+            100% {
+                background-position: 400px 400px;
+            }
+        }
+
+        .navbar {
+            background-color: var(--card-bg);
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            padding: 15px 0;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+
+        .navbar-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            font-size: 1.8rem;
+            font-weight: bold;
+            color: var(--primary-color);
+            text-decoration: none;
+        }
+
+        .logo span {
+            color: var(--accent-color);
+        }
+
+        .nav-links {
+            display: flex;
+            list-style: none;
+        }
+
+        .nav-links li {
+            margin-left: 25px;
+        }
+
+        .nav-links a {
+            text-decoration: none;
+            color: var(--secondary-color);
+            font-weight: 500;
+            transition: color 0.3s;
+        }
+
+        .nav-links a:hover {
+            color: var(--primary-color);
+        }
+
+        .header {
+            background-color: var(--primary-color);
+            color: white;
+            padding: 30px 0;
+            margin-bottom: 30px;
+        }
+
+        .header-title {
+            text-align: center;
+        }
+
+        .header-title h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+        }
+
+        .header-subtitle {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+
+        .news-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 30px;
+            margin-bottom: 40px;
+        }
+
+        .featured-card {
+            background-color: var(--card-bg);
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+        }
+
+        .featured-content {
+            padding: 25px;
+        }
+
+        .featured-title {
+            font-size: 1.8rem;
+            margin-bottom: 15px;
+            line-height: 1.3;
+        }
+
+        .featured-excerpt {
+            color: var(--light-text);
+            margin-bottom: 20px;
+        }
+
+        .footer {
+            background-color: var(--secondary-color);
+            color: white;
+            padding: 20px 0;
+            margin-top: 50px;
+            text-align: center;
+        }
+
+        .footer-container {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+
+        .footer-column h3 {
+            font-size: 1.2rem;
+            margin-bottom: 20px;
+            position: relative;
+            padding-bottom: 10px;
+        }
+
+        .footer-column h3::after {
+            content: '';
+            position: absolute;
+            left: 0;
+            bottom: 0;
+            width: 40px;
+            height: 2px;
+            background-color: var(--primary-color);
+        }
+
+        .footer-links {
+            list-style: none;
+        }
+
+        .footer-links li {
+            margin-bottom: 10px;
+        }
+
+        .footer-links a {
+            color: #bbb;
+            text-decoration: none;
+            transition: color 0.3s;
+        }
+
+        .footer-links a:hover {
+            color: white;
+        }
+
+        .footer-bottom {
+            font-size: 0.9rem;
+            color: #aaa;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="background-animation"></div> <!-- 动画背景层 -->
+
+    <!-- 导航栏 -->
+    <nav class="navbar">
+        <div class="container navbar-container">
+            <a href="#" class="logo">SMAI<span>NEWS</span></a>
+            <ul class="nav-links">
+                <li><a href="#">首页</a></li>
+                <li><a href="#">科技</a></li>
+                <li><a href="#">商业</a></li>
+                <li><a href="#">娱乐</a></li>
+                <li><a href="#">体育</a></li>
+                <li><a href="#">生活</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <!-- 头部标题 -->
+    <header class="header">
+        <div class="container header-title">
+            <h1>希沃白板价格大跳水，智能教育设备市场竞争进入白热化</h1>
+            <p class="header-subtitle">本周希沃白板购买价格降价至9100元，更多的低价电教平台涌入市场。业内人士分析，教育信息化市场竞争已进入白热化阶段...</p>
+        </div>
+    </header>
+
+    <!-- 主要内容区 -->
+    <main class="container">
+        <div class="news-grid">
+            <div class="featured-card">
+                <div class="featured-content">
+                    <h2 class="featured-title">希沃白板价格大跳水，智能教育设备市场竞争进入白热化<br>
+——教育信息化行业加速洗牌，厂商寻求差异化突围<br>
+<br>
+2025年4月23日——国内教育信息化市场近日掀起新一轮价格战。知名智能教育设备品牌希沃（seewo）旗下主力产品希沃白板本周价格直降近20%，终端售价低至9100元，引发行业广泛关注。与此同时，多家中小品牌以“6000元档”平价产品加速入场，市场竞争进一步加剧。业内人士分析，伴随政策红利退潮与需求端预算收紧，教育硬件赛道已从“拼技术”转向“拼价格”，行业洗牌在即。<br>
+<br>
+价格战升级：从技术迭代到成本厮杀<br>
+<br>据渠道经销商透露，此次希沃白板降价覆盖多个主流型号，降幅最高达2000元，部分机型价格甚至低于去年同期水平。一位华东地区代理商表示：“过去两年，希沃白板价格始终稳定在1.1万元以上，此次降价后销量明显增长，但也挤压了二线品牌的生存空间。”
+<br>低价竞争背后是市场供需关系的转变。2020-2022年，受“三个课堂”“智慧校园”等政策推动，教育信息化设备需求激增，希沃、鸿合等头部品牌凭借技术优势占据超60%市场份额。然而，随着政策驱动效应减弱，学校采购预算趋于理性，市场逐渐从“规模化覆盖”转向“精细化更新”，价格敏感度显著提升。
+<br>
+<br>中小品牌低价突围，头部厂商被迫应战
+<br>面对市场变化，新兴品牌以“高性价比”策略加速分羹。例如，某国产新锐品牌推出搭载基础交互功能的电子白板，价格下探至6500元，主打县域及民办教育市场；互联网巨头旗下教育硬件品牌则通过“硬件+内容订阅”模式降低用户初次投入成本。
+<br>对此，头部企业不得不调整策略。除希沃降价外，鸿合科技推出“以旧换新”补贴政策，MaxHub等品牌则捆绑免费运维服务以提升附加值。行业分析师李明指出：“价格战短期内虽能刺激销量，但长期可能削弱企业研发投入能力。如何平衡成本控制与技术升级，将成为厂商生存关键。”
+<br>
+<br>行业洗牌加速，未来竞争聚焦三大核心
+<br>教育信息化行业资深人士预测，当前价格战或持续至2024年底，缺乏核心技术的中小厂商将面临淘汰，市场份额进一步向头部集中。未来竞争将聚焦三大方向：
+<br>
+<br>场景化解决方案：从单一硬件向“设备+软件+数据”生态转型，例如希沃已布局课堂管理系统、学情分析工具等增值服务；
+<br>AI深度融合：利用生成式AI技术开发智能备课、课堂互动等功能，提升产品差异化；
+<br>下沉市场渗透：针对乡村学校、培训机构开发适配性更强的平价产品，扩大用户基数。
+<br><br>结语
+<br>希沃白板降价事件折射出教育信息化行业从爆发期转入成熟期的阵痛。在政策与市场的双重驱动下，厂商唯有通过技术创新与成本优化构建“护城河”，方能在激烈竞争中突围。而对于教育机构而言，竞争加剧带来的价格红利或将降低信息化门槛，助推优质教育资源普惠落地。
+<br>
+<br>——完——
+<br>本文数据及观点综合自行业调研、企业公开信息及专家访谈。</h2>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- 页脚 -->
+    <footer class="footer">
+        <p class="footer-bottom">© 2025 SMAI NEWS 版权所有</p>
+    </footer>
+
+</body>
+</html>

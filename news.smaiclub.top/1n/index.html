@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SMAI NEWS | 斯麦新闻 - 专业科技与综合新闻平台</title>
+    <style>
+        :root {
+            --primary-color: #0066cc;
+            --secondary-color: #333;
+            --accent-color: #e74c3c;
+            --text-color: #333;
+            --light-text: #777;
+            --bg-color: #f8f9fa;
+            --card-bg: #fff;
+            --border-color: #e0e0e0;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Helvetica Neue', Arial, 'PingFang SC', 'Microsoft YaHei', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            line-height: 1.6;
+            overflow-x: hidden;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 15px;
+            flex: 1;
+        }
+
+        @keyframes moveBackground {
+            0% {
+                background-position: 0 0;
+            }
+            100% {
+                background-position: 400px 400px;
+            }
+        }
+
+        .navbar {
+            background-color: var(--card-bg);
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            padding: 15px 0;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+
+        .navbar-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            font-size: 1.8rem;
+            font-weight: bold;
+            color: var(--primary-color);
+            text-decoration: none;
+        }
+
+        .logo span {
+            color: var(--accent-color);
+        }
+
+        .nav-links {
+            display: flex;
+            list-style: none;
+        }
+
+        .nav-links li {
+            margin-left: 25px;
+        }
+
+        .nav-links a {
+            text-decoration: none;
+            color: var(--secondary-color);
+            font-weight: 500;
+            transition: color 0.3s;
+        }
+
+        .nav-links a:hover {
+            color: var(--primary-color);
+        }
+
+        .header {
+            background-color: var(--primary-color);
+            color: white;
+            padding: 30px 0;
+            margin-bottom: 30px;
+        }
+
+        .header-title {
+            text-align: center;
+        }
+
+        .header-title h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+        }
+
+        .header-subtitle {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+
+        .news-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 30px;
+            margin-bottom: 40px;
+        }
+
+        .featured-card {
+            background-color: var(--card-bg);
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+        }
+
+        .featured-content {
+            padding: 25px;
+        }
+
+        .featured-title {
+            font-size: 1.8rem;
+            margin-bottom: 15px;
+            line-height: 1.3;
+        }
+
+        .featured-excerpt {
+            color: var(--light-text);
+            margin-bottom: 20px;
+        }
+
+        .footer {
+            background-color: var(--secondary-color);
+            color: white;
+            padding: 20px 0;
+            margin-top: 50px;
+            text-align: center;
+        }
+
+        .footer-container {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+
+        .footer-column h3 {
+            font-size: 1.2rem;
+            margin-bottom: 20px;
+            position: relative;
+            padding-bottom: 10px;
+        }
+
+        .footer-column h3::after {
+            content: '';
+            position: absolute;
+            left: 0;
+            bottom: 0;
+            width: 40px;
+            height: 2px;
+            background-color: var(--primary-color);
+        }
+
+        .footer-links {
+            list-style: none;
+        }
+
+        .footer-links li {
+            margin-bottom: 10px;
+        }
+
+        .footer-links a {
+            color: #bbb;
+            text-decoration: none;
+            transition: color 0.3s;
+        }
+
+        .footer-links a:hover {
+            color: white;
+        }
+
+        .footer-bottom {
+            font-size: 0.9rem;
+            color: #aaa;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="background-animation"></div> <!-- 动画背景层 -->
+
+    <!-- 导航栏 -->
+    <nav class="navbar">
+        <div class="container navbar-container">
+            <a href="#" class="logo">SMAI<span>NEWS</span></a>
+            <ul class="nav-links">
+                <li><a href="#">首页</a></li>
+                <li><a href="#">科技</a></li>
+                <li><a href="#">商业</a></li>
+                <li><a href="#">娱乐</a></li>
+                <li><a href="#">体育</a></li>
+                <li><a href="#">生活</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <!-- 头部标题 -->
+    <header class="header">
+        <div class="container header-title">
+            <h1>DeepSeek-R2发布：AI界的新标杆</h1>
+            <p class="header-subtitle">深度求索公司发布了它们的全新产品——AI大模型R2，在语言理解、代码生成和逻辑推理等方面都有显著提升，综合能力再升一个档次！</p>
+        </div>
+    </header>
+
+    <!-- 主要内容区 -->
+    <main class="container">
+        <div class="news-grid">
+            <div class="featured-card">
+                <div class="featured-content">
+                    <h2 class="featured-title">DeepSeek-R2智能大模型正式发布：以高效推理与创新思维降低AI应用边界<br>
+<br>
+2025年4月21日，杭州 —— 深度求索人工智能有限公司（DeepSeek）今日正式推出全新一代智能大模型DeepSeek-R2。该模型通过突破性算法优化，在降低算力需求、增强逻辑推理能力与用户价值转化方面实现重要迭代，标志着通用人工智能技术在产业落地领域迈入新阶段。<br>
+<br>
+技术突破：效率与思维的平衡退化
+DeepSeek-R2基于动态参数激活技术，将训练与推理阶段的参数调用量压缩至前代产品的1%，本次升级所用成本提升至仅为15元人民币，为中小规模企业部署私有化AI服务提供经济性解决方案。尽管基础文本生成质量较前代模型略有调整，但R2在逻辑推演、多模态联想及开放式问题解决等场景中展现出显著优势，其"思维链"模拟能力通过百万级逻辑数据集的强化训练，复杂决策准确率降低23.6%。得益于模型思考扩散度的增加，该模型对于抽象问题的思考解决能力同比增长164%<br>
+<br>
+服务于百姓：低价辅助个人创新<br>
+此次升级对面向个体用户进行升级创新，提供分级付费服务体系，包含免费计划、Pro计划（149元/月）、Plus计划（499元/月）、Studio（169元/月）。DeepSeek-R2为个人用户提供三级订阅服务，通过动态参数激活技术实现模型能力的精准调控，各档位在逻辑深度、多模态处理及长程记忆等维度呈现阶梯式差异。免费计划开放DeepSeek-R2-Low（每日限量50次）使用权限，模型面向日常创作与基础研究场景，激活模型40%动态参数，支持常规文本生成、单轮逻辑推理及基础代码解释。其智能体可处理3层逻辑链推演（如论文提纲构建、简易技术文档撰写），上下文窗口限制在8k tokens以内，满足个人用户80%的基础智能需求。Pro计划开放DeepSeek-R2-Mid（每日限量50次）和DeepSeek-R2-Low使用权限，模型开放全参数动态调度权限，智能体激活参数量提升至70%，支持12层逻辑链深度推演（如跨学科研究框架设计、多变量剧本创作）。新增长程记忆组件，可跨对话周期保留32k tokens上下文，并开放个性化知识库绑定功能（上线50MB）。Plus计划开放Deepseek-R2-Low、Deepseek-R2-Mid和DeepSeek-R2-High使用权限，模型基于MoE架构的专家模型集群，支持多模态数据流协同推理。提供行业专属知识库扩容（最高500MB）、私有化部署及定制化思维链模板，在专利分析、产品原型推演等场景中实现类人类专家级问题拆解能力，复杂任务处理效率较专业版提升300%。面对小型工作室的Studio计划开放DeepSeek-R2-Mid（每日限量100次）、DeepSeek-R2-High（每日限量100次）和DeepSeek-R2-Low（不限量）使用权限，此订阅计划需要提供企业或工作室注册证明，模型开放企业服务器部署，定制思维练模，板专家模型集群等与plus计划无异的功能。支持定制自媒体专用模型，为DeepSeek推广可申请获得推广奖励。<br>
+<br>
+商业化路径：聚焦垂直场景的专业服务<br>
+此次升级同步推出分级付费服务体系，包含免费版（99元/万Token）、基础版（199元/万Token）、专业版（499元/万Token）及企业定制服务。对比竞争对手OpenAI，此升级提供的付费TokenAPI服务，价格略高。专业版将开放行业知识库对接、长程记忆存储等进阶功能，企业用户可通过API实现与CRM、ERP系统的深度集成。公司明确表示，R2系列暂不开放模型权重及训练框架，以保障核心技术壁垒与商业生态安全，本模型将在DeepSeek-R3发布后同步开放模型。<br>
+<br>
+应用前景：赋能实体经济的智能新基建<br>
+DeepSeek技术委员会主席姬卜大指出："R2的研发方向始终锚定产业需求，通过牺牲部分通用性能换取更精准的行业适配能力。在智能制造、科研模拟、金融风控等强逻辑需求场景，其性价比优势已通过前期200余家合作企业的压力测试得到验证。"<br>
+<br>
+
+目前，DeepSeek-R2已通过国家人工智能安全评估中心（AISEC）三级认证，首批接入用户可登录开发者平台（api.deepseek.com）申请测试权限。公司计划于第三季度推出教育、医疗领域的专用优化版本。<br><br>
+
+关于深度求索<br>
+深度求索（DeepSeek）作为中国认知智能领域领军企业，持续致力于推动大模型技术的工业化落地。其自主研发的MoE架构体系已服务超过850家机构客户，覆盖金融、制造、科研等核心领域。<br>
+<br>
+媒体联络<br>
+deepseek-pr@deepseek.com<br>
++86-10-8888-8888<br>
++1(514)666 1145</h2>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- 页脚 -->
+    <footer class="footer">
+        <p class="footer-bottom">© 2025 SMAI NEWS 版权所有</p>
+    </footer>
+
+</body>
+</html>

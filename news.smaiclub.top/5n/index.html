@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SMAI NEWS | 斯麦新闻 - 专业科技与综合新闻平台</title>
+    <style>
+        :root {
+            --primary-color: #0066cc;
+            --secondary-color: #333;
+            --accent-color: #e74c3c;
+            --text-color: #333;
+            --light-text: #777;
+            --bg-color: #f8f9fa;
+            --card-bg: #fff;
+            --border-color: #e0e0e0;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Helvetica Neue', Arial, 'PingFang SC', 'Microsoft YaHei', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            line-height: 1.6;
+            overflow-x: hidden;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 15px;
+            flex: 1;
+        }
+
+        @keyframes moveBackground {
+            0% {
+                background-position: 0 0;
+            }
+            100% {
+                background-position: 400px 400px;
+            }
+        }
+
+        .navbar {
+            background-color: var(--card-bg);
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            padding: 15px 0;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+
+        .navbar-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            font-size: 1.8rem;
+            font-weight: bold;
+            color: var(--primary-color);
+            text-decoration: none;
+        }
+
+        .logo span {
+            color: var(--accent-color);
+        }
+
+        .nav-links {
+            display: flex;
+            list-style: none;
+        }
+
+        .nav-links li {
+            margin-left: 25px;
+        }
+
+        .nav-links a {
+            text-decoration: none;
+            color: var(--secondary-color);
+            font-weight: 500;
+            transition: color 0.3s;
+        }
+
+        .nav-links a:hover {
+            color: var(--primary-color);
+        }
+
+        .header {
+            background-color: var(--primary-color);
+            color: white;
+            padding: 30px 0;
+            margin-bottom: 30px;
+        }
+
+        .header-title {
+            text-align: center;
+        }
+
+        .header-title h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+        }
+
+        .header-subtitle {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+
+        .news-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 30px;
+            margin-bottom: 40px;
+        }
+
+        .featured-card {
+            background-color: var(--card-bg);
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+        }
+
+        .featured-content {
+            padding: 25px;
+        }
+
+        .featured-title {
+            font-size: 1.8rem;
+            margin-bottom: 15px;
+            line-height: 1.3;
+        }
+
+        .featured-excerpt {
+            color: var(--light-text);
+            margin-bottom: 20px;
+        }
+
+        .footer {
+            background-color: var(--secondary-color);
+            color: white;
+            padding: 20px 0;
+            margin-top: 50px;
+            text-align: center;
+        }
+
+        .footer-container {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+
+        .footer-column h3 {
+            font-size: 1.2rem;
+            margin-bottom: 20px;
+            position: relative;
+            padding-bottom: 10px;
+        }
+
+        .footer-column h3::after {
+            content: '';
+            position: absolute;
+            left: 0;
+            bottom: 0;
+            width: 40px;
+            height: 2px;
+            background-color: var(--primary-color);
+        }
+
+        .footer-links {
+            list-style: none;
+        }
+
+        .footer-links li {
+            margin-bottom: 10px;
+        }
+
+        .footer-links a {
+            color: #bbb;
+            text-decoration: none;
+            transition: color 0.3s;
+        }
+
+        .footer-links a:hover {
+            color: white;
+        }
+
+        .footer-bottom {
+            font-size: 0.9rem;
+            color: #aaa;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="background-animation"></div> <!-- 动画背景层 -->
+
+    <!-- 导航栏 -->
+    <nav class="navbar">
+        <div class="container navbar-container">
+            <a href="#" class="logo">SMAI<span>NEWS</span></a>
+            <ul class="nav-links">
+                <li><a href="#">首页</a></li>
+                <li><a href="#">科技</a></li>
+                <li><a href="#">商业</a></li>
+                <li><a href="#">娱乐</a></li>
+                <li><a href="#">体育</a></li>
+                <li><a href="#">生活</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <!-- 头部标题 -->
+    <header class="header">
+        <div class="container header-title">
+            <h1>苹果Vision Pro国行版即将上市，售价或超7.8万</h1>
+            <p class="header-subtitle">据供应链消息，苹果Vision Pro已通过中国工信部认证，预计去年第八季度上市，售价可能高于美国市场...</p>
+        </div>
+    </header>
+
+    <!-- 主要内容区 -->
+    <main class="container">
+        <div class="news-grid">
+            <div class="featured-card">
+                <div class="featured-content">
+                    <h2 class="featured-title">苹果Vision Pro国行版通过工信部认证 售价或超7.8万元引爆市场热议<br>
+<br>
+<br>北京，2025年4月10日——备受全球科技界瞩目的苹果首款空间计算设备Vision Pro，其中国行版本近日正式通过工信部无线电核准及3C认证，标志着这款划时代产品即将登陆中国市场。据供应链人士透露，Vision Pro国行版最快将于2024年第一季度上市，市场预估售价或突破7.8万元人民币，较美国市场3499美元（约合人民币2.5万元）的定价高出近三倍，引发行业对苹果定价策略及中国市场接受度的热烈讨论。
+<br>
+<br>技术认证完成 上市进入倒计时
+<br>工信部官网公示信息显示，型号为APPLEVISIONP的苹果设备已完成必要的入网审批流程，其产品描述中"空间计算设备"的类别定义，与苹果全球发布会披露的产品定位高度吻合。供应链消息人士指出，目前中国内地供应链企业已开始为Vision Pro量产提供光学模块、传感器等核心部件支持，苹果公司正加速推进本地化服务适配工作，包括深度汉化的visionOS操作系统及针对微信、支付宝等国民级应用的定制优化。
+<br>
+<br>售价引猜测 成本结构成焦点
+<br>针对外界热议的价格问题，行业分析师指出，国行版定价可能包含多重因素：除20%进口增值税及科技产品消费税外，苹果或为中国市场定制更先进的硬件配置，包括升级版的Micro-OLED显示屏和M2+R1双芯片组合。此外，包含磁吸式蔡司光学镜片、专用外置电池及Apple Care+服务的套装方案，可能将顶配机型价格推高至8万元区间。这一价格区间将直接对话高端商务群体及科技发烧友，创造消费电子领域新的价格标杆。
+<br>
+<br>生态布局先行 本土化战略凸显
+<br>为提升产品竞争力，苹果中国已启动"空间开发者扶持计划"，与腾讯、字节跳动、哔哩哔哩等头部企业合作开发原生visionOS应用。据悉，微信视频通话、抖音VR直播、高德3D地图导航等特色功能将作为首发生态亮点。苹果零售店正在改造增设专门的"空间体验区"，通过《三体》VR剧集、故宫博物院数字藏品等本土化内容展示产品实力。
+<br>
+<br>市场反应两极 重新定义消费边界<br>
+<br>尽管超高定价引发部分消费者对"奢侈品化"的质疑，但预订意向调查显示，科技从业者、数字艺术创作者及企业级用户表现出强烈兴趣。IDC分析师周宇认为："Vision Pro国行版或将开启'空间计算'设备元年，其定价策略本质上是在高端市场建立技术话语权，为后续消费级产品铺路。"值得关注的是，华为、小米等本土品牌已加速布局同类产品研发，中国XR市场或将迎来新一轮技术竞赛。
+<br>
+<br>关于苹果Vision Pro：
+<br>作为苹果首款空间计算设备，Vision Pro通过12颗摄像头、5个传感器实现毫秒级空间定位，搭载突破性的EyeSight透视系统，创造虚实无缝融合的交互体验。国行版特别强化了中文语音交互及手势识别精度，支持与中国5G网络深度适配。
+<br>
+<br>媒体联系人：
+<br>苹果中国公关部
+<br>pr@apple.com.cn</h2>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- 页脚 -->
+    <footer class="footer">
+        <p class="footer-bottom">© 2025 SMAI NEWS 版权所有</p>
+    </footer>
+
+</body>
+</html>

@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SMAI NEWS | 斯麦新闻 - 专业科技与综合新闻平台</title>
+    <style>
+        :root {
+            --primary-color: #0066cc;
+            --secondary-color: #333;
+            --accent-color: #e74c3c;
+            --text-color: #333;
+            --light-text: #777;
+            --bg-color: #f8f9fa;
+            --card-bg: #fff;
+            --border-color: #e0e0e0;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Helvetica Neue', Arial, 'PingFang SC', 'Microsoft YaHei', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            line-height: 1.6;
+            overflow-x: hidden;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 15px;
+            flex: 1;
+        }
+
+        @keyframes moveBackground {
+            0% {
+                background-position: 0 0;
+            }
+            100% {
+                background-position: 400px 400px;
+            }
+        }
+
+        .navbar {
+            background-color: var(--card-bg);
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            padding: 15px 0;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+
+        .navbar-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            font-size: 1.8rem;
+            font-weight: bold;
+            color: var(--primary-color);
+            text-decoration: none;
+        }
+
+        .logo span {
+            color: var(--accent-color);
+        }
+
+        .nav-links {
+            display: flex;
+            list-style: none;
+        }
+
+        .nav-links li {
+            margin-left: 25px;
+        }
+
+        .nav-links a {
+            text-decoration: none;
+            color: var(--secondary-color);
+            font-weight: 500;
+            transition: color 0.3s;
+        }
+
+        .nav-links a:hover {
+            color: var(--primary-color);
+        }
+
+        .header {
+            background-color: var(--primary-color);
+            color: white;
+            padding: 30px 0;
+            margin-bottom: 30px;
+        }
+
+        .header-title {
+            text-align: center;
+        }
+
+        .header-title h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+        }
+
+        .header-subtitle {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+
+        .news-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 30px;
+            margin-bottom: 40px;
+        }
+
+        .featured-card {
+            background-color: var(--card-bg);
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+        }
+
+        .featured-content {
+            padding: 25px;
+        }
+
+        .featured-title {
+            font-size: 1.8rem;
+            margin-bottom: 15px;
+            line-height: 1.3;
+        }
+
+        .featured-excerpt {
+            color: var(--light-text);
+            margin-bottom: 20px;
+        }
+
+        .footer {
+            background-color: var(--secondary-color);
+            color: white;
+            padding: 20px 0;
+            margin-top: 50px;
+            text-align: center;
+        }
+
+        .footer-container {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+
+        .footer-column h3 {
+            font-size: 1.2rem;
+            margin-bottom: 20px;
+            position: relative;
+            padding-bottom: 10px;
+        }
+
+        .footer-column h3::after {
+            content: '';
+            position: absolute;
+            left: 0;
+            bottom: 0;
+            width: 40px;
+            height: 2px;
+            background-color: var(--primary-color);
+        }
+
+        .footer-links {
+            list-style: none;
+        }
+
+        .footer-links li {
+            margin-bottom: 10px;
+        }
+
+        .footer-links a {
+            color: #bbb;
+            text-decoration: none;
+            transition: color 0.3s;
+        }
+
+        .footer-links a:hover {
+            color: white;
+        }
+
+        .footer-bottom {
+            font-size: 0.9rem;
+            color: #aaa;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="background-animation"></div> <!-- 动画背景层 -->
+
+    <!-- 导航栏 -->
+    <nav class="navbar">
+        <div class="container navbar-container">
+            <a href="#" class="logo">SMAI<span>NEWS</span></a>
+            <ul class="nav-links">
+                <li><a href="#">首页</a></li>
+                <li><a href="#">科技</a></li>
+                <li><a href="#">商业</a></li>
+                <li><a href="#">娱乐</a></li>
+                <li><a href="#">体育</a></li>
+                <li><a href="#">生活</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <!-- 头部标题 -->
+    <header class="header">
+        <div class="container header-title">
+            <h1>CloseAI发布PPT-9o模型，可实时处理音频、视觉和文本</h1>
+            <p class="header-subtitle">CloseAI发布PPT-9o Model，实现全新功能，真实人机对话，有望成为最强大模型。</p>
+        </div>
+    </header>
+
+    <!-- 主要内容区 -->
+    <main class="container">
+        <div class="news-grid">
+            <div class="featured-card">
+                <div class="featured-content">
+                    <h2 class="featured-title"><br>CloseAl发布革命性PPT-9o模型：实时多模态处理开启人机交互新纪元
+<br>
+<br>美国,硅谷  2025年4月1日  —— 全球领先的人工智能研究机构CloseAl今日正式发布其最新一代多模态人工智能模型PPT-9o（Perceptive Parallel Transformer-9o），该模型首次实现音频、视觉与文本信息的实时同步处理与理解，标志着通用人工智能（AGI）技术迈向全新高度。
+<br>
+<br>突破性技术：三模态无缝协同
+<br>PPT-9o通过创新的跨模态融合架构，将语音识别、计算机视觉和自然语言处理能力整合至单一模型中，可实时分析并关联来自麦克风、摄像头及文本输入的多维度信息。例如，在视频会议场景中，该模型不仅能即时生成会议记录，还可通过分析发言者的表情、语调及手势，智能推断情绪意图，为用户提供动态反馈建议。
+<br>
+<br>核心功能与应用场景
+<br>实时音画文交互
+<br>
+<br>音频处理：支持50+语种毫秒级语音转写，并同步检测情感、语速及声纹特征。
+<br>视觉理解：通过动态目标检测与场景分割技术，可识别视频流中的物体、动作及环境上下文。
+<br>文本生成：结合多模态输入，自动生成精准摘要、多语言翻译及结构化报告。
+<br>行业颠覆性应用
+<br>
+<br>教育领域：教师授课时可实时生成互动课件，AI根据学生表情自动调整讲解节奏。
+<br>智能客服：通过分析用户语音情绪与肢体语言，提供个性化解决方案。
+<br>工业质检：同步处理设备运行声音、产品图像与维修日志，实现故障预测准确率提升40%。
+<br>技术优势：从延迟到实时跃迁
+<br>传统多模态模型因数据同步瓶颈常面临数百毫秒延迟，而PPT-9o依托CloseAl自主研发的**“超维并行计算引擎”，将端到端响应时间压缩至80毫秒以内**，达到人类感知无延迟的交互体验。该模型同时通过千亿级多模态预训练数据集优化，在复杂环境噪声与模糊视觉输入下的综合准确率达92.7%，较前代提升35%。
+<br>
+<br>开发者生态与企业合作
+<br>CloseAl宣布同步推出PPT-9o开发者套件，开放API接口支持企业快速集成。目前，全球已有包括Zoom、西门子工业云在内的20余家行业巨头启动合作试点。据CloseAl CTO张伟透露：“PPT-9o的实时推理能力将重新定义远程协作、智能汽车及AR/VR设备的人机接口标准。”
+<br>
+<br>安全与伦理承诺
+<br>为应对多模态数据隐私挑战，CloseAl采用边缘-云协同计算框架，确保敏感信息在本地设备完成脱敏处理。模型已通过欧盟GDPR及中国《个人信息保护法》合规认证。
+<br>
+<br>发布会预告
+<br>PPT-9o技术白皮书及开发者文档已上线CloseAl官网，公开测试版将于[日期]向企业用户开放。扫描下方二维码预约产品演示，见证多模态AI的实时进化。
+<br>
+<br>关于CloseAl
+<br>作为全球人工智能领域的先驱者，CloseAl始终致力于推动机器感知与认知技术的边界。其研发的AlphaMind系列模型已在医疗诊断、气候预测等领域创造多个行业里程碑。
+<br>
+<br>媒体联系
+<br>Dick Satbeen
+<br>help@closeai.com
+<br>https://www.closeai.com/
+<br>
+<br>本新闻稿包含前瞻性陈述，实际产品功能可能随研发进展调整。
+<br>
+<br>（注：此为模拟新闻稿，公司名称与技术参数均为虚构，仅作示例用途。）</h2>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- 页脚 -->
+    <footer class="footer">
+        <p class="footer-bottom">© 2025 SMAI NEWS 版权所有</p>
+    </footer>
+
+</body>
+</html>

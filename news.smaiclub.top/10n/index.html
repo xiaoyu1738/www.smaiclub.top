@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SMAI NEWS | 斯麦新闻 - 专业科技与综合新闻平台</title>
+    <style>
+        :root {
+            --primary-color: #0066cc;
+            --secondary-color: #333;
+            --accent-color: #e74c3c;
+            --text-color: #333;
+            --light-text: #777;
+            --bg-color: #f8f9fa;
+            --card-bg: #fff;
+            --border-color: #e0e0e0;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Helvetica Neue', Arial, 'PingFang SC', 'Microsoft YaHei', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            line-height: 1.6;
+            overflow-x: hidden;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 15px;
+            flex: 1;
+        }
+
+        @keyframes moveBackground {
+            0% {
+                background-position: 0 0;
+            }
+            100% {
+                background-position: 400px 400px;
+            }
+        }
+
+        .navbar {
+            background-color: var(--card-bg);
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            padding: 15px 0;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+
+        .navbar-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            font-size: 1.8rem;
+            font-weight: bold;
+            color: var(--primary-color);
+            text-decoration: none;
+        }
+
+        .logo span {
+            color: var(--accent-color);
+        }
+
+        .nav-links {
+            display: flex;
+            list-style: none;
+        }
+
+        .nav-links li {
+            margin-left: 25px;
+        }
+
+        .nav-links a {
+            text-decoration: none;
+            color: var(--secondary-color);
+            font-weight: 500;
+            transition: color 0.3s;
+        }
+
+        .nav-links a:hover {
+            color: var(--primary-color);
+        }
+
+        .header {
+            background-color: var(--primary-color);
+            color: white;
+            padding: 30px 0;
+            margin-bottom: 30px;
+        }
+
+        .header-title {
+            text-align: center;
+        }
+
+        .header-title h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+        }
+
+        .header-subtitle {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+
+        .news-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 30px;
+            margin-bottom: 40px;
+        }
+
+        .featured-card {
+            background-color: var(--card-bg);
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+        }
+
+        .featured-content {
+            padding: 25px;
+        }
+
+        .featured-title {
+            font-size: 1.8rem;
+            margin-bottom: 15px;
+            line-height: 1.3;
+        }
+
+        .featured-excerpt {
+            color: var(--light-text);
+            margin-bottom: 20px;
+        }
+
+        .footer {
+            background-color: var(--secondary-color);
+            color: white;
+            padding: 20px 0;
+            margin-top: 50px;
+            text-align: center;
+        }
+
+        .footer-container {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+
+        .footer-column h3 {
+            font-size: 1.2rem;
+            margin-bottom: 20px;
+            position: relative;
+            padding-bottom: 10px;
+        }
+
+        .footer-column h3::after {
+            content: '';
+            position: absolute;
+            left: 0;
+            bottom: 0;
+            width: 40px;
+            height: 2px;
+            background-color: var(--primary-color);
+        }
+
+        .footer-links {
+            list-style: none;
+        }
+
+        .footer-links li {
+            margin-bottom: 10px;
+        }
+
+        .footer-links a {
+            color: #bbb;
+            text-decoration: none;
+            transition: color 0.3s;
+        }
+
+        .footer-links a:hover {
+            color: white;
+        }
+
+        .footer-bottom {
+            font-size: 0.9rem;
+            color: #aaa;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="background-animation"></div> <!-- 动画背景层 -->
+
+    <!-- 导航栏 -->
+    <nav class="navbar">
+        <div class="container navbar-container">
+            <a href="#" class="logo">SMAI<span>NEWS</span></a>
+            <ul class="nav-links">
+                <li><a href="https://news.smaiclub.top">首页</a></li>
+                <li><a href="https://news.smaiclub.top/404">科技</a></li>
+                <li><a href="https://news.smaiclub.top/404">商业</a></li>
+                <li><a href="https://news.smaiclub.top/404">娱乐</a></li>
+                <li><a href="https://news.smaiclub.top/404">体育</a></li>
+                <li><a href="https://news.smaiclub.top/404">生活</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <!-- 头部标题 -->
+    <header class="header">
+        <div class="container header-title">
+            <h1>特斯拉上海储能超级工厂正式开工，年产91GWh加速全球能源转型</h1>
+            <p class="header-subtitle">全球最大储能超级工厂落子上海，特斯拉“光储充”生态闭环再添战略支点</p>
+        </div>
+    </header>
+
+    <!-- 主要内容区 -->
+    <main class="container">
+        <div class="news-grid">
+            <div class="featured-card">
+                <div class="featured-content">
+                    <h2 class="featured-title"><br>特斯拉上海储能超级工厂正式开工，年产91GWh加速全球能源转型
+<br>全球最大储能超级工厂落子上海，特斯拉“光储充”生态闭环再添战略支点
+<br>
+<br>[上海，中国，2025年4月1日] 今日上午，特斯拉全球第二座储能超级工厂——特斯拉上海储能超级工厂（Tesla Shanghai Megafactory）在临港新片区正式破土动工。该工厂规划年产能达91GWh，相当于每年可为全球180万户家庭提供清洁电力储备，标志着特斯拉在中国从新能源汽车制造向能源全产业链扩张的战略升级，也为全球可再生能源规模化应用按下“快进键”。
+<br>
+<br>超级工厂核心数据：规模与技术双突破
+<br>产能定位：91GWh年产能远超特斯拉美国内华达州40GWh储能工厂，可满足约12个新加坡全年用电需求。
+<br>技术路线：全线生产特斯拉最新一代Megapack 2XL储能系统，单套储能单元容量提升至4MWh，循环寿命超20年，系统能效达92%。
+<br>建设速度：依托上海超级工厂“当年开工、当年投产”的“临港速度”，预计2025年一季度首批产品下线。
+<br>产品与应用：重构全球能源网络
+<br>上海储能工厂生产的Megapack将主要用于：
+<br>
+<br>电网级储能：支持火电灵活性改造与电网调频，单套系统可保障5万户家庭连续6小时用电。
+<br>可再生能源整合：搭配光伏、风电场实现“绿电24小时稳定输出”，解决风光资源间歇性痛点。
+<br>工商业储能：通过AI智能预测充放电策略，帮助工厂削峰填谷降低40%用电成本。
+<br>行业颠覆：成本下探至1元/Wh临界点
+<br>得益于中国供应链本地化（宁德时代LFP电芯直供占比超80%）与产线自动化率提升至95%，Megapack 2XL单位成本较上一代下降35%，系统报价降至1.05元/Wh（约合145美元/kWh），首次逼近行业公认的“储能平价”拐点。据彭博新能源财经预测，该工厂量产将推动2025年全球储能装机量增长25%。
+<br>
+<br>本地化战略：从“中国制造”到“中国研发”
+<br>特斯拉同步宣布在上海设立亚太储能研发中心，聚焦高镍硅碳负极、固态电池预研及多能互补控制系统开发。临港工厂将实现电芯、BMS、逆变器全链条国产化，带动长三角地区超200家供应商升级，预计2026年产业链年产值突破800亿元。
+<br>
+<br>零碳工厂样本：100%可再生能源驱动
+<br>工厂采用光伏屋顶+陆上风电全覆盖，配套50MWh储能电站实现电力自平衡，并应用特斯拉专利的无水制造工艺，较传统锂电池工厂节水90%。厂区还预留氢能储运接口，为未来“绿电-绿氢”耦合技术试验提供基础设施。
+<br>
+<br>政府支持与全球协同
+<br>上海市将该项目纳入“新基建十大标杆工程”，通过专项债、用地指标倾斜等政策助力。特斯拉CEO埃隆·马斯克视频致辞称：“上海工厂是特斯拉能源业务全球化布局的核心引擎，未来柏林、得州工厂将与上海共享工程技术，加速实现可持续能源地球的愿景。”
+<br>
+<br>市场前瞻：万亿储能赛道卡位战
+<br>随着中国新型电力系统建设提速，2025年国内储能装机需求预计突破300GWh。特斯拉中国区总裁王昊在开工仪式上透露：“首批订单已锁定沙特红海新城1.3GWh项目与澳大利亚维多利亚大电池二期工程，中国本土项目占比将逐步提升至40%。”
+<br>
+<br>产业链动态
+<br>上海工厂首批1GWh储能电芯订单今日同步启动招标，特斯拉宣布与临港集团共建“储能产业开放实验室”，向本土企业免费开放电池安全测试平台。
+<br>
+<br>关于特斯拉能源业务
+<br>特斯拉能源板块涵盖Solar Roof、Powerwall、Megapack及虚拟电厂平台，2023年全球储能部署量达14.7GWh。上海储能工厂投产后，特斯拉将成全球首家具备“车、储、充、光”全生态闭环能力的新能源企业。
+<br>
+<br>媒体联系
+<br>[特斯拉中国公关部]
+<br>[400@tesla.com]
+<br>[https://www.tesla.cn/]</h2>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- 页脚 -->
+    <footer class="footer">
+        <p class="footer-bottom">© 2025 SMAI NEWS 版权所有</p>
+    </footer>
+
+</body>
+</html>

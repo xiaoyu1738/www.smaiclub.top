@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SMAI NEWS | 斯麦新闻 - 专业科技与综合新闻平台</title>
+    <style>
+        :root {
+            --primary-color: #0066cc;
+            --secondary-color: #333;
+            --accent-color: #e74c3c;
+            --text-color: #333;
+            --light-text: #777;
+            --bg-color: #f8f9fa;
+            --card-bg: #fff;
+            --border-color: #e0e0e0;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Helvetica Neue', Arial, 'PingFang SC', 'Microsoft YaHei', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            line-height: 1.6;
+            overflow-x: hidden;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 15px;
+            flex: 1;
+        }
+
+        @keyframes moveBackground {
+            0% {
+                background-position: 0 0;
+            }
+            100% {
+                background-position: 400px 400px;
+            }
+        }
+
+        .navbar {
+            background-color: var(--card-bg);
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            padding: 15px 0;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+
+        .navbar-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            font-size: 1.8rem;
+            font-weight: bold;
+            color: var(--primary-color);
+            text-decoration: none;
+        }
+
+        .logo span {
+            color: var(--accent-color);
+        }
+
+        .nav-links {
+            display: flex;
+            list-style: none;
+        }
+
+        .nav-links li {
+            margin-left: 25px;
+        }
+
+        .nav-links a {
+            text-decoration: none;
+            color: var(--secondary-color);
+            font-weight: 500;
+            transition: color 0.3s;
+        }
+
+        .nav-links a:hover {
+            color: var(--primary-color);
+        }
+
+        .header {
+            background-color: var(--primary-color);
+            color: white;
+            padding: 30px 0;
+            margin-bottom: 30px;
+        }
+
+        .header-title {
+            text-align: center;
+        }
+
+        .header-title h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+        }
+
+        .header-subtitle {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+
+        .news-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 30px;
+            margin-bottom: 40px;
+        }
+
+        .featured-card {
+            background-color: var(--card-bg);
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+        }
+
+        .featured-content {
+            padding: 25px;
+        }
+
+        .featured-title {
+            font-size: 1.8rem;
+            margin-bottom: 15px;
+            line-height: 1.3;
+        }
+
+        .featured-excerpt {
+            color: var(--light-text);
+            margin-bottom: 20px;
+        }
+
+        .footer {
+            background-color: var(--secondary-color);
+            color: white;
+            padding: 20px 0;
+            margin-top: 50px;
+            text-align: center;
+        }
+
+        .footer-container {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+
+        .footer-column h3 {
+            font-size: 1.2rem;
+            margin-bottom: 20px;
+            position: relative;
+            padding-bottom: 10px;
+        }
+
+        .footer-column h3::after {
+            content: '';
+            position: absolute;
+            left: 0;
+            bottom: 0;
+            width: 40px;
+            height: 2px;
+            background-color: var(--primary-color);
+        }
+
+        .footer-links {
+            list-style: none;
+        }
+
+        .footer-links li {
+            margin-bottom: 10px;
+        }
+
+        .footer-links a {
+            color: #bbb;
+            text-decoration: none;
+            transition: color 0.3s;
+        }
+
+        .footer-links a:hover {
+            color: white;
+        }
+
+        .footer-bottom {
+            font-size: 0.9rem;
+            color: #aaa;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="background-animation"></div> <!-- 动画背景层 -->
+
+    <!-- 导航栏 -->
+    <nav class="navbar">
+        <div class="container navbar-container">
+            <a href="#" class="logo">SMAI<span>NEWS</span></a>
+            <ul class="nav-links">
+                <li><a href="#">首页</a></li>
+                <li><a href="#">科技</a></li>
+                <li><a href="#">商业</a></li>
+                <li><a href="#">娱乐</a></li>
+                <li><a href="#">体育</a></li>
+                <li><a href="#">生活</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <!-- 头部标题 -->
+    <header class="header">
+        <div class="container header-title">
+            <h1>嫦娥六号成功着陆月球背面，将开展采样返回任务</h1>
+            <p class="header-subtitle">嫦娥六号成功着陆月球背面，开启人类首次月背采样返回壮举中国航天再创历史：地月通信、自主避障技术突破护航“月背挖土”</p>
+        </div>
+    </header>
+
+    <!-- 主要内容区 -->
+    <main class="container">
+        <div class="news-grid">
+            <div class="featured-card">
+                <div class="featured-content">
+                    <h2 class="featured-title"><br>嫦娥六号成功着陆月球背面，开启人类首次月背采样返回壮举
+<br>中国航天再创历史：地月通信、自主避障技术突破护航“月背挖土”
+<br>
+<br>[北京，中国，2025年3月18日] 北京时间今日6时23分，中国探月工程嫦娥系列任务“娥六号”探测器在月球背面南极-艾特肯盆地预选区域成功着陆，即将启动人类历史上首次月球背面自动采样与返回任务。这是继2019年嫦娥四号实现月背软着陆后，中国航天再次刷新地外天体探测纪录，为揭秘月球演化与深空资源开发迈出关键一步。
+<br>
+<br>挑战“不可视之地”：地月通信与智能着陆双突破
+<br>月球背面始终背对地球，探测器与地球的直接通信被月球本体阻挡。为此，中国航天科研团队首创“鹊桥二号”中继星组网方案，通过地月拉格朗日L2点中继卫星实现信号实时回传，并搭载超低延迟自主导航系统。娥六号在下降阶段依托激光三维成像与人工智能避障算法，在距离月面约100米处悬停扫描，自主识别并规避直径大于5厘米的障碍物，最终降落在坡度小于15度的安全区域。
+<br>
+<br>“挖土神器”首秀：钻取+表采双模式攻坚月壤
+<br>娥六号配置的**“玄龙三号”采样装置**采用模块化设计，包含深层钻探机械臂与表层真空吸附系统，可采集月球表面及地下2米深度的样本。针对月背岩石硬度高、风化层结构复杂的特点，钻头采用碳化钨钛合金与自适应转速控制技术，确保在极端温差下高效作业。任务计划在48小时内完成约2公斤月壤与岩芯样本封装，样本将包含约35亿年前的古老物质，有望填补人类对月背地质认知的空白。
+<br>
+<br>星际快递：月面起飞与月球轨道交会对接
+<br>完成采样后，娥六号上升器将以3.8公里/秒的速度从月面垂直起飞，与等候在月球轨道的轨道器完成“无人握手”——高精度自动交会对接，将样本容器转移至返回舱。此后，返回舱将借由月球轨道机动返回地球，预计于6月下旬在内蒙古四子王旗着陆场实现软着陆。这一“地月接力”全流程自主化技术，将为未来火星采样返回奠定基础。
+<br>
+<br>科学目标：解码月背之谜与深空资源图谱
+<br>地质演化：分析月背火山活动遗迹，探究月球早期撞击历史与内部结构。
+<br>资源勘探：通过中子与红外光谱仪扫描，绘制水冰、氦-3等战略资源分布图。
+<br>天文观测：利用月背无电磁干扰的环境，开展低频射电天文实验，探寻宇宙黑暗时代信号。
+<br>国际合作与数据共享
+<br>中国国家航天局宣布，娥六号任务已与欧洲空间局（ESA）、阿联酋月球探测项目达成数据共享协议，部分样本将开放国际联合研究。法国提供的挥发性物质分析仪与意大利研制的激光角反射器均搭载于探测器上，彰显全球协同探索深空的科学精神。
+<br>
+<br>院士解读：月背采样如何推动航天技术跃迁
+<br>中国探月工程总设计师吴伟仁院士表示：“娥六号突破的智能自主控制、极端环境采样与地月远程测控技术，将直接服务于载人登月与月球科研站建设。未来十年，中国计划实现月球南极水冰原位利用，让‘月球基地’从科幻走进现实。”
+<br>
+<br>任务预告
+<br>娥六号采样工作将于今日18时启动，国家航天局官网将实时更新探测器的机械臂操作影像（经中继卫星延迟约3分钟）。公众可通过“数字月球”平台参与虚拟采样互动，体验“地外挖土”的科技魅力。
+<br>
+<br>关于嫦娥工程
+<br>中国嫦娥探月工程自2004年启动，已实现“绕、落、回”三步走战略。娥六号任务由航天科技集团五院抓总研制，搭载的6台科学仪器全部为国产化创新成果。
+<br>
+<br>媒体联系
+<br>[中国国家航天局新闻处]
+<br>[casc@spacechina.com]
+<br>[https://www.cnsa.gov.cn/]
+<br>
+<br>本次任务所有科学数据将经校准后分批向全球公开，部分技术细节因航天工程保密要求暂未披露。
+<br>
+<br>（注：本文中“娥六号”为任务简称，正式名称为嫦娥六号探测器；任务进展与科学成果以中国国家航天局官方发布为准。）</h2>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- 页脚 -->
+    <footer class="footer">
+        <p class="footer-bottom">© 2025 SMAI NEWS 版权所有</p>
+    </footer>
+
+</body>
+</html>
