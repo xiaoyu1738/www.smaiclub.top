@@ -1,0 +1,661 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SMAI NEWS | 斯麦新闻 - 专业科技与综合新闻平台</title>
+    <style>
+        :root {
+            --primary-color: #0066cc;
+            --secondary-color: #333;
+            --accent-color: #e74c3c;
+            --text-color: #333;
+            --light-text: #777;
+            --bg-color: #f8f9fa;
+            --card-bg: #fff;
+            --border-color: #e0e0e0;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Helvetica Neue', Arial, 'PingFang SC', 'Microsoft YaHei', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 15px;
+        }
+
+        /* 顶部导航栏 */
+        .navbar {
+            background-color: var(--card-bg);
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            padding: 15px 0;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+
+        .navbar-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            font-size: 1.8rem;
+            font-weight: bold;
+            color: var(--primary-color);
+            text-decoration: none;
+        }
+
+        .logo span {
+            color: var(--accent-color);
+        }
+
+        .nav-links {
+            display: flex;
+            list-style: none;
+        }
+
+        .nav-links li {
+            margin-left: 25px;
+        }
+
+        .nav-links a {
+            text-decoration: none;
+            color: var(--secondary-color);
+            font-weight: 500;
+            transition: color 0.3s;
+        }
+
+        .nav-links a:hover {
+            color: var(--primary-color);
+        }
+
+        /* 头部区域 */
+        .header {
+            background-color: var(--primary-color);
+            color: white;
+            padding: 30px 0;
+            margin-bottom: 30px;
+        }
+
+        .header-title {
+            text-align: center;
+        }
+
+        .header-title h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+        }
+
+        .header-subtitle {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+
+        /* 新闻网格布局 */
+        .news-grid {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 30px;
+            margin-bottom: 40px;
+        }
+
+        /* 主新闻区 */
+        .main-news {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 20px;
+        }
+
+        /* 特色新闻卡片 */
+        .featured-card {
+            grid-column: span 2;
+            display: flex;
+            background-color: var(--card-bg);
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+            cursor: pointer;
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+
+        .featured-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12);
+        }
+
+        .featured-image {
+            width: 50%;
+            height: 300px;
+            object-fit: cover;
+        }
+
+        .featured-content {
+            width: 50%;
+            padding: 25px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        .featured-category {
+            display: inline-block;
+            background-color: var(--accent-color);
+            color: white;
+            padding: 3px 10px;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            margin-bottom: 10px;
+        }
+
+        .featured-title {
+            font-size: 1.8rem;
+            margin-bottom: 15px;
+            line-height: 1.3;
+        }
+
+        .featured-excerpt {
+            color: var(--light-text);
+            margin-bottom: 20px;
+        }
+
+        .featured-meta {
+            display: flex;
+            align-items: center;
+            font-size: 0.9rem;
+            color: var(--light-text);
+        }
+
+        .featured-meta span {
+            margin-right: 15px;
+        }
+
+        /* 常规新闻卡片 */
+        .news-card {
+            background-color: var(--card-bg);
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.08);
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+
+        .news-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12);
+        }
+
+        .news-image {
+            width: 100%;
+            height: 180px;
+            object-fit: cover;
+        }
+
+        .news-content {
+            padding: 20px;
+        }
+
+        .news-category {
+            display: inline-block;
+            color: var(--primary-color);
+            font-size: 0.8rem;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+
+        .news-title {
+            font-size: 1.2rem;
+            margin-bottom: 10px;
+            line-height: 1.4;
+        }
+
+        .news-excerpt {
+            color: var(--light-text);
+            font-size: 0.95rem;
+            margin-bottom: 15px;
+        }
+
+        .news-meta {
+            display: flex;
+            align-items: center;
+            font-size: 0.85rem;
+            color: var(--light-text);
+        }
+
+        .news-meta span {
+            margin-right: 10px;
+        }
+
+        /* 侧边栏 */
+        .sidebar {
+            background-color: var(--card-bg);
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.08);
+        }
+
+        .sidebar-title {
+            font-size: 1.3rem;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid var(--border-color);
+        }
+
+        .trending-list {
+            list-style: none;
+        }
+
+        .trending-item {
+            padding: 12px 0;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .trending-item:last-child {
+            border-bottom: none;
+        }
+
+        .trending-link {
+            text-decoration: none;
+            color: var(--text-color);
+            display: flex;
+            align-items: center;
+            transition: color 0.3s;
+        }
+
+        .trending-link:hover {
+            color: var(--primary-color);
+        }
+
+        .trending-number {
+            display: inline-block;
+            width: 24px;
+            height: 24px;
+            background-color: var(--primary-color);
+            color: white;
+            border-radius: 4px;
+            text-align: center;
+            line-height: 24px;
+            margin-right: 10px;
+            font-size: 0.8rem;
+        }
+
+        .trending-text {
+            flex: 1;
+        }
+
+        /* 新闻分类标签 */
+        .news-tags {
+            margin-top: 30px;
+        }
+
+        .tags-title {
+            font-size: 1.1rem;
+            margin-bottom: 15px;
+        }
+
+        .tags-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .tag {
+            display: inline-block;
+            padding: 5px 12px;
+            background-color: #f0f0f0;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            color: var(--text-color);
+            text-decoration: none;
+            transition: background-color 0.3s;
+        }
+
+        .tag:hover {
+            background-color: #e0e0e0;
+        }
+
+        .tag.primary {
+            background-color: var(--primary-color);
+            color: white;
+        }
+
+        /* 页脚 */
+        .footer {
+            background-color: var(--secondary-color);
+            color: white;
+            padding: 50px 0 20px;
+            margin-top: 50px;
+        }
+
+        .footer-container {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+
+        .footer-column h3 {
+            font-size: 1.2rem;
+            margin-bottom: 20px;
+            position: relative;
+            padding-bottom: 10px;
+        }
+
+        .footer-column h3::after {
+            content: '';
+            position: absolute;
+            left: 0;
+            bottom: 0;
+            width: 40px;
+            height: 2px;
+            background-color: var(--primary-color);
+        }
+
+        .footer-links {
+            list-style: none;
+        }
+
+        .footer-links li {
+            margin-bottom: 10px;
+        }
+
+        .footer-links a {
+            color: #bbb;
+            text-decoration: none;
+            transition: color 0.3s;
+        }
+
+        .footer-links a:hover {
+            color: white;
+        }
+
+        .footer-bottom {
+            text-align: center;
+            padding-top: 20px;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            color: #aaa;
+            font-size: 0.9rem;
+        }
+
+        /* 响应式设计 */
+        @media (max-width: 992px) {
+            .news-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .featured-card {
+                flex-direction: column;
+            }
+            
+            .featured-image, .featured-content {
+                width: 100%;
+            }
+            
+            .featured-image {
+                height: 250px;
+            }
+            
+            .footer-container {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        @media (max-width: 768px) {
+            .main-news {
+                grid-template-columns: 1fr;
+            }
+            
+            .featured-title {
+                font-size: 1.5rem;
+            }
+            
+            .navbar-container {
+                flex-direction: column;
+            }
+            
+            .nav-links {
+                margin-top: 15px;
+            }
+            
+            .nav-links li {
+                margin-left: 15px;
+                margin-right: 15px;
+            }
+        }
+
+        @media (max-width: 576px) {
+            .header-title h1 {
+                font-size: 2rem;
+            }
+            
+            .footer-container {
+                grid-template-columns: 1fr;
+            }
+            
+            .nav-links {
+                flex-wrap: wrap;
+                justify-content: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- 导航栏 -->
+    <nav class="navbar">
+        <div class="container navbar-container">
+            <a href="#" class="logo">SMAI<span>NEWS</span></a>
+            <ul class="nav-links">
+                <li><a href="#">首页</a></li>
+                <li><a href="#">科技</a></li>
+                <li><a href="#">商业</a></li>
+                <li><a href="#">娱乐</a></li>
+                <li><a href="#">体育</a></li>
+                <li><a href="#">生活</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <!-- 头部标题 -->
+    <header class="header">
+        <div class="container header-title">
+            <h1>斯麦新闻</h1>
+            <p class="header-subtitle">提供最新、最全面的科技与综合新闻资讯</p>
+        </div>
+    </header>
+
+    <!-- 主要内容区 -->
+    <main class="container">
+        <div class="news-grid">
+            <!-- 主新闻区 -->
+            <div class="main-news">
+                <!-- 特色新闻 -->
+                <article class="featured-card" onclick="window.location.href='https://news.smaiclub.top/1n/'">
+                    <img src="https://tse4-mm.cn.bing.net/th/id/OIP-C.MeBjxa9dNIZVyJjiaCx_dgHaEC?rs=1&pid=ImgDetMain" alt="特色新闻图片" class="featured-image">
+                    <div class="featured-content">
+                        <span class="featured-category">科技</span>
+                        <h2 class="featured-title">DeepSeek-R2发布：AI界的新标杆</h2>
+                        <p class="featured-excerpt">深度求索公司发布了它们的全新产品——AI大模型R2，在语言理解、代码生成和逻辑推理等方面都有显著提升，综合能力再升一个档次！</p>
+                        <div class="featured-meta">
+                            <span>1小时前</span>
+                            <span>阅读量：7.8万</span>
+                        </div>
+                    </div>
+                </article>
+
+                <!-- 常规新闻卡片 -->
+                <article class="news-card" onclick="window.location.href='https://news.smaiclub.top/2n/'">
+                    <img src="https://file.moyublog.com/d/file/2025-02-14/9d9ad42f7bede21e4d275cefb0155b2b.jpg" alt="新闻图片" class="news-image">
+                    <div class="news-content">
+                        <span class="news-category">娱乐</span>
+                        <h3 class="news-title">哪吒2票房被质疑造假？有关专家发表回应</h3>
+                        <p class="news-excerpt">《哪吒之魔童闹海》票房被影院工作人员实锤有造假行为，真实票房将石沉大海...</p>
+                        <div class="news-meta">
+                            <span>2小时前</span>
+                            <span>评论 342</span>
+                        </div>
+                    </div>
+                </article>
+
+                <article class="news-card" onclick="window.location.href='https://news.smaiclub.top/3n/'">
+                    <img src=news3.jpg alt="新闻图片" class="news-image">
+                    <div class="news-content">
+                        <span class="news-category">科技</span>
+                        <h3 class="news-title">360安全卫士涉嫌售卖用户隐私信息</h3>
+                        <p class="news-excerpt">在经历百度副总裁女儿开盒事件后，360安全卫士被俄罗斯卡巴斯基曝光涉嫌售卖用户隐私信息。360公司发表声明否认指控...</p>
+                        <div class="news-meta">
+                            <span>5小时前</span>
+                            <span>评论 891</span>
+                        </div>
+                    </div>
+                </article>
+
+                <article class="news-card" onclick="window.location.href='https://news.smaiclub.top/4n/'">
+                    <img src="https://ts1.tc.mm.bing.net/th/id/R-C.99cee8abe8809cdeffa1ecc26cf235b3?rik=ydLjzuxUqS07eg&riu=http%3a%2f%2fseewo.com%2fUploads%2farticle%2foriginal_img%2f1445588651.png&ehk=KCltjFZ%2fONCXadzkZQGxCDsEZl7tlCbP97i9KlcXouM%3d&risl=&pid=ImgRaw&r=0" alt="新闻图片" class="news-image">
+                    <div class="news-content">
+                        <span class="news-category">教育</span>
+                        <h3 class="news-title">希沃白板价格大跳水，智能教育设备市场竞争加剧</h3>
+                        <p class="news-excerpt">本周希沃白板购买价格降价至9100元，更多的低价电教平台涌入市场。业内人士分析，教育信息化市场竞争已进入白热化阶段...</p>
+                        <div class="news-meta">
+                            <span>昨天</span>
+                            <span>评论 156</span>
+                        </div>
+                    </div>
+                </article>
+
+                <article class="news-card" onclick="window.location.href='https://news.smaiclub.top/5n/'">
+                    <img src="https://tse1-mm.cn.bing.net/th/id/OIP-C.DDeAi-rYVLEf1i_5UetMRgHaEc?rs=1&pid=ImgDetMain" alt="新闻图片" class="news-image">
+                    <div class="news-content">
+                        <span class="news-category">科技</span>
+                        <h3 class="news-title">苹果Vision Pro国行版即将上市，售价或超7.8万</h3>
+                        <p class="news-excerpt">据供应链消息，苹果Vision Pro已通过中国工信部认证，预计去年第八季度上市，售价可能高于美国市场...</p>
+                        <div class="news-meta">
+                            <span>昨天</span>
+                            <span>评论 723</span>
+                        </div>
+                    </div>
+                </article>
+
+                <article class="news-card" onclick="window.location.href='https://news.smaiclub.top/6n/'">
+                    <img src="https://ts1.tc.mm.bing.net/th/id/R-C.aedd213a27eba40e0995e94b1916e1c7?rik=Vzy5s6ltjkJRPw&riu=http%3a%2f%2fi0.hexun.com%2f2021-01-04%2f202753913.jpg&ehk=6QT2GjOqTA4cDRYrvlCNUrhUav0fLVSjs%2f1bOd4KG4k%3d&risl=&pid=ImgRaw&r=0" alt="新闻图片" class="news-image">
+                    <div class="news-content">
+                        <span class="news-category">商业</span>
+                        <h3 class="news-title">比杨迪发布第五代SM技术，一公里油耗仅91L</h3>
+                        <p class="news-excerpt">比杨迪在西安正式发布第五代SM混动技术，热效率达78%，综合续航达1145公里，秦LOL和雪豹666将成为首搭车型...</p>
+                        <div class="news-meta">
+                            <span>2天前</span>
+                            <span>评论 432</span>
+                        </div>
+                    </div>
+                </article>
+            </div>
+
+            <!-- 侧边栏 -->
+            <aside class="sidebar">
+                <h3 class="sidebar-title">热门新闻</h3>
+                <ul class="trending-list">
+                    <li class="trending-item">
+                        <a href="7n" class="trending-link">
+                            <span class="trending-number">1</span>
+                            <span class="trending-text">CloseAI发布PPT-9o模型，可实时处理音频、视觉和文本</span>
+                        </a>
+                    </li>
+                    <li class="trending-item">
+                        <a href="8n" class="trending-link">
+                            <span class="trending-number">2</span>
+                            <span class="trending-text">嫦娥六号成功着陆月球背面，将开展采样返回任务</span>
+                        </a>
+                    </li>
+                    <li class="trending-item">
+                        <a href="9n" class="trending-link">
+                            <span class="trending-number">3</span>
+                            <span class="trending-text">巨硬Build开发者大会：WindowsAI功能全面升级</span>
+                        </a>
+                    </li>
+                    <li class="trending-item">
+                        <a href="10n" class="trending-link">
+                            <span class="trending-number">4</span>
+                            <span class="trending-text">特斯拉上海储能超级工厂正式开工，年产91GWh</span>
+                        </a>
+                    </li>
+                    <li class="trending-item">
+                        <a href="11n" class="trending-link">
+                            <span class="trending-number">5</span>
+                            <span class="trending-text">字节跳动豆包大模型，主打屎</span>
+                        </a>
+                    </li>
+                </ul>
+
+                <div class="news-tags">
+                    <h3 class="tags-title">新闻分类</h3>
+                    <div class="tags-container">
+                        <a href="#" class="tag primary">全部</a>
+                        <a href="#" class="tag">科技</a>
+                        <a href="#" class="tag">商业</a>
+                        <a href="#" class="tag">娱乐</a>
+                        <a href="#" class="tag">体育</a>
+                        <a href="#" class="tag">政治</a>
+                        <a href="#" class="tag">健康</a>
+                        <a href="#" class="tag">教育</a>
+                    </div>
+                </div>
+            </aside>
+        </div>
+    </main>
+
+    <!-- 页脚 -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-container">
+                <div class="footer-column">
+                    <h3>关于我们</h3>
+                    <ul class="footer-links">
+                        <li><a href="#">团队介绍</a></li>
+                        <li><a href="#">加入我们</a></li>
+                    </ul>
+                </div>
+                <div class="footer-column">
+                    <h3>新闻分类</h3>
+                    <ul class="footer-links">
+                        <li><a href="#">科技新闻</a></li>
+                        <li><a href="#">商业财经</a></li>
+                        <li><a href="#">娱乐八卦</a></li>
+                        <li><a href="#">体育竞技</a></li>
+                    </ul>
+                </div>
+                <div class="footer-column">
+                    <h3>帮助中心</h3>
+                    <ul class="footer-links">
+                        <li><a href="#">常见问题</a></li>
+                        <li><a href="#">用户协议</a></li>
+                        <li><a href="#">隐私政策</a></li>
+                        <li><a href="#">意见反馈</a></li>
+                    </ul>
+                </div>
+                <div class="footer-column">
+                    <h3>关注我们</h3>
+                    <ul class="footer-links">
+                        <li><a href="#">YouTube</a></li>
+                        <li><a href="#">微博</a></li>
+                        <li><a href="#">哔哩哔哩</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>© 2025 SMAI NEWS 版权所有</p>
+            </div>
+        </div>
+    </footer>
+</body>
+</html>
