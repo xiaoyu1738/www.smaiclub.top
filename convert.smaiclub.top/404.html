@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>404 - 页面未找到</title>
+    <style>
+        /* 基本重置和全局样式 */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html, body {
+            height: 100%; /* 确保html和body占满整个视口高度 */
+            font-family: 'Arial', 'Microsoft YaHei', sans-serif; /* 使用更常见的字体 */
+            line-height: 1.6;
+            color: #333;
+            background-color: #f8f9fa; /* 浅灰色背景 */
+        }
+
+        /* 主要内容容器，使用Flexbox实现垂直居中和底部固定 */
+        body {
+            display: flex;
+            flex-direction: column; /* 垂直排列子元素 */
+            min-height: 100vh; /* 最小高度为视口高度 */
+        }
+
+        /* 404错误内容区域 */
+        .error-container {
+            flex-grow: 1; /* 让内容区域占据剩余空间，将页脚推到底部 */
+            display: flex;
+            flex-direction: column;
+            justify-content: center; /* 垂直居中 */
+            align-items: center; /* 水平居中 */
+            text-align: center;
+            padding: 40px 20px; /* 内边距 */
+        }
+
+        .error-code {
+            font-size: 10rem; /* 大号字体显示404 */
+            font-weight: bold;
+            color: #dee2e6; /* 浅灰色，不那么刺眼 */
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1); /* 轻微阴影增加立体感 */
+            margin-bottom: 0; /* 减少与下方文字的间距 */
+            line-height: 1; /* 调整行高避免过大间距 */
+        }
+
+        .error-message {
+            font-size: 1.8rem; /* 错误信息字体 */
+            color: #495057; /* 深灰色 */
+            margin-top: 0;
+            margin-bottom: 20px;
+        }
+
+        .error-description {
+            font-size: 1rem; /* 描述文字 */
+            color: #6c757d; /* 中灰色 */
+            margin-bottom: 30px;
+            max-width: 400px; /* 限制最大宽度，避免文字过长 */
+        }
+
+        .home-link {
+            display: inline-block; /* 使链接可以设置内外边距 */
+            padding: 10px 25px;
+            font-size: 1rem;
+            color: #fff;
+            background-color: #007bff; /* 蓝色按钮 */
+            border: none;
+            border-radius: 5px; /* 圆角 */
+            text-decoration: none; /* 去掉下划线 */
+            transition: background-color 0.3s ease; /* 平滑过渡效果 */
+        }
+
+        .home-link:hover {
+            background-color: #0056b3; /* 鼠标悬停时变深 */
+        }
+
+        /* 页脚样式 */
+        footer {
+            background-color: #000000; /* 黑色背景 */
+            color: #ffffff; /* 白色文字 */
+            text-align: center;
+            padding: 15px 0; /* 上下内边距 */
+            font-size: 0.9em;
+            width: 100%; /* 宽度占满 */
+            /* flex-shrink: 0; */ /* 防止页脚在内容不足时缩小，虽然有flex-grow在上面，这个通常不是必需的 */
+        }
+    </style>
+</head>
+<body>
+
+    <!-- 主要错误内容 -->
+    <div class="error-container">
+        <div class="error-code">404</div>
+        <h1 class="error-message">哎呀，页面不见了！</h1>
+        <p class="error-description">
+            抱歉，我们找不到您要访问的页面。它可能已被移动、删除或从未存在过。
+        </p>
+        <a href="/" class="home-link">返回首页</a>
+    </div>
+
+    <!-- 页脚 -->
+    <footer>
+        <p>© SMAICLUB 2025</p>
+    </footer>
+
+</body>
+</html>

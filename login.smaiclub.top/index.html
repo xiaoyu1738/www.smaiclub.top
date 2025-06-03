@@ -1,0 +1,535 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SMAICLUB 2025</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            background: linear-gradient(135deg, #a1c4fd 0%, #c2e9fb 100%); 
+            color: #333;
+            animation: fadeIn 1s ease-in-out;
+            /* 移除 overflow: hidden; 允许页面滚动 */
+            /* overflow: hidden; */ 
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .container {
+            background-color: rgba(255, 255, 255, 0.95);
+            padding: 40px;
+            border-radius: 15px;
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.15);
+            width: 100%;
+            max-width: 480px; /* 维持上次增加的宽度 */
+            text-align: center;
+            box-sizing: border-box;
+            transform: translateY(0);
+            transition: transform 0.5s ease-out, box-shadow 0.3s ease;
+            position: relative;
+            display: none; 
+            /* 添加 max-height 和 overflow-y 应对内容超出屏幕高度 */
+            max-height: 90vh; /* 限制容器最大高度为视口高度的90% */
+            overflow-y: auto; /* 当内容超出时显示垂直滚动条 */
+            -ms-overflow-style: none;  /* IE and Edge */
+            scrollbar-width: none;  /* Firefox */
+        }
+        /* 隐藏滚动条 */
+        .container::-webkit-scrollbar {
+            display: none;
+        }
+
+
+        #loginContainer {
+            display: block; 
+        }
+
+        .container.shaking {
+            animation: shake 0.5s;
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            10%, 30%, 50%, 70%, 90% { transform: translateX(-10px); }
+            20%, 40%, 60%, 80% { transform: translateX(10px); }
+        }
+
+        h1 {
+            margin-bottom: 30px;
+            color: #2c3e50;
+            font-size: 2.2em; /* 稍微减小字体，避免标题换行 */
+            letter-spacing: 1.5px;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.05);
+            line-height: 1.2; /* 调整行高 */
+        }
+
+        .form-group {
+            margin-bottom: 25px; 
+            text-align: left;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px; /* 稍微减小label与输入框间距 */
+            font-weight: bold;
+            color: #555;
+            font-size: 1.1em;
+        }
+
+        input[type="text"],
+        input[type="password"] {
+            width: calc(100% - 24px); 
+            padding: 12px;
+            border: 1px solid #c2d4e0;
+            border-radius: 6px;
+            font-size: 1.1em;
+            box-sizing: border-box;
+            transition: border-color 0.3s, box-shadow 0.3s;
+        }
+
+        input[type="text"]:focus,
+        input[type="password"]:focus {
+            border-color: #007bff;
+            outline: none;
+            box-shadow: 0 0 10px rgba(0, 123, 255, 0.25);
+        }
+
+        button {
+            background-color: #007bff;
+            color: white;
+            padding: 15px 30px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1.3em;
+            font-weight: bold;
+            margin-top: 25px; 
+            transition: background-color 0.3s ease, transform 0.2s ease, box-shadow 0.3s ease;
+            width: 100%;
+            box-sizing: border-box;
+            box-shadow: 0 4px 15px rgba(0, 123, 255, 0.2);
+        }
+
+        button:hover {
+            background-color: #0056b3;
+            transform: translateY(-3px);
+            box-shadow: 0 6px 20px rgba(0, 123, 255, 0.3);
+        }
+
+        button:active {
+            transform: translateY(0);
+            background-color: #004085;
+            box-shadow: 0 2px 10px rgba(0, 123, 255, 0.1);
+        }
+
+        .secondary-button {
+            background-color: #6c757d; 
+            margin-top: 15px; 
+        }
+        .secondary-button:hover {
+            background-color: #5a6268;
+            box-shadow: 0 6px 20px rgba(108, 117, 125, 0.3);
+        }
+
+        #message, #regMessage, #copySuccessMessage {
+            margin-top: 25px; /* 调整消息段落上边距 */
+            font-size: 1.1em;
+            font-weight: bold;
+            word-wrap: break-word; 
+        }
+
+        .error-message {
+            color: #dc3545; 
+        }
+
+        .success-message {
+            color: #28a745; 
+        }
+
+        .info-text {
+            font-size: 1em; 
+            color: #666;
+            margin-top: 10px; /* 调整间距 */
+            line-height: 1.6; 
+            text-align: left; 
+            margin-bottom: 20px; /* 增加底部间距 */
+        }
+
+        .code-display {
+            background-color: #e9ecef;
+            padding: 15px 20px; 
+            border-radius: 8px; 
+            font-size: 1.2em; 
+            font-weight: bold;
+            color: #007bff;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 10px; /* 调整与label的间距 */
+            margin-bottom: 15px; /* 调整与下一个元素的间距 */
+            word-break: break-all; 
+            border: 1px solid #cfe2f3; 
+        }
+        .code-display span {
+            flex-grow: 1; 
+            text-align: left; 
+            padding-right: 10px; /* 避免文本与按钮过于贴近 */
+        }
+        .code-display button {
+            width: auto;
+            padding: 10px 18px; 
+            font-size: 1em; 
+            margin-top: 0;
+            box-shadow: none; 
+            margin-left: 15px; 
+            flex-shrink: 0; 
+            background-color: #17a2b8; 
+        }
+        .code-display button:hover {
+            background-color: #138496;
+        }
+
+        .warning-text {
+            color: #dc3545;
+            font-weight: bold;
+            margin-top: 20px;
+            font-size: 1.1em;
+        }
+    </style>
+</head>
+<body>
+    <!-- 登录界面 -->
+    <div class="container" id="loginContainer">
+        <h1>SMAICLUB 2025<br>登录</h1> <!-- 明确让“登录”换行 -->
+        <form id="loginForm">
+            <div class="form-group">
+                <label for="username">用户名:</label>
+                <input type="text" id="username" name="username" required>
+            </div>
+
+            <div class="form-group">
+                <label for="password">密码:</label>
+                <input type="password" id="password" name="password" required>
+            </div>
+
+            <div class="form-group">
+                <label for="license">许可证:</label> 
+                <input type="text" id="license" name="license" required>
+            </div>
+
+            <button type="submit">登录</button>
+            <button type="button" id="registerBtn" class="secondary-button">注册新账户</button>
+        </form>
+        <p id="message"></p>
+    </div>
+
+    <!-- 注册界面 - 步骤1 (邮箱验证) -->
+    <div class="container" id="registerEmailContainer">
+        <h1>注册新账户 - 步骤 1/2</h1>
+        <p class="info-text">
+            请将以下**生成的验证码**作为邮件正文，发送至指定邮箱。
+            <br>请务必确保邮件内容仅包含验证码，不带其他文本。
+        </p>
+        
+        <div class="form-group" style="margin-top: 30px;">
+            <label>请发送验证码至:</label>
+            <div class="code-display">
+                <span id="emailToCopy">smaiclub-no-reply@smaiclub.top</span>
+                <button type="button" id="copyEmailBtn">复制邮箱</button>
+            </div>
+
+            <label>请复制以下验证码:</label>
+            <div class="code-display">
+                <span id="generatedEmailCode"></span>
+                <button type="button" id="copyGeneratedEmailCodeBtn">复制验证码</button>
+            </div>
+        </div>
+        
+        <button type="button" id="iSentEmailBtn">我已发送，继续</button>
+        <button type="button" id="backToLoginBtn" class="secondary-button">返回登录</button>
+        <p id="regMessage" class="info-text"></p>
+    </div>
+
+    <!-- 注册界面 - 步骤2 (复制登录信息) -->
+    <div class="container" id="registerSuccessContainer">
+        <h1>注册成功！ - 步骤 2/2</h1>
+        <p class="info-text">
+            您的账户已创建，请务必点击下方按钮**复制您的登录代码与密码**并妥善保存。
+        </p>
+        <div style="margin-top: 30px;">
+            <input type="hidden" id="finalLoginCodeInput" value="">
+            <input type="hidden" id="finalPasswordInput" value="">
+            <button type="button" id="copyFinalCredentialsBtn">复制登录代码与密码</button>
+        </div>
+        <p id="copySuccessMessage"></p>
+        <p class="warning-text">
+            重要提示：复制后将自动返回登录页面，且此信息**将不再显示**！请务必妥善保存。
+        </p>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // --- 容器元素 ---
+            const loginContainer = document.getElementById('loginContainer');
+            const registerEmailContainer = document.getElementById('registerEmailContainer');
+            const registerSuccessContainer = document.getElementById('registerSuccessContainer');
+
+            // --- 登录页面元素 ---
+            const loginForm = document.getElementById('loginForm');
+            const usernameInput = document.getElementById('username');
+            const passwordInput = document.getElementById('password');
+            const licenseInput = document.getElementById('license');
+            const messageParagraph = document.getElementById('message');
+            const registerBtn = document.getElementById('registerBtn');
+
+            // --- 注册页面1元素 (邮箱验证) ---
+            const emailToCopy = document.getElementById('emailToCopy');
+            const copyEmailBtn = document.getElementById('copyEmailBtn');
+            const generatedEmailCodeSpan = document.getElementById('generatedEmailCode');
+            const copyGeneratedEmailCodeBtn = document.getElementById('copyGeneratedEmailCodeBtn');
+            const iSentEmailBtn = document.getElementById('iSentEmailBtn');
+            const backToLoginBtn = document.getElementById('backToLoginBtn');
+            const regMessageParagraph = document.getElementById('regMessage');
+
+            // --- 注册页面2元素 (复制信息) ---
+            const finalLoginCodeInput = document.getElementById('finalLoginCodeInput');
+            const finalPasswordInput = document.getElementById('finalPasswordInput');
+            const copyFinalCredentialsBtn = document.getElementById('copyFinalCredentialsBtn');
+            const copySuccessMessage = document.getElementById('copySuccessMessage');
+
+            // --- 常量 (所有验证都将使用这些常量) ---
+            const correctLicense = 'SM-AI-CL-UB-20-25-114-514-LI-CE-NS-ES-PA-SS-AL-LA-CC-ES-S1';
+            const redirectUrl = 'https://www.bilibili.com/video/BV1UT42167xb/?spm_id_from=333.337.search-card.all.click&vd_source=af3106607c487ec01ae9a5b81fa0d672';
+            const loginCodeSuffix = '--smaiclublogincode';
+            const requiredPassword = 'smaiclubloginpassword'; // 统一要求密码
+            const loginCodeDigitsLength = 20; // 随机数字部分的长度
+
+            // --- 辅助函数 ---
+            function showContainer(containerToShow) {
+                // 隐藏所有容器
+                [loginContainer, registerEmailContainer, registerSuccessContainer].forEach(container => {
+                    container.style.display = 'none';
+                });
+                // 显示目标容器
+                containerToShow.style.display = 'block';
+
+                // 清空所有消息，并移除样式
+                messageParagraph.textContent = '';
+                messageParagraph.classList.remove('error-message', 'success-message');
+                regMessageParagraph.textContent = '';
+                regMessageParagraph.classList.remove('error-message', 'success-message');
+                copySuccessMessage.textContent = '';
+                copySuccessMessage.classList.remove('error-message', 'success-message');
+
+                // 如果是注册邮箱页面，生成并显示验证码
+                if (containerToShow === registerEmailContainer) {
+                    const emailVerificationCode = generateRandomAlphaNumeric(10);
+                    generatedEmailCodeSpan.textContent = emailVerificationCode;
+                }
+                // 如果是注册成功页面，从 sessionStorage 读取并设置不可见的登录信息
+                else if (containerToShow === registerSuccessContainer) {
+                    const pendingLoginCode = sessionStorage.getItem('pendingFinalLoginCode'); 
+                    const pendingPassword = sessionStorage.getItem('pendingFinalPassword'); 
+                    
+                    if (pendingLoginCode && pendingPassword) {
+                        finalLoginCodeInput.value = pendingLoginCode;
+                        finalPasswordInput.value = pendingPassword;
+                        // 读取后立即清除，确保不会重复显示
+                        sessionStorage.removeItem('pendingFinalLoginCode');
+                        sessionStorage.removeItem('pendingFinalPassword');
+                    } else {
+                        // 防止用户直接访问此页面的情况
+                        copySuccessMessage.textContent = '未找到注册信息，请返回重新注册。';
+                        copySuccessMessage.classList.add('error-message');
+                        setTimeout(() => showContainer(loginContainer), 2000);
+                    }
+                }
+            }
+
+            function copyToClipboard(text, targetButton) {
+                navigator.clipboard.writeText(text)
+                    .then(() => {
+                        const originalText = targetButton.textContent;
+                        targetButton.textContent = '已复制!';
+                        setTimeout(() => {
+                            targetButton.textContent = originalText;
+                        }, 1500);
+                    })
+                    .catch(err => {
+                        console.error('复制失败:', err);
+                        const originalText = targetButton.textContent;
+                        targetButton.textContent = '复制失败!';
+                        setTimeout(() => {
+                            targetButton.textContent = originalText;
+                        }, 1500);
+                    });
+            }
+
+            function generateRandomDigits(length) {
+                let result = '';
+                for (let i = 0; i < length; i++) {
+                    result += Math.floor(Math.random() * 10).toString();
+                }
+                return result;
+            }
+
+            function generateRandomAlphaNumeric(length) {
+                const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+                let result = '';
+                for (let i = 0; i < length; i++) {
+                    result += chars.charAt(Math.floor(Math.random() * chars.length));
+                }
+                return result;
+            }
+
+            // --- 事件监听器 ---
+
+            // 登录表单提交
+            loginForm.addEventListener('submit', (event) => {
+                event.preventDefault(); // 阻止表单默认提交行为
+
+                const enteredUsername = usernameInput.value.trim();
+                const enteredPassword = passwordInput.value.trim();
+                const enteredLicense = licenseInput.value.trim();
+
+                // 调试输出
+                console.log('--- Login Attempt ---');
+                console.log('Entered Username:', enteredUsername);
+                console.log('Entered Password:', enteredPassword);
+                console.log('Entered License:', enteredLicense);
+
+                // 移除之前的动画和消息
+                loginContainer.classList.remove('shaking');
+                messageParagraph.classList.remove('error-message', 'success-message');
+                messageParagraph.textContent = '';
+
+                let errorMessage = '';
+
+                // 1. 验证用户名格式 (20位数字 + 后缀)
+                const expectedUsernameLength = loginCodeDigitsLength + loginCodeSuffix.length; // 20 + 19 = 39
+                const isUsernameCorrectFormat = 
+                    enteredUsername.endsWith(loginCodeSuffix) &&
+                    enteredUsername.length === expectedUsernameLength;
+                
+                let isUsernameDigitsValid = false;
+                if (isUsernameCorrectFormat) {
+                    const codePart = enteredUsername.substring(0, loginCodeDigitsLength);
+                    isUsernameDigitsValid = /^\d+$/.test(codePart);
+                }
+
+                // 2. 验证密码
+                const isPasswordCorrect = (enteredPassword === requiredPassword);
+
+                // 3. 验证许可证
+                const isLicenseCorrect = (enteredLicense === correctLicense);
+
+                // 统一的成功条件判断
+                if (isUsernameCorrectFormat && isUsernameDigitsValid && isPasswordCorrect && isLicenseCorrect) {
+                    messageParagraph.textContent = '登录成功！恭喜加入SMAICLUB斯麦俱乐部！即将重定向...';
+                    messageParagraph.classList.add('success-message');
+                    setTimeout(() => {
+                        window.location.href = redirectUrl;
+                    }, 3000);
+                } else {
+                    // 构建具体的错误信息
+                    if (!isUsernameCorrectFormat || !isUsernameDigitsValid) {
+                        errorMessage = '登录失败：用户名不存在。';
+                    } else if (!isPasswordCorrect) {
+                        errorMessage = '登录失败：密码不正确。';
+                    } else if (!isLicenseCorrect) {
+                        errorMessage = '登录失败：许可证不正确。';
+                    } else {
+                        // 如果都不是，可能是其他未知情况，但基本不会发生
+                        errorMessage = '登录失败：用户名、密码或许可证不匹配。';
+                    }
+
+                    messageParagraph.textContent = errorMessage;
+                    messageParagraph.classList.add('error-message');
+                    loginContainer.classList.add('shaking');
+                    setTimeout(() => {
+                        loginContainer.classList.remove('shaking');
+                    }, 500);
+                }
+                
+                // 额外的调试输出，让你清楚看到每个条件的判断结果
+                console.log('Username Format Correct:', isUsernameCorrectFormat);
+                console.log('Username Digits Valid:', isUsernameDigitsValid);
+                console.log('Password Correct:', isPasswordCorrect);
+                console.log('License Correct:', isLicenseCorrect);
+                console.log('Overall Login Success:', isUsernameCorrectFormat && isUsernameDigitsValid && isPasswordCorrect && isLicenseCorrect);
+            });
+
+            // 点击注册按钮 (从登录页跳转到注册邮箱页)
+            registerBtn.addEventListener('click', () => {
+                showContainer(registerEmailContainer);
+            });
+
+            // 复制邮箱地址按钮
+            copyEmailBtn.addEventListener('click', () => {
+                copyToClipboard(emailToCopy.textContent, copyEmailBtn);
+            });
+
+            // 复制生成的邮箱验证码按钮
+            copyGeneratedEmailCodeBtn.addEventListener('click', () => {
+                copyToClipboard(generatedEmailCodeSpan.textContent, copyGeneratedEmailCodeBtn);
+            });
+
+            // 我已发送，继续按钮 (从注册邮箱页跳转到复制信息页)
+            iSentEmailBtn.addEventListener('click', () => {
+                regMessageParagraph.textContent = '正在为您生成登录信息...';
+                regMessageParagraph.classList.add('success-message');
+
+                // 模拟注册成功，生成登录代码和密码
+                const generatedLoginCode = generateRandomDigits(loginCodeDigitsLength) + loginCodeSuffix;
+                const generatedPassword = requiredPassword; // 注册时生成的密码也必须是统一的requiredPassword
+
+                // 将生成的登录信息临时保存到 sessionStorage，供下一页读取
+                sessionStorage.setItem('pendingFinalLoginCode', generatedLoginCode);
+                sessionStorage.setItem('pendingFinalPassword', generatedPassword);
+
+                // 延迟后显示复制信息页面
+                setTimeout(() => {
+                    showContainer(registerSuccessContainer);
+                }, 1500);
+            });
+
+            // 复制一次性登录代码与密码按钮 (在注册成功页)
+            copyFinalCredentialsBtn.addEventListener('click', () => {
+                const loginCode = finalLoginCodeInput.value;
+                const password = finalPasswordInput.value;
+                const textToCopy = `用户名(登录代码): ${loginCode}\n密码: ${password}`;
+
+                navigator.clipboard.writeText(textToCopy)
+                    .then(() => {
+                        copySuccessMessage.textContent = '登录代码和密码已复制到剪贴板！即将返回登录页面...';
+                        copySuccessMessage.classList.add('success-message');
+                        
+                        // 延迟后重定向到登录页面
+                        setTimeout(() => {
+                            window.location.href = window.location.pathname; // 重定向到当前页面，即刷新页面以清除sessionStorage
+                        }, 3000);
+                    })
+                    .catch(err => {
+                        console.error('复制失败:', err);
+                        copySuccessMessage.textContent = '复制失败，请手动记录！';
+                        copySuccessMessage.classList.add('error-message');
+                    });
+            });
+
+            // 返回登录按钮 (从注册邮箱页返回登录页)
+            backToLoginBtn.addEventListener('click', () => {
+                showContainer(loginContainer);
+            });
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SMAI 下载中心</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: #f5f5f5;
+            padding: 40px 20px;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+        .header h1 {
+            font-size: 48px;
+            color: #333;
+            margin-bottom: 10px;
+        }
+        .header p {
+            color: #666;
+            font-size: 18px;
+        }
+        .download-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 30px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        .download-card {
+            background-color: white;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+        .download-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+        }
+        .card-image {
+            height: 180px;
+            background-color: #e0e0e0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #666;
+            font-size: 24px;
+        }
+        .card-content {
+            padding: 25px;
+        }
+        .card-content h3 {
+            color: #333;
+            margin-bottom: 15px;
+            font-size: 22px;
+        }
+        .card-content p {
+            color: #666;
+            margin-bottom: 20px;
+            line-height: 1.6;
+        }
+        .download-btn {
+            display: inline-block;
+            background-color: #4CAF50;
+            color: white;
+            text-decoration: none;
+            padding: 10px 25px;
+            border-radius: 5px;
+            font-weight: bold;
+            transition: background-color 0.3s;
+        }
+        .download-btn:hover {
+            background-color: #45a049;
+        }
+        .file-info {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 1px solid #eee;
+            color: #888;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>下载中心</h1>
+        <p>选择您需要的文件进行下载</p>
+    </div>
+
+    <div class="download-grid">
+        <!-- 卡片1 -->
+        <div class="download-card">
+            <div class="card-image">SMAI CLUB</div>
+            <div class="card-content">
+                <h3>软件安装包</h3>
+                <p>最新版本的软件安装包。  密码1234</p>
+                <a href="https://wwnr.lanzoum.com/iCNAW2vg40ji" class="download-btn">立即下载</a>
+                <div class="file-info">
+                    <span>大小: 66.6KB</span>
+                    <span>版本: v0.01</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- 卡片2 -->
+        <div class="download-card">
+            <div class="card-image">SMAI CLUB</div>
+            <div class="card-content">
+                <h3>未上传</h3>
+                <p>未上传。</p>
+                <a href="https://www.smaiclub.top" class="download-btn">下载个蛋</a>
+                <div class="file-info">
+                    <span>大小: 0MB</span>
+                    <span>格式: CNM</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- 卡片3 -->
+        <div class="download-card">
+            <div class="card-image">SMAI CLUB</div>
+            <div class="card-content">
+                <h3>未上传</h3>
+                <p>未上传。</p>
+                <a href="https://www.smaiclub.top" class="download-btn">下载个蛋</a>
+                <div class="file-info">
+                    <span>大小: 0MB</span>
+                    <span>格式: CNM</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

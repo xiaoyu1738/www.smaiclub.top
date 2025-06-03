@@ -1,0 +1,93 @@
+/* --- 基本样式 --- */
+body {
+    font-family: 'SimHei', '黑体', Arial, sans-serif; /* 优先使用中文字体 */
+    max-width: 900px;      /* 增加最大宽度 (可按需调整) */
+    margin: 30px auto;     /* 页面居中 */
+    padding: 35px;         /* 增加内边距 (可按需调整) */
+    border: 5px solid #8B4513; /* 棕色边框，类似旧海报 */
+    background-color: #FFF8DC; /* 米色背景 */
+    box-shadow: 5px 5px 15px rgba(0,0,0,0.3); /* 添加阴影 */
+}
+
+h1 {
+    text-align: center;
+    color: #A00; /* 深红色 */
+    font-size: 2.5em;
+    margin-bottom: 15px;
+    text-transform: uppercase; /* 大写 */
+    letter-spacing: 3px; /* 字母间距 */
+}
+
+.poster-content {
+    display: flex; /* 使用 Flexbox 布局 */
+    flex-direction: column; /* 垂直排列 */
+    align-items: center; /* 水平居中 */
+    gap: 15px; /* 元素间距 */
+}
+
+.suspect-image {
+    max-width: 80%; /* 图片最大宽度为其容器的80% */
+    height: auto;     /* 高度自动调整 */
+    border: 3px solid #555; /* 深灰色边框 */
+    display: block;   /* 确保图片是块级元素 */
+    margin-bottom: 10px;
+}
+
+/* --- 使用 CSS Grid 布局定义列表 --- */
+.info-section {
+    width: 100%; /* 占满容器宽度 */
+}
+
+.info-section dl {
+    display: grid;                 /* 启用 Grid 布局 */
+    grid-template-columns: max-content 1fr; /* 定义两列：第一列宽度自适应内容，第二列占满剩余空间 */
+    gap: 8px 15px;             /* 定义行间距 (8px) 和列间距 (15px) */
+    margin: 0;                 /* 清除默认外边距 */
+    padding: 0;                /* 清除默认内边距 */
+    align-items: baseline;         /* 让同行内容的基线对齐 */
+}
+
+.info-section dt {
+    font-weight: bold;
+    color: #333;
+    text-align: right;         /* 标签文本右对齐 */
+    grid-column: 1;            /* 明确指定在第一列 */
+}
+
+.info-section dd {
+    color: #444;
+    word-wrap: break-word;     /* 旧版浏览器兼容 */
+    overflow-wrap: break-word; /* 标准属性，用于长单词或URL换行 */
+    margin: 0;                 /* 清除默认的 dd 外边距 */
+    grid-column: 2;            /* 明确指定在第二列 */
+}
+
+/* --- 页脚样式 --- */
+footer {
+    text-align: center;
+    margin-top: 30px;
+    padding-top: 15px;
+    border-top: 1px dashed #8B4513; /* 顶部虚线 */
+    font-size: 0.9em;
+    color: #666;
+}
+
+/* --- 响应式调整 --- */
+@media (max-width: 600px) {
+    body {
+        margin: 10px;
+        padding: 20px; /* 稍微增加小屏幕内边距 */
+        border-width: 3px;
+    }
+    h1 {
+        font-size: 2em;
+    }
+    .info-section dl {
+        /* 在小屏幕上保持 Grid 布局，但可以减小间距 */
+        gap: 6px 10px; /* 减小行间距和列间距 */
+    }
+    .info-section dt {
+        text-align: left; /* 在小屏幕上，标签左对齐 */
+    }
+    /* dd 样式通常不需要在响应式中特别修改 */
+}
