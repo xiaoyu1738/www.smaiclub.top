@@ -287,6 +287,39 @@
                 gap: 0;
             }
         }
+
+        /* --- START: 新增的加载提示框样式 --- */
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.7);
+            display: none; /* 初始隐藏 */
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            z-index: 1000;
+            color: white;
+            font-size: 18px;
+        }
+
+        .loading-spinner {
+            border: 8px solid #f3f3f3;
+            border-top: 8px solid #3498db;
+            border-radius: 50%;
+            width: 60px;
+            height: 60px;
+            animation: spin 1.5s linear infinite;
+            margin-bottom: 20px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        /* --- END: 新增的加载提示框样式 --- */
     </style>
 </head>
 <body>
@@ -310,7 +343,7 @@
             </div>
             
             <div class="price-tag">
-                $5,000/年<span>
+                1145元/年<span>
             </div>
         </div>
         
@@ -407,6 +440,13 @@
         </div>
     </div>
 
+    <!-- --- START: 新增的加载提示框 HTML --- -->
+    <div id="loadingOverlay" class="loading-overlay">
+        <div class="loading-spinner"></div>
+        <p>正在支付，请稍候...</p>
+    </div>
+    <!-- --- END: 新增的加载提示框 HTML --- -->
+
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             // 获取表单元素
@@ -419,6 +459,7 @@
             const paymentOptions = document.querySelectorAll('.payment-option');
             const bankCardFields = document.getElementById('bankCardFields');
             const thirdPartyMsg = document.getElementById('thirdPartyMsg');
+            const loadingOverlay = document.getElementById('loadingOverlay'); // 获取加载提示框
             
             // 正则表达式验证规则
             const validators = {
@@ -481,28 +522,17 @@
                     isValid = validateField(cardInput, validators.card, 'cardError', '请输入16或19位有效银行卡号') && isValid;
                 }
                 
+                // --- START: 修改后的支付处理逻辑 ---
                 if (isValid) {
-                    // 实际支付处理逻辑
-                    const paymentMethod = document.querySelector('.payment-option.selected div').textContent;
+                    // 显示加载提示框
+                    loadingOverlay.style.display = 'flex';
                     
-                    // 模拟支付处理
-                    document.querySelector('.submit-btn').innerHTML = '<i class="fas fa-spinner fa-spin"></i> 处理中...';
-                    
+                    // 模拟支付处理延迟，然后跳转
                     setTimeout(() => {
-                        alert(`支付成功！您已通过${paymentMethod}完成会员购买`);
-                        document.querySelector('.submit-btn').textContent = '立即支付';
-                        
-                        // 重置表单
-                        document.getElementById('paymentForm').reset();
-                        clearAllErrors();
-                        
-                        // 重置支付方式
-                        paymentOptions.forEach(opt => opt.classList.remove('selected'));
-                        document.querySelector('[data-type="card"]').classList.add('selected');
-                        bankCardFields.style.display = 'block';
-                        thirdPartyMsg.style.display = 'none';
-                    }, 1500);
+                        window.location.href = 'pay_finish.html'; // 支付成功后跳转到支付完成页面
+                    }, 2000); // 延迟2秒
                 }
+                // --- END: 修改后的支付处理逻辑 ---
             });
             
             // 字段验证函数
@@ -510,14 +540,17 @@
                 const errorElement = document.getElementById(errorElementId);
                 const errorIcon = input.nextElementSibling;
                 
-                if (!input.value.trim()) {
+                // 对银行卡号特殊处理，先移除空格再验证
+                const valueToTest = input.id === 'cardNumber' ? input.value.replace(/\s+/g, '') : input.value;
+
+                if (!valueToTest.trim()) {
                     input.classList.remove('error');
                     errorElement.style.visibility = 'hidden';
                     errorIcon.style.display = 'none';
                     return false;
                 }
                 
-                if (regex.test(input.value)) {
+                if (regex.test(valueToTest)) {
                     // 验证通过
                     input.classList.remove('error');
                     errorElement.style.visibility = 'hidden';
