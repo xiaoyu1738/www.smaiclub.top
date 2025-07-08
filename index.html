@@ -81,12 +81,22 @@
             opacity: 1;
         }
 
+        /* ----- 改动 1: CSS ----- */
+        /* "新闻"链接保持渐变色样式 */
         .news-link {
             background: var(--gradient-1);
             -webkit-background-clip: text;
             background-clip: text;
             -webkit-text-fill-color: transparent;
             color: transparent;
+            opacity: 1 !important;
+            font-weight: 500 !important;
+        }
+        
+        /* 新增 "购买" 链接的样式，设置为绿色 */
+        .shop-link {
+            color: #28a745; /* 设置为绿色 */
+            -webkit-text-fill-color: initial; /* 重置文字填充颜色，让 color 生效 */
             opacity: 1 !important;
             font-weight: 500 !important;
         }
@@ -504,8 +514,7 @@
         .footer-column h3 {
             font-size: 14px;
             margin-bottom: 20px;
-            font-weight: 6
-00;
+            font-weight: 600;
             color: var(--text-gray);
             text-transform: uppercase;
             letter-spacing: 0.5px;
@@ -616,7 +625,8 @@
     <nav class="navbar">
         <a href="#" class="logo">SMAI CLUB</a>
         <ul class="nav-links">
-            <li><a href="https://www.smaiclub.top/shop" class="news-link">购买</a></li>
+            <!-- HTML部分无需改动，它已经使用了正确的class -->
+            <li><a href="https://www.smaiclub.top/shop" class="shop-link">购买</a></li>
             <li><a href="https://news.smaiclub.top/" class="news-link">新闻</a></li>
             <li><a href="#">首页</a></li>
             <li><a href="https://hall.smaiclub.top/" class="exhibition-link">展览馆</a></li>
@@ -628,6 +638,7 @@
         </div>
     </nav>
 
+    <!-- ... 页面其余部分保持不变 ... -->
     <section class="hero">
         <div class="hero-content">
             <h1>SMAI CLUB</h1>
@@ -833,6 +844,7 @@
         </div>
     </footer>
 
+    <!-- JavaScript部分无需改动 -->
     <script>
         // 导航栏滚动效果
         window.addEventListener('scroll', function() {
@@ -850,6 +862,12 @@
         
         menuToggle.addEventListener('click', function() {
             navLinks.classList.toggle('active');
+        });
+
+        // 为购买链接添加单独的重定向
+        document.querySelector('.shop-link').addEventListener('click', function(e) {
+            e.preventDefault();
+            window.location.href = 'https://www.smaiclub.top/shop';
         });
 
         // 为新闻链接添加单独的重定向
