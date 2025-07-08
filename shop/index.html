@@ -1,0 +1,599 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>会员支付</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #f5f7fa 0%, #e4eff9 100%);
+            color: #333;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            display: flex;
+            max-width: 1000px;
+            width: 100%;
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.12);
+            border-radius: 16px;
+            overflow: hidden;
+        }
+        
+        /* 会员信息区 */
+        .membership-section {
+            flex: 1;
+            background: linear-gradient(135deg, #3a7bd5 0%, #00d2ff 100%);
+            color: white;
+            padding: 40px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+        
+        .benefits {
+            margin-top: 30px;
+        }
+        
+        .benefits ul {
+            list-style: none;
+            margin-top: 20px;
+        }
+        
+        .benefits li {
+            display: flex;
+            align-items: center;
+            margin-bottom: 15px;
+            font-size: 16px;
+        }
+        
+        .benefits i {
+            margin-right: 10px;
+            font-size: 18px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 50%;
+            width: 28px;
+            height: 28px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        /* 支付表单区 */
+        .payment-section {
+            flex: 1.2;
+            background: white;
+            padding: 40px;
+        }
+        
+        .payment-header {
+            margin-bottom: 30px;
+        }
+        
+        .payment-header h1 {
+            color: #2c3e50;
+            font-size: 28px;
+            margin-bottom: 5px;
+        }
+        
+        .payment-header p {
+            color: #7f8c8d;
+            font-size: 16px;
+        }
+        
+        .payment-card {
+            background: #f8f9fa;
+            border-radius: 12px;
+            padding: 25px;
+            margin-bottom: 25px;
+        }
+        
+        .price-tag {
+            font-size: 32px;
+            font-weight: 700;
+            color: #e74c3c;
+            margin-bottom: 20px;
+        }
+        
+        .price-tag span {
+            font-size: 16px;
+            color: #95a5a6;
+            font-weight: normal;
+        }
+        
+        /* 支付方式切换 */
+        .payment-options {
+            display: flex;
+            gap: 12px;
+            margin: 20px 0;
+        }
+        
+        .payment-option {
+            flex: 1;
+            border: 2px solid #e0e6ed;
+            border-radius: 10px;
+            padding: 15px 10px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: #fff;
+        }
+        
+        .payment-option:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.08);
+        }
+        
+        .payment-option.selected {
+            border-color: #3498db;
+            background-color: #e1f0fa;
+        }
+        
+        .payment-option i {
+            font-size: 28px;
+            margin-bottom: 10px;
+            color: #3498db;
+        }
+        
+        .payment-option.wechat i {
+            color: #09bb07;
+        }
+        
+        .payment-option.alipay i {
+            color: #1777ff;
+        }
+        
+        .payment-option.selected i {
+            color: #2c3e50;
+        }
+        
+        /* 表单样式 */
+        .form-group {
+            margin-bottom: 22px;
+            position: relative;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #2c3e50;
+            font-size: 15px;
+        }
+        
+        .input-container {
+            position: relative;
+        }
+        
+        input {
+            width: 100%;
+            padding: 14px 15px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+        
+        input:focus {
+            border-color: #3498db;
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.2);
+        }
+        
+        .error-message {
+            color: #e74c3c;
+            font-size: 13px;
+            height: 18px;
+            margin-top: 5px;
+            visibility: hidden;
+        }
+        
+        .error-icon {
+            position: absolute;
+            right: 12px;
+            top: 14px;
+            color: #e74c3c;
+            display: none;
+        }
+        
+        input.error {
+            border-color: #e74c3c;
+        }
+        
+        .card-group {
+            display: flex;
+            gap: 15px;
+        }
+        
+        .card-group .form-group {
+            flex: 1;
+        }
+        
+        .security-badge {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin: 25px 0;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            font-size: 14px;
+            color: #2c3e50;
+        }
+        
+        .security-badge i {
+            color: #27ae60;
+            font-size: 20px;
+        }
+        
+        .submit-btn {
+            background: linear-gradient(to right, #3498db, #2c3e50);
+            color: white;
+            border: none;
+            padding: 18px;
+            width: 100%;
+            border-radius: 8px;
+            font-size: 17px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            box-shadow: 0 4px 10px rgba(52, 152, 219, 0.3);
+        }
+        
+        .submit-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 15px rgba(52, 152, 219, 0.4);
+        }
+        
+        .payment-footer {
+            text-align: center;
+            margin-top: 25px;
+            font-size: 13px;
+            color: #95a5a6;
+        }
+        
+        .payment-footer a {
+            color: #3498db;
+            text-decoration: none;
+        }
+        
+        @media (max-width: 768px) {
+            .container {
+                flex-direction: column;
+            }
+            
+            .membership-section {
+                padding: 30px;
+            }
+            
+            .payment-options {
+                flex-direction: column;
+            }
+            
+            .card-group {
+                flex-direction: column;
+                gap: 0;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- 会员信息区 -->
+        <div class="membership-section">
+            <div>
+                <h1>SMAI SVIP II</h1>
+                <p>加入我们，享受专属服务与特权</p>
+                
+                <div class="benefits">
+                    <h3>会员专属福利：</h3>
+                    <ul>
+                        <li><i class="fas fa-play"></i>   飞机坠机服务</li>
+                        <li><i class="fas fa-play"></i>   高质答辩试吃</li>
+                        <li><i class="fas fa-play"></i>   优先趋势服务</li>
+                        <li><i class="fas fa-play"></i>   同城月跑优惠</li>
+                        <li><i class="fas fa-play"></i>   管家全面保护</li>
+                    </ul>
+                </div>
+            </div>
+            
+            <div class="price-tag">
+                $5,000/年<span>
+            </div>
+        </div>
+        
+        <!-- 支付表单区 -->
+        <div class="payment-section">
+            <div class="payment-card">
+                <div class="payment-header">
+                    <h1>会员支付</h1>
+                    <p>请填写您的支付信息</p>
+                </div>
+                
+                <form id="paymentForm">
+                    <!-- 基本信息 -->
+                    <div class="form-group">
+                        <label for="name">姓名</label>
+                        <div class="input-container">
+                            <input type="text" id="name" name="name" placeholder="请输入您的真实姓名">
+                            <span class="error-icon">✘</span>
+                        </div>
+                        <div class="error-message" id="nameError">请输入2-4个汉字作为姓名</div>
+                    </div>
+                    
+                    <!-- 联系方式 -->
+                    <div class="card-group">
+                        <div class="form-group">
+                            <label for="phone">手机号</label>
+                            <div class="input-container">
+                                <input type="text" id="phone" name="phone" placeholder="请输入手机号">
+                                <span class="error-icon">✘</span>
+                            </div>
+                            <div class="error-message" id="phoneError">请输入11位有效手机号</div>
+                        </div>
+                        <div class="form-group">
+                            <label for="email">邮箱 (可选)</label>
+                            <div class="input-container">
+                                <input type="text" id="email" name="email" placeholder="请输入电子邮箱">
+                                <span class="error-icon">✘</span>
+                            </div>
+                            <div class="error-message" id="emailError">请输入有效邮箱地址</div>
+                        </div>
+                    </div>
+                    
+                    <!-- 支付方式 -->
+                    <div class="form-group">
+                        <label>支付方式</label>
+                        <div class="payment-options">
+                            <div class="payment-option selected" data-type="card">
+                                <i class="far fa-credit-card"></i>
+                                <div>银行卡</div>
+                            </div>
+                            <div class="payment-option" data-type="alipay">
+                                <i class="fab fa-alipay"></i>
+                                <div>支付宝</div>
+                            </div>
+                            <div class="payment-option" data-type="wechat">
+                                <i class="fab fa-weixin"></i>
+                                <div>微信支付</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- 银行卡支付字段 (初始显示) -->
+                    <div id="bankCardFields">
+                        <div class="form-group">
+                            <label for="cardNumber">银行卡号</label>
+                            <div class="input-container">
+                                <input type="text" id="cardNumber" name="cardNumber" placeholder="请输入16或19位银行卡号">
+                                <span class="error-icon">✘</span>
+                            </div>
+                            <div class="error-message" id="cardError">请输入有效的银行卡号</div>
+                        </div>
+                    </div>
+                    
+                    <!-- 其他支付方式提示 (初始隐藏) -->
+                    <div id="thirdPartyMsg" style="display: none;">
+                        <div class="security-badge">
+                            <i class="fas fa-info-circle"></i>
+                            <div>选择支付宝/微信支付后，点击支付按钮将跳转到相应支付平台完成支付</div>
+                        </div>
+                    </div>
+                    
+                    <div class="security-badge">
+                        <i class="fas fa-lock"></i>
+                        <div>您的支付信息加密保护，安全可靠</div>
+                    </div>
+                    
+                    <button type="submit" class="submit-btn">立即支付</button>
+                </form>
+                
+                <div class="payment-footer">
+                    点击支付即表示您同意<a href="#">会员协议</a>和<a href="#">隐私政策</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // 获取表单元素
+            const nameInput = document.getElementById('name');
+            const cardInput = document.getElementById('cardNumber');
+            const phoneInput = document.getElementById('phone');
+            const emailInput = document.getElementById('email');
+            
+            // 支付方式选择元素
+            const paymentOptions = document.querySelectorAll('.payment-option');
+            const bankCardFields = document.getElementById('bankCardFields');
+            const thirdPartyMsg = document.getElementById('thirdPartyMsg');
+            
+            // 正则表达式验证规则
+            const validators = {
+                name: /^[\u4e00-\u9fa5]{2,4}$/, // 2-4个汉字
+                card: /^(?:\d{16}|\d{19})$/, // 16或19位数字
+                phone: /^1[3-9]\d{9}$/, // 11位手机号
+                email: /^[^\s@]+@[^\s@]+\.[^\s@]+$/ // 邮箱格式
+            };
+            
+            // 添加实时输入验证
+            nameInput.addEventListener('input', () => validateField(nameInput, validators.name, 'nameError', '请输入2-4个汉字作为姓名'));
+            phoneInput.addEventListener('input', () => validateField(phoneInput, validators.phone, 'phoneError', '请输入有效的11位手机号'));
+            emailInput.addEventListener('input', () => validateEmail(emailInput));
+            cardInput.addEventListener('input', () => {
+                validateField(cardInput, validators.card, 'cardError', '请输入16或19位有效银行卡号');
+                formatCardNumber(cardInput);
+            });
+            
+            // 支付方式选择
+            paymentOptions.forEach(option => {
+                option.addEventListener('click', () => {
+                    // 更新选中状态
+                    paymentOptions.forEach(opt => opt.classList.remove('selected'));
+                    option.classList.add('selected');
+                    
+                    const paymentType = option.getAttribute('data-type');
+                    
+                    // 显示对应字段
+                    if (paymentType === 'card') {
+                        bankCardFields.style.display = 'block';
+                        thirdPartyMsg.style.display = 'none';
+                    } else {
+                        bankCardFields.style.display = 'none';
+                        thirdPartyMsg.style.display = 'block';
+                    }
+                });
+            });
+            
+            // 表单提交处理
+            document.getElementById('paymentForm').addEventListener('submit', function(e) {
+                e.preventDefault();
+                
+                // 验证所有字段
+                let isValid = true;
+                isValid = validateField(nameInput, validators.name, 'nameError', '请输入2-4个汉字作为姓名') && isValid;
+                isValid = validateField(phoneInput, validators.phone, 'phoneError', '请输入有效的11位手机号') && isValid;
+                
+                const selectedPayment = document.querySelector('.payment-option.selected').getAttribute('data-type');
+                
+                // 邮箱非必填但需要验证格式
+                if (emailInput.value && !validators.email.test(emailInput.value)) {
+                    setError(emailInput, 'emailError', '请输入有效邮箱地址');
+                    isValid = false;
+                } else {
+                    clearError(emailInput, 'emailError');
+                }
+                
+                // 银行卡支付需要额外验证卡号
+                if (selectedPayment === 'card') {
+                    isValid = validateField(cardInput, validators.card, 'cardError', '请输入16或19位有效银行卡号') && isValid;
+                }
+                
+                if (isValid) {
+                    // 实际支付处理逻辑
+                    const paymentMethod = document.querySelector('.payment-option.selected div').textContent;
+                    
+                    // 模拟支付处理
+                    document.querySelector('.submit-btn').innerHTML = '<i class="fas fa-spinner fa-spin"></i> 处理中...';
+                    
+                    setTimeout(() => {
+                        alert(`支付成功！您已通过${paymentMethod}完成会员购买`);
+                        document.querySelector('.submit-btn').textContent = '立即支付';
+                        
+                        // 重置表单
+                        document.getElementById('paymentForm').reset();
+                        clearAllErrors();
+                        
+                        // 重置支付方式
+                        paymentOptions.forEach(opt => opt.classList.remove('selected'));
+                        document.querySelector('[data-type="card"]').classList.add('selected');
+                        bankCardFields.style.display = 'block';
+                        thirdPartyMsg.style.display = 'none';
+                    }, 1500);
+                }
+            });
+            
+            // 字段验证函数
+            function validateField(input, regex, errorElementId, errorMessage) {
+                const errorElement = document.getElementById(errorElementId);
+                const errorIcon = input.nextElementSibling;
+                
+                if (!input.value.trim()) {
+                    input.classList.remove('error');
+                    errorElement.style.visibility = 'hidden';
+                    errorIcon.style.display = 'none';
+                    return false;
+                }
+                
+                if (regex.test(input.value)) {
+                    // 验证通过
+                    input.classList.remove('error');
+                    errorElement.style.visibility = 'hidden';
+                    errorIcon.style.display = 'none';
+                    return true;
+                } else {
+                    // 验证失败
+                    setError(input, errorElementId, errorMessage);
+                    return false;
+                }
+            }
+            
+            // 邮箱验证（可选）
+            function validateEmail(input) {
+                const errorElementId = 'emailError';
+                
+                if (!input.value.trim()) {
+                    // 邮箱为空时清除错误
+                    clearError(input, errorElementId);
+                    return;
+                }
+                
+                if (validators.email.test(input.value)) {
+                    clearError(input, errorElementId);
+                } else {
+                    setError(input, errorElementId, '请输入有效邮箱地址');
+                }
+            }
+            
+            // 设置错误状态
+            function setError(input, errorElementId, errorMessage) {
+                const errorElement = document.getElementById(errorElementId);
+                const errorIcon = input.nextElementSibling;
+                
+                input.classList.add('error');
+                errorElement.textContent = errorMessage;
+                errorElement.style.visibility = 'visible';
+                errorIcon.style.display = 'block';
+            }
+            
+            // 清除错误
+            function clearError(input, errorElementId) {
+                const errorElement = document.getElementById(errorElementId);
+                const errorIcon = input.nextElementSibling;
+                
+                input.classList.remove('error');
+                errorElement.style.visibility = 'hidden';
+                errorIcon.style.display = 'none';
+            }
+            
+            // 清除所有错误
+            function clearAllErrors() {
+                document.querySelectorAll('.error-message').forEach(el => {
+                    el.style.visibility = 'hidden';
+                });
+                document.querySelectorAll('.error-icon').forEach(el => {
+                    el.style.display = 'none';
+                });
+                document.querySelectorAll('.error').forEach(el => {
+                    el.classList.remove('error');
+                });
+            }
+            
+            // 银行卡号格式美化（每4位加空格）
+            function formatCardNumber(input) {
+                let value = input.value.replace(/\s+/g, '').replace(/\D/g, '');
+                let formatted = '';
+                
+                for (let i = 0; i < value.length; i++) {
+                    if (i > 0 && i % 4 === 0) formatted += ' ';
+                    formatted += value[i];
+                }
+                
+                input.value = formatted;
+            }
+        });
+    </script>
+</body>
+</html>
