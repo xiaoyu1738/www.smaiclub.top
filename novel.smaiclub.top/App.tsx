@@ -14,7 +14,7 @@ const App: React.FC = () => {
   useEffect(() => {
     const fetchNovel = async () => {
       try {
-        const response = await fetch('/NovelList.json');
+        const response = await fetch('./NovelList.json');
         if (!response.ok) {
           throw new Error('获取小说列表失败');
         }
