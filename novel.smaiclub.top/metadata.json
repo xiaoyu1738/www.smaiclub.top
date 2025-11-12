@@ -1,0 +1,5 @@
+{
+  "name": "Epub 轻小说阅读器",
+  "description": "一个现代化的网络应用程序，用于阅读EPUB格式的轻小说。用户可以从虚拟书架中选择一本书，并在一个干净、响应式的界面中逐章阅读。",
+  "requestFramePermissions": []
+}
