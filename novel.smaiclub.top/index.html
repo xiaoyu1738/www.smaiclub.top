@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="zh-CN">
   <head>
@@ -7,14 +8,14 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/jszip@3.1.5/dist/jszip.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/epubjs@0.3.93/dist/epub.min.js"></script>
-    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
   <script type="importmap">
 {
   "imports": {
-    "react": "https://esm.sh/react@18.2.0",
-    "react-dom/client": "https://esm.sh/react-dom@18.2.0/client",
+    "react": "https://aistudiocdn.com/react@^19.2.0",
     "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.0/",
-    "react/": "https://aistudiocdn.com/react@^19.2.0/"
+    "react/": "https://aistudiocdn.com/react@^19.2.0/",
+    "vite": "https://aistudiocdn.com/vite@^7.2.2",
+    "@vitejs/plugin-react": "https://aistudiocdn.com/@vitejs/plugin-react@^5.1.1"
   }
 }
 </script>
@@ -22,16 +23,7 @@
 </head>
   <body class="bg-gray-900 text-gray-100 font-sans">
     <div id="root"></div>
-    <!-- 
-      本地开发注意事项:
-      由于浏览器安全策略，直接通过 file:// 协议打开此文件可能无法正常工作。
-      这是因为在浏览器中进行即时转译 (Babel) 和模块加载 (ESM) 需要一个HTTP服务器环境。
-      请使用一个简单的本地HTTP服务器来运行此应用，例如:
-      - Python 3: python -m http.server
-      - Node.js: npx serve
-      然后通过 http://localhost:8000 (或相应端口) 访问。
-    -->
-    <script type="text/babel" data-type="module" data-presets="react,typescript" src="index.tsx"></script>
+    <script type="module" src="/src/index.tsx"></script>
   <script type="module" src="/index.tsx"></script>
 </body>
 </html>
