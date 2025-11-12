@@ -1,6 +1,6 @@
 import React from 'react';
-import { Novel, Volume } from '../types';
-import { BookOpenIcon } from './icons/BookOpenIcon';
+import { Novel, Volume } from '../types.ts';
+import { BookOpenIcon } from './icons/BookOpenIcon.tsx';
 
 interface VolumeListProps {
   novel: Novel;

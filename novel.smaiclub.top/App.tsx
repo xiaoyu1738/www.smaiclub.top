@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { Novel, Volume } from './types';
-import VolumeList from './components/VolumeList';
-import EpubReader from './components/EpubReader';
-import { SpinnerIcon } from './components/icons/SpinnerIcon';
+import { Novel, Volume } from './types.ts';
+import VolumeList from './components/VolumeList.tsx';
+import EpubReader from './components/EpubReader.tsx';
+import { SpinnerIcon } from './components/icons/SpinnerIcon.tsx';
 
 
 const App: React.FC = () => {

@@ -1,11 +1,11 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { TocItem } from '../types';
-import { ArrowLeftIcon } from './icons/ArrowLeftIcon';
-import { ChevronLeftIcon } from './icons/ChevronLeftIcon';
-import { ChevronRightIcon } from './icons/ChevronRightIcon';
-import { SpinnerIcon } from './icons/SpinnerIcon';
-import { MenuIcon } from './icons/MenuIcon';
-import { XIcon } from './icons/XIcon';
+import { TocItem } from '../types.ts';
+import { ArrowLeftIcon } from './icons/ArrowLeftIcon.tsx';
+import { ChevronLeftIcon } from './icons/ChevronLeftIcon.tsx';
+import { ChevronRightIcon } from './icons/ChevronRightIcon.tsx';
+import { SpinnerIcon } from './icons/SpinnerIcon.tsx';
+import { MenuIcon } from './icons/MenuIcon.tsx';
+import { XIcon } from './icons/XIcon.tsx';
 
 interface EpubReaderProps {
   readingInfo: {

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Novel } from '../types';
+import { Novel } from '../types.ts';
 
 interface BookListProps {
   novels: Novel[];

@@ -1,5 +1,5 @@
 
-import { Novel } from './types';
+import { Novel } from './types.ts';
 
 export const BOOKS: Novel[] = [
   {
