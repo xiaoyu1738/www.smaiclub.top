@@ -1,7 +1,7 @@
 
 import React from 'react';
 
-export const ChevronRightIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
+export const SpinnerIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
   <svg
     xmlns="http://www.w3.org/2000/svg"
     width="24"
@@ -12,8 +12,9 @@ export const ChevronRightIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props)
     strokeWidth="2"
     strokeLinecap="round"
     strokeLinejoin="round"
+    className={`animate-spin ${props.className}`}
     {...props}
   >
-    <polyline points="9 18 15 12 9 6" />
+    <path d="M21 12a9 9 0 1 1-6.219-8.56" />
   </svg>
 );

@@ -230,7 +230,7 @@ const EpubReader: React.FC<EpubReaderProps> = ({ readingInfo, onBack }) => {
         {/* TOC Sidebar - Mobile */}
         <div className={`fixed inset-0 z-40 transition-transform duration-300 ease-in-out md:hidden ${isTocOpen ? 'translate-x-0' : '-translate-x-full'}`}>
            <div className="absolute inset-0 bg-black bg-opacity-50" onClick={() => setIsTocOpen(false)}></div>
-           <aside className="relative w-4/fifths max-w-sm h-full bg-gray-800 overflow-y-auto p-4 shadow-lg">
+           <aside className="relative w-4/5 max-w-sm h-full bg-gray-800 overflow-y-auto p-4 shadow-lg">
             <div className="flex justify-between items-center mb-4">
                 <h2 className="text-xl font-bold">章节</h2>
                 <button onClick={() => setIsTocOpen(false)} className="p-2 rounded-md hover:bg-gray-700">
