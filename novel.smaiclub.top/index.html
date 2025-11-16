@@ -1,36 +1,37 @@
 <!doctype html>
 <html lang="zh-CN">
-<head>
+  <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Epub 轻小说阅读器</title>
-
+    
     <!-- Tailwind CSS for styling -->
     <script src="https://cdn.tailwindcss.com"></script>
-
+    
     <!-- epub.js for reader functionality -->
     <script src="https://cdn.jsdelivr.net/npm/epubjs@0.3.93/dist/epub.min.js"></script>
-
+    
     <style>
-        /* Prevents flash of unstyled content before React loads */
-        body {
-            background-color: #111827;
-        }
+      /* Prevents flash of unstyled content before React loads */
+      body {
+        background-color: #111827;
+      }
     </style>
-    <script type="importmap">
-        {
-          "imports": {
-            "vite": "https://aistudiocdn.com/vite@^7.2.2",
-            "@vitejs/plugin-react": "https://aistudiocdn.com/@vitejs/plugin-react@^5.1.1",
-            "react": "https://aistudiocdn.com/react@^19.2.0",
-            "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.0/",
-            "react/": "https://aistudiocdn.com/react@^19.2.0/"
-          }
-        }
-    </script>
+  <script type="importmap">
+{
+  "imports": {
+    "vite": "https://aistudiocdn.com/vite@^7.2.2",
+    "@vitejs/plugin-react": "https://aistudiocdn.com/@vitejs/plugin-react@^5.1.1",
+    "react": "https://aistudiocdn.com/react@^19.2.0",
+    "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.0/",
+    "react/": "https://aistudiocdn.com/react@^19.2.0/"
+  }
+}
+</script>
+<link rel="stylesheet" href="/index.css">
 </head>
-<body>
-<div id="root"></div>
-<script type="module" src="/src/index.tsx"></script>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/index.tsx"></script>
 </body>
 </html>
