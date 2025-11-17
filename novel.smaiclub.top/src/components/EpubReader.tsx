@@ -88,8 +88,19 @@ const EpubReader: React.FC<EpubReaderProps> = ({ readingInfo, onBack }) => {
 
                 if (!isMounted) return;
 
-                // 使用 CORS 代理来解决跨域问题
-                const epubBook = ePub(readingInfo.epubUrl);
+                // 1. 使用 fetch 手动获取文件
+                const response = await fetch(readingInfo.epubUrl);
+                if (!response.ok) {
+                    // 如果 fetch 失败（例如 404），则抛出错误
+                    throw new Error(`无法获取 EPUB 文件，状态码: ${response.status}`);
+                }
+                // 2. 将响应体转换为 ArrayBuffer
+                const arrayBuffer = await response.arrayBuffer();
+
+                if (!isMounted) return;
+
+                // 3. 将 ArrayBuffer 传递给 ePub.js
+                const epubBook = ePub(arrayBuffer);
                 bookRef.current = epubBook;
 
                 const rendition = epubBook.renderTo(viewerRef.current!, {
@@ -100,7 +111,7 @@ const EpubReader: React.FC<EpubReaderProps> = ({ readingInfo, onBack }) => {
                 });
                 renditionRef.current = rendition;
 
-                // 为阅读器内容应用深色主题
+                // 为阅读器内容应用深色主题 (后面的代码保持不变)
                 rendition.themes.register('dark', {
                     body: {
                         'background-color': '#111827',
@@ -125,10 +136,10 @@ const EpubReader: React.FC<EpubReaderProps> = ({ readingInfo, onBack }) => {
                     }
                 });
 
-                // 添加超时机制防止无限加载
+                // 你仍然可以保留这个超时，以防解析一个巨大的或损坏的文件时卡住
                 const readyPromise = epubBook.ready;
                 const timeoutPromise = new Promise((_, reject) =>
-                    setTimeout(() => reject(new Error('书籍解析超时。可能是文件损坏、网络问题或跨域请求(CORS)被阻止。')), 20000) // 20秒超时
+                    setTimeout(() => reject(new Error('书籍解析超时。可能是文件损坏或格式不受支持。')), 20000)
                 );
 
                 await Promise.race([readyPromise, timeoutPromise]);
@@ -136,14 +147,14 @@ const EpubReader: React.FC<EpubReaderProps> = ({ readingInfo, onBack }) => {
                 if (isMounted) {
                     setToc(epubBook.navigation.toc);
                     await rendition.display();
-                    handleResize(); // Set initial size
+                    handleResize();
                     setIsLoading(false);
                 }
             } catch (err) {
                 console.error("加载书籍时出错:", err);
                 if (isMounted) {
                     const message = err instanceof Error ? err.message : '未知错误';
-                    if (message.includes('404')) {
+                    if (message.includes('404') || message.includes('无法获取')) {
                         setError('加载书籍失败：找不到文件。链接可能已失效。');
                     } else {
                         setError(`加载书籍失败: ${message}`);
