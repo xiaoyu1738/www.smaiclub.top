@@ -89,8 +89,7 @@ const EpubReader: React.FC<EpubReaderProps> = ({ readingInfo, onBack }) => {
                 if (!isMounted) return;
 
                 // 使用 CORS 代理来解决跨域问题
-                const proxiedUrl = `https://cors.eu.org/${readingInfo.epubUrl.replace(/^https?:\/\//, '')}`;
-                const epubBook = ePub(proxiedUrl);
+                const epubBook = ePub(readingInfo.epubUrl);
                 bookRef.current = epubBook;
 
                 const rendition = epubBook.renderTo(viewerRef.current!, {
