@@ -4,6 +4,7 @@ import { ArrowLeftIcon } from './icons/ArrowLeftIcon.tsx';
 import { ChevronLeftIcon } from './icons/ChevronLeftIcon.tsx';
 import { ChevronRightIcon } from './icons/ChevronRightIcon.tsx';
 import { SpinnerIcon } from './icons/SpinnerIcon.tsx';
+import ePub from 'epubjs';
 import { MenuIcon } from './icons/MenuIcon.tsx';
 import { XIcon } from './icons/XIcon.tsx';
 
@@ -15,30 +16,6 @@ interface EpubReaderProps {
     };
     onBack: () => void;
 }
-
-// 帮助函数，等待 ePub.js 库加载完成
-const waitForEpub = (): Promise<any> => {
-    return new Promise((resolve, reject) => {
-        let attempts = 0;
-        const maxAttempts = 40; // 等待最多20秒 (40 * 500ms)
-        const interval = 500; // 每500毫秒检查一次
-
-        const check = () => {
-            if ((window as any).ePub) {
-                resolve((window as any).ePub);
-            } else {
-                attempts++;
-                if (attempts < maxAttempts) {
-                    setTimeout(check, interval);
-                } else {
-                    reject(new Error('ePub.js 库加载超时。'));
-                }
-            }
-        };
-        check();
-    });
-};
-
 
 const EpubReader: React.FC<EpubReaderProps> = ({ readingInfo, onBack }) => {
     const [toc, setToc] = useState<TocItem[]>([]);
@@ -83,8 +60,6 @@ const EpubReader: React.FC<EpubReaderProps> = ({ readingInfo, onBack }) => {
                 setError(null);
                 setToc([]);
                 if (viewerRef.current) viewerRef.current.innerHTML = '';
-
-                const ePub = await waitForEpub();
 
                 if (!isMounted) return;
 
