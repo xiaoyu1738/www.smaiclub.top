@@ -29,6 +29,13 @@ const EpubReader: React.FC<EpubReaderProps> = ({ readingInfo, onBack }) => {
     const bookRef = useRef<any>(null);
 
     useEffect(() => {
+        document.title = `${readingInfo.volumeTitle} - ${readingInfo.novelTitle}`;
+        return () => {
+            document.title = 'Epub 轻小说阅读器';
+        };
+    }, [readingInfo]);
+
+    useEffect(() => {
         if (!readingInfo.epubUrl || !viewerRef.current) return;
 
         let isMounted = true;
@@ -63,8 +70,12 @@ const EpubReader: React.FC<EpubReaderProps> = ({ readingInfo, onBack }) => {
 
                 if (!isMounted) return;
 
+                const epubUrl = import.meta.env.DEV
+                    ? readingInfo.epubUrl.replace('https://lib.smaiclub.top', '/epubs')
+                    : readingInfo.epubUrl;
+
                 // 1. 使用 fetch 手动获取文件
-                const response = await fetch(readingInfo.epubUrl);
+                const response = await fetch(epubUrl);
                 if (!response.ok) {
                     // 如果 fetch 失败（例如 404），则抛出错误
                     throw new Error(`无法获取 EPUB 文件，状态码: ${response.status}`);
@@ -93,7 +104,7 @@ const EpubReader: React.FC<EpubReaderProps> = ({ readingInfo, onBack }) => {
                         'color': '#d1d5db',
                         'font-family': 'sans-serif',
                         'line-height': '1.6',
-                        'padding': '2rem'
+                        'padding': '2rem 2rem 6rem 2rem'
                     },
                     'a': { 'color': '#818cf8 !important', 'text-decoration': 'underline !important' },
                     'h1, h2, h3, h4': { 'color': '#f9fafb !important' },
