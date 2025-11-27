@@ -31,7 +31,7 @@ const EpubReader: React.FC<EpubReaderProps> = ({ readingInfo, onBack }) => {
     useEffect(() => {
         document.title = `${readingInfo.volumeTitle} - ${readingInfo.novelTitle}`;
         return () => {
-            document.title = 'Epub 轻小说阅读器';
+            document.title = '轻小说阅读器';
         };
     }, [readingInfo]);
 
@@ -104,7 +104,7 @@ const EpubReader: React.FC<EpubReaderProps> = ({ readingInfo, onBack }) => {
                         'color': '#d1d5db',
                         'font-family': 'sans-serif',
                         'line-height': '1.6',
-                        'padding': '2rem 2rem 6rem 2rem'
+                        'padding': '2rem'
                     },
                     'a': { 'color': '#818cf8 !important', 'text-decoration': 'underline !important' },
                     'h1, h2, h3, h4': { 'color': '#f9fafb !important' },
@@ -245,10 +245,13 @@ const EpubReader: React.FC<EpubReaderProps> = ({ readingInfo, onBack }) => {
                     </aside>
                 </div>
 
-                <main className="flex-grow relative flex flex-col">
-                    <div id="viewer" ref={viewerRef} className="flex-grow w-full overflow-hidden min-h-0"></div>
-                    <div className="absolute inset-x-0 bottom-0 md:bottom-4 flex justify-center p-4">
-                        <div className="flex items-center justify-center gap-4 bg-gray-800/80 backdrop-blur-sm p-2 rounded-full shadow-lg ring-1 ring-white/10">
+                <div className="flex-grow flex flex-col overflow-hidden">
+                    <main className="flex-grow relative overflow-hidden">
+                        <div id="viewer" ref={viewerRef} className="w-full h-full"></div>
+                    </main>
+
+                    <div className="flex-shrink-0 flex justify-center items-center p-2 bg-gray-800">
+                        <div className="flex items-center justify-center gap-4">
                             <button onClick={goPrev} className="p-3 rounded-full hover:bg-gray-700 transition-colors">
                                 <ChevronLeftIcon className="h-6 w-6" />
                             </button>
@@ -257,7 +260,7 @@ const EpubReader: React.FC<EpubReaderProps> = ({ readingInfo, onBack }) => {
                             </button>
                         </div>
                     </div>
-                </main>
+                </div>
             </div>
         </div>
     );
