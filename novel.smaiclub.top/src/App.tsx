@@ -1,9 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, lazy } from 'react';
 import { Novel, Volume } from './types.ts';
 import { BOOKS } from './constants.ts';
 import BookList from './components/BookList.tsx';
 import VolumeList from './components/VolumeList.tsx';
-import EpubReader from './components/EpubReader.tsx';
+
+const EpubReader = lazy(() => import('./components/EpubReader.tsx'));
 
 const App: React.FC = () => {
     const [novels] = useState<Novel[]>(BOOKS);
@@ -29,14 +30,16 @@ const App: React.FC = () => {
 
     if (selectedVolume && selectedNovel) {
         return (
-            <EpubReader
-                readingInfo={{
-                    novelTitle: selectedNovel.title,
-                    volumeTitle: selectedVolume.title,
-                    epubUrl: selectedVolume.epubUrl,
-                }}
-                onBack={handleBackToNovelList}
-            />
+            <React.Suspense fallback={<div className="h-screen w-screen flex justify-center items-center bg-gray-900 text-white">正在加载阅读器...</div>}>
+                <EpubReader
+                    readingInfo={{
+                        novelTitle: selectedNovel.title,
+                        volumeTitle: selectedVolume.title,
+                        epubUrl: selectedVolume.epubUrl,
+                    }}
+                    onBack={handleBackToNovelList}
+                />
+            </React.Suspense>
         );
     }
 
