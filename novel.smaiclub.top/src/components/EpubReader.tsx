@@ -4,6 +4,7 @@ import { ArrowLeftIcon } from './icons/ArrowLeftIcon.tsx';
 import { ChevronLeftIcon } from './icons/ChevronLeftIcon.tsx';
 import { ChevronRightIcon } from './icons/ChevronRightIcon.tsx';
 import { SpinnerIcon } from './icons/SpinnerIcon.tsx';
+import ePub from 'epubjs';
 import { MenuIcon } from './icons/MenuIcon.tsx';
 import { XIcon } from './icons/XIcon.tsx';
 
@@ -16,30 +17,6 @@ interface EpubReaderProps {
     onBack: () => void;
 }
 
-// 帮助函数，等待 ePub.js 库加载完成
-const waitForEpub = (): Promise<any> => {
-    return new Promise((resolve, reject) => {
-        let attempts = 0;
-        const maxAttempts = 40; // 等待最多20秒 (40 * 500ms)
-        const interval = 500; // 每500毫秒检查一次
-
-        const check = () => {
-            if ((window as any).ePub) {
-                resolve((window as any).ePub);
-            } else {
-                attempts++;
-                if (attempts < maxAttempts) {
-                    setTimeout(check, interval);
-                } else {
-                    reject(new Error('ePub.js 库加载超时。'));
-                }
-            }
-        };
-        check();
-    });
-};
-
-
 const EpubReader: React.FC<EpubReaderProps> = ({ readingInfo, onBack }) => {
     const [toc, setToc] = useState<TocItem[]>([]);
     const [isLoading, setIsLoading] = useState(true);
@@ -50,6 +27,13 @@ const EpubReader: React.FC<EpubReaderProps> = ({ readingInfo, onBack }) => {
     const viewerRef = useRef<HTMLDivElement>(null);
     const renditionRef = useRef<any>(null);
     const bookRef = useRef<any>(null);
+
+    useEffect(() => {
+        document.title = `${readingInfo.volumeTitle} - ${readingInfo.novelTitle}`;
+        return () => {
+            document.title = 'Epub 轻小说阅读器';
+        };
+    }, [readingInfo]);
 
     useEffect(() => {
         if (!readingInfo.epubUrl || !viewerRef.current) return;
@@ -84,12 +68,14 @@ const EpubReader: React.FC<EpubReaderProps> = ({ readingInfo, onBack }) => {
                 setToc([]);
                 if (viewerRef.current) viewerRef.current.innerHTML = '';
 
-                const ePub = await waitForEpub();
-
                 if (!isMounted) return;
 
+                const epubUrl = import.meta.env.DEV
+                    ? readingInfo.epubUrl.replace('https://lib.smaiclub.top', '/epubs')
+                    : readingInfo.epubUrl;
+
                 // 1. 使用 fetch 手动获取文件
-                const response = await fetch(readingInfo.epubUrl);
+                const response = await fetch(epubUrl);
                 if (!response.ok) {
                     // 如果 fetch 失败（例如 404），则抛出错误
                     throw new Error(`无法获取 EPUB 文件，状态码: ${response.status}`);
@@ -118,7 +104,7 @@ const EpubReader: React.FC<EpubReaderProps> = ({ readingInfo, onBack }) => {
                         'color': '#d1d5db',
                         'font-family': 'sans-serif',
                         'line-height': '1.6',
-                        'padding': '2rem'
+                        'padding': '2rem 2rem 6rem 2rem'
                     },
                     'a': { 'color': '#818cf8 !important', 'text-decoration': 'underline !important' },
                     'h1, h2, h3, h4': { 'color': '#f9fafb !important' },
