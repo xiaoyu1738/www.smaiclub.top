@@ -1,0 +1,12 @@
+name = "login-smaiclub-kv"
+main = "src/index.js"
+compatibility_date = "2025-12-14"
+
+# 路由配置
+routes = [
+	{ pattern = "login.smaiclub.top", custom_domain = true }
+]
+
+[[kv_namespaces]]
+binding = "USER_DB"
+id = "431c57f25d32429bb501209dccbbfe61"
