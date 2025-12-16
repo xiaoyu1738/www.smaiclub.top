@@ -78,31 +78,30 @@ export default {
                     return jsonResp({ error: "密码强度不足：必须大于8位且包含字母和数字" }, 400, responseHeaders);
                 }
 
-                const exists = await env.USER_DB.get(`user:${username}`);
+                // D1 检查用户是否存在
+                const exists = await env.DB.prepare('SELECT 1 FROM users WHERE username = ?').bind(username).first();
                 if (exists) return jsonResp({ error: "用户已存在" }, 409, responseHeaders);
 
                 const salt = crypto.randomUUID();
                 const encryptedPassword = await encryptData(password, env.SECRET_KEY, salt);
+                const now = Date.now();
 
-                const userData = {
-                    username,
-                    password: encryptedPassword,
-                    salt,
-                    role: 'user',
-                    createdAt: Date.now()
-                };
+                // D1 插入用户
+                await env.DB.prepare(
+                    'INSERT INTO users (username, password, salt, role, createdAt) VALUES (?, ?, ?, ?, ?)'
+                ).bind(username, encryptedPassword, salt, 'user', now).run();
 
-                await env.USER_DB.put(`user:${username}`, JSON.stringify(userData));
                 return jsonResp({ success: true }, 200, responseHeaders);
             }
 
             // --- 登录 ---
             if (url.pathname === "/api/login") {
                 const { username, password, licenseKey } = body;
-                const userRaw = await env.USER_DB.get(`user:${username}`);
-                if (!userRaw) return jsonResp({ error: "用户不存在" }, 404, responseHeaders);
 
-                let user = JSON.parse(userRaw);
+                // D1 获取用户
+                const user = await env.DB.prepare('SELECT * FROM users WHERE username = ?').bind(username).first();
+
+                if (!user) return jsonResp({ error: "用户不存在" }, 404, responseHeaders);
 
                 const decryptedPassword = await decryptData(user.password, env.SECRET_KEY, user.salt);
                 if (password !== decryptedPassword) return jsonResp({ error: "密码错误" }, 401, responseHeaders);
@@ -149,9 +148,10 @@ export default {
             // --- 修改密码 ---
             if (url.pathname === "/api/change-password") {
                 const { username, oldPassword, newPassword } = body;
-                const userRaw = await env.USER_DB.get(`user:${username}`);
-                if (!userRaw) return jsonResp({ error: "用户不存在" }, 404, responseHeaders);
-                let user = JSON.parse(userRaw);
+
+                // D1 获取用户
+                const user = await env.DB.prepare('SELECT * FROM users WHERE username = ?').bind(username).first();
+                if (!user) return jsonResp({ error: "用户不存在" }, 404, responseHeaders);
 
                 const decryptedOld = await decryptData(user.password, env.SECRET_KEY, user.salt);
                 if (oldPassword !== decryptedOld) return jsonResp({ error: "旧密码错误" }, 401, responseHeaders);
@@ -159,8 +159,9 @@ export default {
                 if (!PASSWORD_REGEX.test(newPassword)) return jsonResp({ error: "新密码强度不足" }, 400, responseHeaders);
 
                 const newEncrypted = await encryptData(newPassword, env.SECRET_KEY, user.salt);
-                user.password = newEncrypted;
-                await env.USER_DB.put(`user:${username}`, JSON.stringify(user));
+
+                // D1 更新密码
+                await env.DB.prepare('UPDATE users SET password = ? WHERE username = ?').bind(newEncrypted, username).run();
 
                 return jsonResp({ success: true }, 200, responseHeaders);
             }
@@ -178,13 +179,22 @@ export default {
                     return jsonResp({ error: "请提供个人信息" }, 400, responseHeaders);
                 }
 
-                // 记录购买信息和升级
-                user.role = tier;
-                user.licensePending = true;
-                user.personalInfo = personalInfo; // 存储个人信息
-                user.lastPurchase = Date.now();
+                // 防止降级逻辑
+                const roleLevels = { 'user': 0, 'vip': 1, 'svip1': 2, 'svip2': 3 };
+                const currentLevel = roleLevels[user.role] || 0;
+                const newLevel = roleLevels[tier] || 0;
 
-                await env.USER_DB.put(`user:${user.username}`, JSON.stringify(user));
+                if (newLevel <= currentLevel) {
+                    return jsonResp({ error: "cannot_downgrade", message: "您当前已拥有同级或更高级别的会员权益，无需重复购买或降级。" }, 400, responseHeaders);
+                }
+
+                const lastPurchase = Date.now();
+                const personalInfoStr = JSON.stringify(personalInfo);
+
+                // D1 更新用户 (购买)
+                await env.DB.prepare(
+                    'UPDATE users SET role = ?, licensePending = 1, personalInfo = ?, lastPurchase = ? WHERE username = ?'
+                ).bind(tier, personalInfoStr, lastPurchase, user.username).run();
 
                 return jsonResp({ success: true, message: "购买成功" }, 200, responseHeaders);
             }
@@ -198,14 +208,11 @@ export default {
                 if (!licenseKey || licenseKey.length < 4) return jsonResp({ error: "许可证太短" }, 400, responseHeaders);
 
                 const encryptedLicense = await encryptData(licenseKey, env.SECRET_KEY, user.salt);
-                user.licenseKey = encryptedLicense;
-                delete user.licensePending;
 
-                // 这里的 sessionRole 不会立即更新，用户需要重新登录才能生效，或者我们这里不更新cookie
-                // 前端逻辑是设置完后让用户重登，或者刷新页面（如果不需要许可证验证）
-                // 但为了安全，许可证是在登录时验证的，所以必须重登
-
-                await env.USER_DB.put(`user:${user.username}`, JSON.stringify(user));
+                // D1 更新用户 (设置许可证)
+                await env.DB.prepare(
+                    'UPDATE users SET licenseKey = ?, licensePending = NULL WHERE username = ?'
+                ).bind(encryptedLicense, user.username).run();
 
                 // 设置完成后，自动清除当前 session 强制用户重登以应用新权限
                 const cookie = `auth_token=; Path=/; Domain=.smaiclub.top; Max-Age=0; Secure; SameSite=None`;
@@ -243,10 +250,18 @@ async function getUserFromCookie(request, env) {
     try {
         const sessionStr = await decryptData(token, env.SECRET_KEY, "SESSION_SALT");
         const session = JSON.parse(sessionStr);
-        const userRaw = await env.USER_DB.get(`user:${session.username}`);
-        if (!userRaw) return null;
-        const user = JSON.parse(userRaw);
+        // D1 获取用户
+        const user = await env.DB.prepare('SELECT * FROM users WHERE username = ?').bind(session.username).first();
+        if (!user) return null;
+
         user.sessionRole = session.role;
+        // 自动解析 JSON 字段 (虽然 SQL 返回的是 TEXT/NULL，需要手动解析吗？
+        // D1 返回的 TEXT 字段是字符串，如果我们在 JS 中存储了 JSON string，这里需要解析吗？
+        // 为了兼容之前的 user.personalInfo 访问，如果需要的话可以解析，但目前代码中 user.personalInfo 只是在 buy 接口存储，
+        // 在 get 中并没有用到 specific fields，只是返回整个 user 给前端显示 role 等。
+        // 为了安全，我们通常不返回 personalInfo 给前端，除非特定 API。
+        // /api/me 接口里没有返回 personalInfo。所以这里不需要解析。
+
         return user;
     } catch (e) {
         return null;
