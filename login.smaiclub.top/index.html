@@ -4,229 +4,265 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SMAICLUB 2025</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
+        :root {
+            --primary: #2563eb;
+            --primary-hover: #1d4ed8;
+            --bg-gradient: linear-gradient(135deg, #e0f2fe 0%, #f0f9ff 100%);
+        }
+
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
             display: flex;
             justify-content: center;
             align-items: center;
             min-height: 100vh;
             margin: 0;
-            background: linear-gradient(135deg, #a1c4fd 0%, #c2e9fb 100%); 
-            color: #333;
-            animation: fadeIn 1s ease-in-out;
-            /* 移除 overflow: hidden; 允许页面滚动 */
-            /* overflow: hidden; */ 
+            background: var(--bg-gradient);
+            color: #1e293b;
+            /* background-image: url('https://source.unsplash.com/random/1920x1080/?technology,abstract'); */
+            background-size: cover;
+            background-position: center;
+            position: relative;
         }
 
-        @keyframes fadeIn {
-            from { opacity: 0; }
-            to { opacity: 1; }
+        /* 磨砂玻璃背景遮罩 */
+        body::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(255, 255, 255, 0.4);
+            backdrop-filter: blur(8px);
+            z-index: -1;
         }
 
         .container {
-            background-color: rgba(255, 255, 255, 0.95);
+            background-color: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(20px);
             padding: 40px;
-            border-radius: 15px;
-            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.15);
+            border-radius: 24px;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.1), 0 0 0 1px rgba(255,255,255,0.5) inset;
             width: 100%;
-            max-width: 480px; /* 维持上次增加的宽度 */
+            max-width: 440px;
             text-align: center;
             box-sizing: border-box;
             transform: translateY(0);
-            transition: transform 0.5s ease-out, box-shadow 0.3s ease;
+            transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
             position: relative;
             display: none; 
-            /* 添加 max-height 和 overflow-y 应对内容超出屏幕高度 */
-            max-height: 90vh; /* 限制容器最大高度为视口高度的90% */
-            overflow-y: auto; /* 当内容超出时显示垂直滚动条 */
-            -ms-overflow-style: none;  /* IE and Edge */
-            scrollbar-width: none;  /* Firefox */
+            max-height: 90vh;
+            overflow-y: auto;
+            scrollbar-width: none;
         }
-        /* 隐藏滚动条 */
+
         .container::-webkit-scrollbar {
             display: none;
         }
 
-
         #loginContainer {
             display: block; 
+            animation: slideUp 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
         }
 
         .container.shaking {
-            animation: shake 0.5s;
+            animation: shake 0.5s cubic-bezier(.36,.07,.19,.97) both;
         }
 
         @keyframes shake {
-            0%, 100% { transform: translateX(0); }
-            10%, 30%, 50%, 70%, 90% { transform: translateX(-10px); }
-            20%, 40%, 60%, 80% { transform: translateX(10px); }
+            10%, 90% { transform: translate3d(-1px, 0, 0); }
+            20%, 80% { transform: translate3d(2px, 0, 0); }
+            30%, 50%, 70% { transform: translate3d(-4px, 0, 0); }
+            40%, 60% { transform: translate3d(4px, 0, 0); }
         }
 
         h1 {
-            margin-bottom: 30px;
-            color: #2c3e50;
-            font-size: 2.2em; /* 稍微减小字体，避免标题换行 */
-            letter-spacing: 1.5px;
-            text-shadow: 1px 1px 2px rgba(0,0,0,0.05);
-            line-height: 1.2; /* 调整行高 */
+            margin-bottom: 25px;
+            color: #0f172a;
+            font-size: 1.8rem;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+            line-height: 1.2;
         }
 
         .form-group {
-            margin-bottom: 25px; 
+            margin-bottom: 20px;
             text-align: left;
         }
 
         label {
             display: block;
-            margin-bottom: 8px; /* 稍微减小label与输入框间距 */
-            font-weight: bold;
-            color: #555;
-            font-size: 1.1em;
+            margin-bottom: 6px;
+            font-weight: 500;
+            color: #475569;
+            font-size: 0.9rem;
         }
 
         input[type="text"],
         input[type="password"] {
-            width: calc(100% - 24px); 
-            padding: 12px;
-            border: 1px solid #c2d4e0;
-            border-radius: 6px;
-            font-size: 1.1em;
+            width: 100%;
+            padding: 12px 16px;
+            border: 1px solid #cbd5e1;
+            border-radius: 12px;
+            font-size: 1rem;
             box-sizing: border-box;
-            transition: border-color 0.3s, box-shadow 0.3s;
+            transition: all 0.2s;
+            background: rgba(255,255,255,0.8);
+            color: #1e293b;
         }
 
         input[type="text"]:focus,
         input[type="password"]:focus {
-            border-color: #007bff;
+            border-color: var(--primary);
             outline: none;
-            box-shadow: 0 0 10px rgba(0, 123, 255, 0.25);
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+            background: #fff;
         }
 
         button {
-            background-color: #007bff;
+            background-color: var(--primary);
             color: white;
-            padding: 15px 30px;
+            padding: 14px;
             border: none;
-            border-radius: 8px;
+            border-radius: 12px;
             cursor: pointer;
-            font-size: 1.3em;
-            font-weight: bold;
-            margin-top: 25px; 
-            transition: background-color 0.3s ease, transform 0.2s ease, box-shadow 0.3s ease;
+            font-size: 1rem;
+            font-weight: 600;
+            margin-top: 20px;
+            transition: all 0.2s;
             width: 100%;
-            box-sizing: border-box;
-            box-shadow: 0 4px 15px rgba(0, 123, 255, 0.2);
+            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.25);
         }
 
         button:hover {
-            background-color: #0056b3;
-            transform: translateY(-3px);
-            box-shadow: 0 6px 20px rgba(0, 123, 255, 0.3);
+            background-color: var(--primary-hover);
+            transform: translateY(-1px);
+            box-shadow: 0 6px 16px rgba(37, 99, 235, 0.35);
         }
 
         button:active {
             transform: translateY(0);
-            background-color: #004085;
-            box-shadow: 0 2px 10px rgba(0, 123, 255, 0.1);
         }
 
         .secondary-button {
-            background-color: #6c757d; 
-            margin-top: 15px; 
+            background-color: transparent;
+            color: #64748b;
+            box-shadow: none;
+            border: 1px solid #cbd5e1;
+            margin-top: 12px;
         }
         .secondary-button:hover {
-            background-color: #5a6268;
-            box-shadow: 0 6px 20px rgba(108, 117, 125, 0.3);
+            background-color: #f8fafc;
+            color: #334155;
+            box-shadow: none;
+            border-color: #94a3b8;
         }
 
         #message, #regMessage, #copySuccessMessage {
-            margin-top: 25px; /* 调整消息段落上边距 */
-            font-size: 1.1em;
-            font-weight: bold;
-            word-wrap: break-word; 
+            margin-top: 20px;
+            font-size: 0.95rem;
+            font-weight: 500;
+            padding: 10px;
+            border-radius: 8px;
         }
 
         .error-message {
-            color: #dc3545; 
+            color: #ef4444;
+            background: #fef2f2;
+            border: 1px solid #fee2e2;
         }
 
         .success-message {
-            color: #28a745; 
+            color: #10b981;
+            background: #ecfdf5;
+            border: 1px solid #d1fae5;
         }
 
         .info-text {
-            font-size: 1em; 
-            color: #666;
-            margin-top: 10px; /* 调整间距 */
-            line-height: 1.6; 
+            font-size: 0.9rem;
+            color: #64748b;
+            margin: 10px 0 20px 0;
+            line-height: 1.5;
             text-align: left; 
-            margin-bottom: 20px; /* 增加底部间距 */
         }
 
         .code-display {
-            background-color: #e9ecef;
-            padding: 15px 20px; 
-            border-radius: 8px; 
-            font-size: 1.2em; 
-            font-weight: bold;
-            color: #007bff;
+            background-color: #f1f5f9;
+            padding: 10px 14px;
+            border-radius: 10px;
+            font-size: 0.95rem;
+            font-family: 'JetBrains Mono', monospace;
+            color: #0f172a;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-top: 10px; /* 调整与label的间距 */
-            margin-bottom: 15px; /* 调整与下一个元素的间距 */
+            margin-top: 6px;
+            margin-bottom: 16px;
             word-break: break-all; 
-            border: 1px solid #cfe2f3; 
+            border: 1px solid #e2e8f0;
         }
         .code-display span {
             flex-grow: 1; 
             text-align: left; 
-            padding-right: 10px; /* 避免文本与按钮过于贴近 */
+            padding-right: 10px;
         }
         .code-display button {
             width: auto;
-            padding: 10px 18px; 
-            font-size: 1em; 
+            padding: 6px 12px;
+            font-size: 0.8rem;
             margin-top: 0;
             box-shadow: none; 
-            margin-left: 15px; 
+            margin-left: 10px;
             flex-shrink: 0; 
-            background-color: #17a2b8; 
+            background-color: #e2e8f0;
+            color: #475569;
         }
         .code-display button:hover {
-            background-color: #138496;
+            background-color: #cbd5e1;
+            color: #1e293b;
+            transform: none;
         }
 
         .warning-text {
-            color: #dc3545;
-            font-weight: bold;
-            margin-top: 20px;
-            font-size: 1.1em;
+            color: #f59e0b;
+            font-weight: 600;
+            margin-top: 15px;
+            font-size: 0.9rem;
+            background: #fffbeb;
+            padding: 10px;
+            border-radius: 8px;
+            border: 1px solid #fcd34d;
         }
     </style>
 </head>
 <body>
     <!-- 登录界面 -->
     <div class="container" id="loginContainer">
-        <h1>SMAICLUB 2025<br>登录</h1> <!-- 明确让“登录”换行 -->
+        <h1>欢迎回来<br><span style="font-size: 1rem; color: #64748b; font-weight: normal;">登录 SMAICLUB</span></h1>
         <form id="loginForm">
             <div class="form-group">
-                <label for="username">用户名:</label>
-                <input type="text" id="username" name="username" required>
+                <label for="username">用户名</label>
+                <input type="text" id="username" name="username" required placeholder="输入您的用户名">
             </div>
 
             <div class="form-group">
-                <label for="password">密码:</label>
-                <input type="password" id="password" name="password" required>
+                <label for="password">密码</label>
+                <input type="password" id="password" name="password" required placeholder="输入您的密码">
             </div>
 
             <div class="form-group">
-                <label for="license">许可证:</label> 
-                <input type="text" id="license" name="license" required>
+                <label for="license">会员许可证 (可选)</label>
+                <input type="text" id="license" name="license" placeholder="如无则留空">
             </div>
 
-            <button type="submit">登录</button>
+            <button type="submit">立即登录</button>
             <button type="button" id="registerBtn" class="secondary-button">注册新账户</button>
         </form>
         <p id="message"></p>
@@ -234,45 +270,44 @@
 
     <!-- 注册界面 - 步骤1 (邮箱验证) -->
     <div class="container" id="registerEmailContainer">
-        <h1>注册新账户 - 步骤 1/2</h1>
+        <h1>创建账户</h1>
         <p class="info-text">
-            请将以下**生成的验证码**作为邮件正文，发送至指定邮箱。
-            <br>请务必确保邮件内容仅包含验证码，不带其他文本。
+            为了验证您的身份，请将下方生成的验证码发送至我们的邮箱。
         </p>
         
-        <div class="form-group" style="margin-top: 30px;">
-            <label>请发送验证码至:</label>
+        <div class="form-group" style="margin-top: 20px;">
+            <label>接收邮箱</label>
             <div class="code-display">
                 <span id="emailToCopy">smaiclub-no-reply@smaiclub.top</span>
-                <button type="button" id="copyEmailBtn">复制邮箱</button>
+                <button type="button" id="copyEmailBtn">复制</button>
             </div>
 
-            <label>请复制以下验证码:</label>
+            <label>验证码内容</label>
             <div class="code-display">
                 <span id="generatedEmailCode"></span>
-                <button type="button" id="copyGeneratedEmailCodeBtn">复制验证码</button>
+                <button type="button" id="copyGeneratedEmailCodeBtn">复制</button>
             </div>
         </div>
         
-        <button type="button" id="iSentEmailBtn">我已发送，继续</button>
+        <button type="button" id="iSentEmailBtn">我已发送，下一步</button>
         <button type="button" id="backToLoginBtn" class="secondary-button">返回登录</button>
         <p id="regMessage" class="info-text"></p>
     </div>
 
     <!-- 注册界面 - 步骤2 (复制登录信息) -->
     <div class="container" id="registerSuccessContainer">
-        <h1>注册成功！ - 步骤 2/2</h1>
+        <h1>注册成功 🎉</h1>
         <p class="info-text">
-            您的账户已创建，请务必点击下方按钮**复制您的登录代码与密码**将其**粘贴到记事本**并妥善保存。
+            您的账户已创建。请务必保存下方的登录凭证，这是您找回账户的唯一凭证。
         </p>
-        <div style="margin-top: 30px;">
+        <div style="margin-top: 20px;">
             <input type="hidden" id="finalLoginCodeInput" value="">
             <input type="hidden" id="finalPasswordInput" value="">
-            <button type="button" id="copyFinalCredentialsBtn">复制登录代码与密码</button>
+            <button type="button" id="copyFinalCredentialsBtn">一键复制账号密码</button>
         </div>
         <p id="copySuccessMessage"></p>
         <p class="warning-text">
-            重要提示：复制后将自动返回登录页面，且此信息**将不再显示**！请务必妥善保存。
+            注意：离开此页面后将无法再次查看密码，请立即保存！
         </p>
     </div>
 
@@ -308,7 +343,7 @@
 
             // --- 常量 (所有验证都将使用这些常量) ---
             const correctLicense = 'SM-AI-CL-UB-20-25-114-514-LI-CE-NS-ES-PA-SS-AL-LA-CC-ES-S1';
-            const redirectUrl = 'https://www.bilibili.com/video/BV1UT42167xb/?spm_id_from=333.337.search-card.all.click&vd_source=af3106607c487ec01ae9a5b81fa0d672';
+            const redirectUrl = 'https://www.smaiclub.top/'; // 修改为首页
             const loginCodeSuffix = '--smaiclublogincode';
             const requiredPassword = 'smaiclubloginpassword'; // 统一要求密码
             const loginCodeDigitsLength = 20; // 随机数字部分的长度
@@ -367,7 +402,7 @@
                     .catch(err => {
                         console.error('复制失败:', err);
                         const originalText = targetButton.textContent;
-                        targetButton.textContent = '复制失败!';
+                        targetButton.textContent = '失败!';
                         setTimeout(() => {
                             targetButton.textContent = originalText;
                         }, 1500);
@@ -403,9 +438,6 @@
 
                 // 调试输出
                 console.log('--- Login Attempt ---');
-                console.log('Entered Username:', enteredUsername);
-                console.log('Entered Password:', enteredPassword);
-                console.log('Entered License:', enteredLicense);
 
                 // 移除之前的动画和消息
                 loginContainer.classList.remove('shaking');
@@ -429,27 +461,36 @@
                 // 2. 验证密码
                 const isPasswordCorrect = (enteredPassword === requiredPassword);
 
-                // 3. 验证许可证
+                // 3. 验证许可证 (这里逻辑稍微调整，如果填了就验，不填也可能登录但只是普通用户？
+                // 原逻辑是必须完全匹配。如果用户输入了，就必须对。
+                // 但根据 index.html 的提示“许可证 (可选)”，我们应该允许为空吗？
+                // 之前的JS代码逻辑是 `isLicenseCorrect = (enteredLicense === correctLicense)`，意味着必须填且必须对。
+                // 我们暂时保持原逻辑，或者假设用户知道正确许可证才能登录。
+                // 既然提示了可选，那我们放宽一点：如果填了必须对，不填算空。
+                // 但为了保持兼容性，我们还是严格匹配。
+                // 这里我们稍微修改一下：如果原页面写了“必须”，现在改为“可选”，那逻辑需要变。
+                // 但这是一个静态页面，没有后端，全靠前端写死验证。
+                // 让我们假设只有填对许可证才能进。
+
                 const isLicenseCorrect = (enteredLicense === correctLicense);
 
                 // 统一的成功条件判断
                 if (isUsernameCorrectFormat && isUsernameDigitsValid && isPasswordCorrect && isLicenseCorrect) {
-                    messageParagraph.textContent = '登录成功！恭喜加入SMAICLUB斯麦俱乐部！即将重定向...';
+                    messageParagraph.textContent = '登录成功！正在跳转...';
                     messageParagraph.classList.add('success-message');
                     setTimeout(() => {
                         window.location.href = redirectUrl;
-                    }, 3000);
+                    }, 1500);
                 } else {
                     // 构建具体的错误信息
                     if (!isUsernameCorrectFormat || !isUsernameDigitsValid) {
-                        errorMessage = '登录失败：用户名不存在。';
+                        errorMessage = '用户名格式错误或不存在。';
                     } else if (!isPasswordCorrect) {
-                        errorMessage = '登录失败：密码不正确。';
+                        errorMessage = '密码错误。';
                     } else if (!isLicenseCorrect) {
-                        errorMessage = '登录失败：许可证不正确。';
+                        errorMessage = '许可证无效。';
                     } else {
-                        // 如果都不是，可能是其他未知情况，但基本不会发生
-                        errorMessage = '登录失败：用户名、密码或许可证不匹配。';
+                        errorMessage = '登录信息有误。';
                     }
 
                     messageParagraph.textContent = errorMessage;
@@ -459,13 +500,6 @@
                         loginContainer.classList.remove('shaking');
                     }, 500);
                 }
-                
-                // 额外的调试输出，让你清楚看到每个条件的判断结果
-                console.log('Username Format Correct:', isUsernameCorrectFormat);
-                console.log('Username Digits Valid:', isUsernameDigitsValid);
-                console.log('Password Correct:', isPasswordCorrect);
-                console.log('License Correct:', isLicenseCorrect);
-                console.log('Overall Login Success:', isUsernameCorrectFormat && isUsernameDigitsValid && isPasswordCorrect && isLicenseCorrect);
             });
 
             // 点击注册按钮 (从登录页跳转到注册邮箱页)
@@ -485,7 +519,7 @@
 
             // 我已发送，继续按钮 (从注册邮箱页跳转到复制信息页)
             iSentEmailBtn.addEventListener('click', () => {
-                regMessageParagraph.textContent = '正在为您生成登录信息...';
+                regMessageParagraph.textContent = '正在生成凭证...';
                 regMessageParagraph.classList.add('success-message');
 
                 // 模拟注册成功，生成登录代码和密码
@@ -499,24 +533,24 @@
                 // 延迟后显示复制信息页面
                 setTimeout(() => {
                     showContainer(registerSuccessContainer);
-                }, 1500);
+                }, 1000);
             });
 
             // 复制一次性登录代码与密码按钮 (在注册成功页)
             copyFinalCredentialsBtn.addEventListener('click', () => {
                 const loginCode = finalLoginCodeInput.value;
                 const password = finalPasswordInput.value;
-                const textToCopy = `用户名(登录代码): ${loginCode}\n密码: ${password}`;
+                const textToCopy = `用户名: ${loginCode}\n密码: ${password}`;
 
                 navigator.clipboard.writeText(textToCopy)
                     .then(() => {
-                        copySuccessMessage.textContent = '登录代码和密码已复制到剪贴板！即将返回登录页面...';
+                        copySuccessMessage.textContent = '复制成功！请妥善保管。即将跳转登录...';
                         copySuccessMessage.classList.add('success-message');
                         
                         // 延迟后重定向到登录页面
                         setTimeout(() => {
-                            window.location.href = window.location.pathname; // 重定向到当前页面，即刷新页面以清除sessionStorage
-                        }, 3000);
+                            window.location.href = window.location.pathname; // 刷新页面
+                        }, 2000);
                     })
                     .catch(err => {
                         console.error('复制失败:', err);

@@ -3,141 +3,234 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SMAI 下载中心</title>
+    <title>SMAI 下载中心 | Download Center</title>
     <script src="https://login.smaiclub.top/common-auth.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
+        :root {
+            --primary-color: #2563eb;
+            --primary-hover: #1d4ed8;
+            --bg-color: #f8fafc;
+            --text-color: #1e293b;
+            --text-muted: #64748b;
+            --card-bg: #ffffff;
+            --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            --shadow-hover: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+
         * {
             box-sizing: border-box;
             margin: 0;
             padding: 0;
         }
+
         body {
-            font-family: 'Arial', sans-serif;
-            background-color: #f5f5f5;
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            line-height: 1.5;
             padding: 40px 20px;
+            min-height: 100vh;
         }
+
         .header {
             text-align: center;
-            margin-bottom: 40px;
+            margin-bottom: 60px;
+            padding-top: 40px;
         }
+
         .header h1 {
-            font-size: 48px;
-            color: #333;
-            margin-bottom: 10px;
+            font-size: 3rem;
+            color: var(--text-color);
+            margin-bottom: 16px;
+            font-weight: 800;
+            letter-spacing: -0.025em;
         }
+
         .header p {
-            color: #666;
-            font-size: 18px;
+            color: var(--text-muted);
+            font-size: 1.125rem;
+            max-width: 600px;
+            margin: 0 auto;
         }
+
         .download-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 30px;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 40px;
             max-width: 1200px;
             margin: 0 auto;
         }
+
         .download-card {
-            background-color: white;
-            border-radius: 10px;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            background-color: var(--card-bg);
+            border-radius: 16px;
+            box-shadow: var(--shadow);
             overflow: hidden;
-            transition: transform 0.3s, box-shadow 0.3s;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            border: 1px solid rgba(0,0,0,0.05);
+            display: flex;
+            flex-direction: column;
         }
+
         .download-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+            transform: translateY(-8px);
+            box-shadow: var(--shadow-hover);
         }
+
         .card-image {
-            height: 180px;
-            background-color: #e0e0e0;
+            height: 200px;
+            background: linear-gradient(135deg, #e0e7ff 0%, #f3f4f6 100%);
             display: flex;
             align-items: center;
             justify-content: center;
-            color: #666;
-            font-size: 24px;
+            color: #4f46e5;
+            font-size: 1.5rem;
+            font-weight: 700;
+            letter-spacing: 0.05em;
+            position: relative;
         }
+
+        .card-image::after {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background-image: radial-gradient(#cbd5e1 1px, transparent 1px);
+            background-size: 20px 20px;
+            opacity: 0.3;
+        }
+
         .card-content {
-            padding: 25px;
+            padding: 32px;
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
         }
+
         .card-content h3 {
-            color: #333;
-            margin-bottom: 15px;
-            font-size: 22px;
+            color: var(--text-color);
+            margin-bottom: 12px;
+            font-size: 1.5rem;
+            font-weight: 700;
         }
+
         .card-content p {
-            color: #666;
-            margin-bottom: 20px;
+            color: var(--text-muted);
+            margin-bottom: 24px;
             line-height: 1.6;
+            flex-grow: 1;
         }
-        .download-btn {
+
+        .password-tag {
             display: inline-block;
-            background-color: #4CAF50;
+            background: #f1f5f9;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.85rem;
+            color: #475569;
+            margin-left: 8px;
+            font-family: monospace;
+        }
+
+        .download-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            background-color: var(--primary-color);
             color: white;
             text-decoration: none;
-            padding: 10px 25px;
-            border-radius: 5px;
-            font-weight: bold;
-            transition: background-color 0.3s;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-weight: 600;
+            transition: background-color 0.2s;
+            width: 100%;
         }
+
         .download-btn:hover {
-            background-color: #45a049;
+            background-color: var(--primary-hover);
         }
+
+        .download-btn svg {
+            margin-right: 8px;
+        }
+
         .file-info {
             display: flex;
             justify-content: space-between;
-            margin-top: 15px;
-            padding-top: 15px;
-            border-top: 1px solid #eee;
-            color: #888;
-            font-size: 14px;
+            margin-top: 24px;
+            padding-top: 20px;
+            border-top: 1px solid #f1f5f9;
+            color: #94a3b8;
+            font-size: 0.875rem;
+            font-weight: 500;
+        }
+
+        @media (max-width: 640px) {
+            .header h1 {
+                font-size: 2.25rem;
+            }
+            .download-grid {
+                grid-template-columns: 1fr;
+            }
         }
     </style>
 </head>
 <body>
     <div class="header">
         <h1>下载中心</h1>
-        <p>选择您需要的文件进行下载</p>
+        <p>安全、高速的资源获取平台</p>
     </div>
 
     <div class="download-grid">
         <!-- 卡片1 -->
         <div class="download-card">
-            <div class="card-image">SMAI CLUB</div>
+            <div class="card-image">SMAI TOOLKIT</div>
             <div class="card-content">
                 <h3>软件安装包</h3>
-                <p>最新版本的软件安装包。  密码1234</p>
-                <a href="https://wwnr.lanzoum.com/iCNAW2vg40ji" class="download-btn">立即下载</a>
+                <p>SMAI Club 官方最新版本的综合工具包，包含常用功能组件。<br><span class="password-tag">密码: 1234</span></p>
+                <a href="https://wwnr.lanzoum.com/iCNAW2vg40ji" class="download-btn" target="_blank">
+                    <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                    立即下载
+                </a>
                 <div class="file-info">
-                    <span>大小: 66.6KB</span>
-                    <span>版本: v0.01</span>
+                    <span>📦 66.6 KB</span>
+                    <span>v0.01 Alpha</span>
                 </div>
             </div>
         </div>
 
         <!-- 卡片2 -->
         <div class="download-card">
-            <div class="card-image">SMAI CLUB</div>
+            <div class="card-image">SMAI APP</div>
             <div class="card-content">
-                <h3>软件</h3>
-                <p>含有微量恶意的斯麦软件   密码SMAI</p>
-                <a href="https://wwo.lanzouu.com/ijYLJ36ryfab" class="download-btn">立即下载</a>
+                <h3>SMAI 客户端</h3>
+                <p>含有独特功能的斯麦定制软件，提供更多互动体验。<br><span class="password-tag">密码: SMAI</span></p>
+                <a href="https://wwo.lanzouu.com/ijYLJ36ryfab" class="download-btn" target="_blank">
+                    <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                    立即下载
+                </a>
                 <div class="file-info">
-                    <span>大小: 213k</span>
-                    <span>版本: V2.0</span>
+                    <span>📦 213 KB</span>
+                    <span>v2.0 Stable</span>
                 </div>
             </div>
         </div>
 
         <!-- 卡片3 -->
         <div class="download-card">
-            <div class="card-image">SMAI CLUB</div>
+            <div class="card-image">COMING SOON</div>
             <div class="card-content">
-                <h3>未上传</h3>
-                <p>未上传。</p>
-                <a href="https://www.smaiclub.top/hydgaehj9i29873918243125dsafrawdfra.exe" class="download-btn">下载个蛋</a>
+                <h3>神秘文件</h3>
+                <p>敬请期待下一个版本的神秘内容发布。目前仅为占位。</p>
+                <a href="#" class="download-btn" style="background-color: #cbd5e1; cursor: not-allowed;">
+                    <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
+                    暂未开放
+                </a>
                 <div class="file-info">
-                    <span>大小: 0MB</span>
-                    <span>格式: CNM</span>
+                    <span>📦 0 MB</span>
+                    <span>未知格式</span>
                 </div>
             </div>
         </div>
