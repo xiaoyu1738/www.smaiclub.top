@@ -595,7 +595,49 @@
         showModal('alert-modal');
     }
 
+    // 页面加载时检查用户状态，防止降级选择
+    const ROLE_LEVELS = { 'user': 0, 'vip': 1, 'svip1': 2, 'svip2': 3 };
+    let currentUserLevel = 0;
+
+    document.addEventListener('DOMContentLoaded', async () => {
+        try {
+            const res = await fetch('https://login.smaiclub.top/api/me', { credentials: 'include' });
+            const data = await res.json();
+            if (data.loggedIn) {
+                currentUserLevel = ROLE_LEVELS[data.role] || 0;
+                updateTierAvailability();
+            }
+        } catch (e) {
+            console.error("Failed to fetch user status", e);
+        }
+    });
+
+    function updateTierAvailability() {
+        const tiers = [
+            { id: 'vip', level: 1, el: document.querySelectorAll('.tier-card')[0] },
+            { id: 'svip1', level: 2, el: document.querySelectorAll('.tier-card')[1] },
+            { id: 'svip2', level: 3, el: document.querySelectorAll('.tier-card')[2] }
+        ];
+
+        tiers.forEach(t => {
+            if (t.level <= currentUserLevel) {
+                t.el.style.opacity = '0.5';
+                t.el.style.cursor = 'not-allowed';
+                t.el.style.pointerEvents = 'none'; // 禁止点击
+                // 更改显示的文字提示
+                const p = t.el.querySelector('p');
+                if (p) p.innerHTML += '<br><strong style="color:#ff453a">(当前已拥有同级或更高级别)</strong>';
+            }
+        });
+    }
+
     function selectTier(tier, price) {
+        // 二次检查（防止通过控制台调用）
+        const tierLevel = ROLE_LEVELS[tier] || 0;
+        if (tierLevel <= currentUserLevel) {
+            return showAlert("您当前已拥有同级或更高级别的会员权益，无需重复购买或降级。", "无法购买");
+        }
+
         selectedTier = tier;
         selectedPrice = price;
 

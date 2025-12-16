@@ -178,6 +178,15 @@ export default {
                     return jsonResp({ error: "请提供个人信息" }, 400, responseHeaders);
                 }
 
+                // 防止降级逻辑
+                const roleLevels = { 'user': 0, 'vip': 1, 'svip1': 2, 'svip2': 3 };
+                const currentLevel = roleLevels[user.role] || 0;
+                const newLevel = roleLevels[tier] || 0;
+
+                if (newLevel <= currentLevel) {
+                    return jsonResp({ error: "cannot_downgrade", message: "您当前已拥有同级或更高级别的会员权益，无需重复购买或降级。" }, 400, responseHeaders);
+                }
+
                 // 记录购买信息和升级
                 user.role = tier;
                 user.licensePending = true;
