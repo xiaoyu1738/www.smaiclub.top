@@ -1,292 +1,202 @@
-export default `
+export function htmlTemplate() {
+    return `
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SMAICLUB 2025 - 登录</title>
+    <title>SmaiClub 统一登录</title>
     <style>
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
-            margin: 0;
-            background: linear-gradient(135deg, #a1c4fd 0%, #c2e9fb 100%);
-            color: #333;
-            animation: fadeIn 1s ease-in-out;
-        }
-
-        @keyframes fadeIn {
-            from { opacity: 0; }
-            to { opacity: 1; }
-        }
-
-        .container {
-            background-color: rgba(255, 255, 255, 0.95);
-            padding: 40px;
-            border-radius: 15px;
-            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.15);
-            width: 100%;
-            max-width: 480px;
-            text-align: center;
-            box-sizing: border-box;
-            transition: transform 0.5s ease-out, box-shadow 0.3s ease;
-            max-height: 90vh;
-            overflow-y: auto;
-        }
-
-        .container:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.2);
-        }
-
-        h1 {
-            margin-bottom: 30px;
-            color: #2c3e50;
-            font-size: 2.2em;
-            letter-spacing: 1.5px;
-        }
-
-        .form-group {
-            margin-bottom: 25px;
-            text-align: left;
-        }
-
-        label {
-            display: block;
-            margin-bottom: 8px;
-            font-weight: bold;
-            color: #555;
-            font-size: 1.1em;
-        }
-
-        input[type="text"],
-        input[type="password"] {
-            width: 100%;
-            padding: 12px;
-            border: 1px solid #c2d4e0;
-            border-radius: 6px;
-            font-size: 1.1em;
-            box-sizing: border-box;
-            transition: border-color 0.3s ease, box-shadow 0.3s ease;
-        }
-
-        input[type="text"]:focus,
-        input[type="password"]:focus {
-            border-color: #007bff;
-            box-shadow: 0 0 8px rgba(0, 123, 255, 0.25);
-            outline: none;
-        }
-
-        button {
-            background-color: #007bff;
-            color: white;
-            padding: 15px 30px;
-            border: none;
-            border-radius: 8px;
-            cursor: pointer;
-            font-size: 1.3em;
-            font-weight: bold;
-            margin-top: 25px;
-            width: 100%;
-            transition: all 0.3s ease;
-        }
-
-        button:hover {
-            background-color: #0056b3;
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(0, 123, 255, 0.3);
-        }
-
-        button:active {
-            transform: translateY(0);
-        }
-
-        .secondary-button {
-            background-color: #6c757d;
-            margin-top: 15px;
-            font-size: 1em;
-            padding: 12px;
-        }
-
-        .secondary-button:hover {
-            background-color: #5a6268;
-            box-shadow: 0 5px 15px rgba(108, 117, 125, 0.3);
-        }
-
-        #message, #regMessage {
-            margin-top: 25px;
-            font-size: 1.1em;
-            font-weight: bold;
-            min-height: 1.5em;
-        }
-
-        .error-message { color: #dc3545; }
-        .success-message { color: #28a745; }
-
-        @keyframes shake {
-            0% { transform: translateX(0); }
-            25% { transform: translateX(-5px); }
-            50% { transform: translateX(5px); }
-            75% { transform: translateX(-5px); }
-            100% { transform: translateX(0); }
-        }
-        .shaking {
-            animation: shake 0.4s ease-in-out;
-        }
-
-        #registerContainer {
-            display: none;
-        }
+        body { font-family: 'Segoe UI', sans-serif; background: #f0f2f5; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+        .container { background: white; padding: 2rem; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); width: 100%; max-width: 400px; }
+        h2 { text-align: center; color: #333; margin-bottom: 1.5rem; }
+        .form-group { margin-bottom: 1rem; }
+        label { display: block; margin-bottom: 0.5rem; color: #666; }
+        input { width: 100%; padding: 0.8rem; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box; }
+        button { width: 100%; padding: 0.8rem; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 1rem; margin-top: 1rem; }
+        button:hover { background: #0056b3; }
+        .toggle-link { text-align: center; margin-top: 1rem; display: block; color: #007bff; text-decoration: none; cursor: pointer; }
+        .error { color: red; text-align: center; margin-bottom: 1rem; display: none; }
+        .hidden { display: none; }
+        /* 许可证输入框样式 */
+        #license-group { border-top: 1px dashed #ccc; padding-top: 10px; margin-top: 10px; }
+        .license-hint { font-size: 12px; color: #888; }
     </style>
 </head>
 <body>
+    <div class="container" id="auth-box">
+        <!-- 登录表单 -->
+        <div id="login-form">
+            <h2>登录 SmaiClub</h2>
+            <div class="error" id="login-error"></div>
+            <div class="form-group">
+                <label>用户名</label>
+                <input type="text" id="login-user" required>
+            </div>
+            <div class="form-group">
+                <label>密码</label>
+                <input type="password" id="login-pass" required>
+            </div>
+            
+            <div class="form-group" id="license-group">
+                <label>会员许可证 (选填)</label>
+                <input type="password" id="login-license" placeholder="普通用户无需填写">
+                <p class="license-hint">如果您是VIP会员，请输入许可证以激活会员权限，否则将以降级模式登录。</p>
+            </div>
 
-    <!-- 登录界面 -->
-    <div class="container" id="loginContainer">
-        <h1>SMAICLUB 2025<br>用户登录</h1>
-        <form id="loginForm">
-            <div class="form-group">
-                <label for="username">用户名</label>
-                <input type="text" id="username" name="username" required placeholder="请输入用户名">
-            </div>
-            <div class="form-group">
-                <label for="password">密码</label>
-                <input type="password" id="password" name="password" required placeholder="请输入密码">
-            </div>
-            <button type="submit">立即登录</button>
-            <button type="button" id="toRegisterBtn" class="secondary-button">注册新账户</button>
-        </form>
-        <p id="message"></p>
-    </div>
+            <button onclick="handleLogin()">登录</button>
+            <a class="toggle-link" onclick="toggleForm('register')">没有账号？去注册</a>
+        </div>
 
-    <!-- 注册界面 -->
-    <div class="container" id="registerContainer">
-        <h1>创建账户</h1>
-        <form id="registerForm">
+        <!-- 注册表单 -->
+        <div id="register-form" class="hidden">
+            <h2>注册账号</h2>
+            <div class="error" id="register-error"></div>
             <div class="form-group">
-                <label for="regUsername">设置用户名</label>
-                <input type="text" id="regUsername" name="username" required placeholder="请设置用户名">
+                <label>用户名</label>
+                <input type="text" id="reg-user" required>
             </div>
             <div class="form-group">
-                <label for="regPassword">设置密码</label>
-                <input type="password" id="regPassword" name="password" required placeholder="请设置密码">
+                <label>密码 (至少8位，含字母数字)</label>
+                <input type="password" id="reg-pass" required>
             </div>
-            <button type="submit">注册并加密保存</button>
-            <button type="button" id="backToLoginBtn" class="secondary-button">返回登录</button>
-        </form>
-        <p id="regMessage"></p>
+            <button onclick="handleRegister()">注册</button>
+            <a class="toggle-link" onclick="toggleForm('login')">已有账号？去登录</a>
+        </div>
+
+        <!-- 修改密码表单 (强制) -->
+        <div id="change-pass-form" class="hidden">
+            <h2 style="color:#d9534f">安全警告</h2>
+            <p style="text-align:center; color:#666">您的密码过于简单，不符合新的安全规范。请立即修改密码。</p>
+            <div class="error" id="change-pass-error"></div>
+            <input type="hidden" id="cp-user">
+            <input type="hidden" id="cp-old-pass">
+            <div class="form-group">
+                <label>新密码 (至少8位，含字母数字)</label>
+                <input type="password" id="cp-new-pass" required>
+            </div>
+            <div class="form-group">
+                <label>确认新密码</label>
+                <input type="password" id="cp-confirm-pass" required>
+            </div>
+            <button onclick="handleChangePass()">确认修改并登录</button>
+        </div>
     </div>
 
     <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            const loginContainer = document.getElementById('loginContainer');
-            const registerContainer = document.getElementById('registerContainer');
-            
-            const loginForm = document.getElementById('loginForm');
-            const registerForm = document.getElementById('registerForm');
-            
-            const messageP = document.getElementById('message');
-            const regMessageP = document.getElementById('regMessage');
+        const API_BASE = window.location.origin + '/api';
 
-            // 切换到注册页
-            document.getElementById('toRegisterBtn').addEventListener('click', () => {
-                loginContainer.style.display = 'none';
-                registerContainer.style.display = 'block';
-                messageP.textContent = '';
-                regMessageP.textContent = '';
-                registerForm.reset();
-            });
+        function toggleForm(type) {
+            document.getElementById('login-form').classList.toggle('hidden', type !== 'login');
+            document.getElementById('register-form').classList.toggle('hidden', type !== 'register');
+            document.getElementById('change-pass-form').classList.add('hidden');
+        }
 
-            // 切换回登录页
-            document.getElementById('backToLoginBtn').addEventListener('click', () => {
-                registerContainer.style.display = 'none';
-                loginContainer.style.display = 'block';
-                messageP.textContent = '';
-                regMessageP.textContent = '';
-                loginForm.reset();
-            });
+        async function handleRegister() {
+            const user = document.getElementById('reg-user').value;
+            const pass = document.getElementById('reg-pass').value;
+            const errorDiv = document.getElementById('register-error');
 
-            // --- 注册逻辑 ---
-            registerForm.addEventListener('submit', async (e) => {
-                e.preventDefault();
-                const username = document.getElementById('regUsername').value.trim();
-                const password = document.getElementById('regPassword').value.trim();
+            // 客户端预检
+            if (pass.length < 8 || !/[A-Za-z]/.test(pass) || !/\\d/.test(pass)) {
+                errorDiv.textContent = "密码必须大于8位且包含字母和数字";
+                errorDiv.style.display = 'block';
+                return;
+            }
 
-                if(!username || !password) return;
-                
-                regMessageP.textContent = '正在加密处理...';
-                regMessageP.className = '';
-
-                try {
-                    const res = await fetch('/api/register', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ username, password })
-                    });
-                    const data = await res.json();
-                    
-                    if (data.success) {
-                        regMessageP.textContent = '注册成功！请返回登录。';
-                        regMessageP.className = 'success-message';
-                        setTimeout(() => {
-                            registerContainer.style.display = 'none';
-                            loginContainer.style.display = 'block';
-                            document.getElementById('username').value = username; 
-                        }, 2000);
-                    } else {
-                        regMessageP.textContent = '注册失败: ' + data.message;
-                        regMessageP.className = 'error-message';
-                    }
-                } catch (err) {
-                    console.error(err);
-                    regMessageP.textContent = '网络请求失败，请稍后重试';
-                    regMessageP.className = 'error-message';
+            try {
+                const res = await fetch(API_BASE + '/register', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username: user, password: pass })
+                });
+                const data = await res.json();
+                if (res.ok) {
+                    alert('注册成功，请登录');
+                    toggleForm('login');
+                } else {
+                    errorDiv.textContent = data.error;
+                    errorDiv.style.display = 'block';
                 }
-            });
+            } catch (e) {
+                errorDiv.textContent = "网络错误";
+                errorDiv.style.display = 'block';
+            }
+        }
 
-            // --- 登录逻辑 ---
-            loginForm.addEventListener('submit', async (e) => {
-                e.preventDefault();
-                const username = document.getElementById('username').value.trim();
-                const password = document.getElementById('password').value.trim();
+        async function handleLogin() {
+            const user = document.getElementById('login-user').value;
+            const pass = document.getElementById('login-pass').value;
+            const license = document.getElementById('login-license').value;
+            const errorDiv = document.getElementById('login-error');
 
-                if(!username || !password) return;
+            try {
+                const res = await fetch(API_BASE + '/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username: user, password: pass, licenseKey: license })
+                });
+                const data = await res.json();
 
-                messageP.textContent = '正在验证身份...';
-                messageP.className = '';
-
-                try {
-                    const res = await fetch('/api/login', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ username, password })
-                    });
-                    const data = await res.json();
-
-                    if (data.success) {
-                        messageP.textContent = '登录成功！正在跳转...';
-                        messageP.className = 'success-message';
-                        setTimeout(() => {
-                            // 登录成功后的跳转地址
-                            window.location.href = 'https://www.bilibili.com/video/BV1UT42167xb/?spm_id_from=333.337.search-card.all.click&vd_source=af3106607c487ec01ae9a5b81fa0d672';
-                        }, 1000);
-                    } else {
-                        messageP.textContent = '登录失败: ' + data.message;
-                        messageP.className = 'error-message';
-                        loginContainer.classList.add('shaking');
-                        setTimeout(() => loginContainer.classList.remove('shaking'), 500);
-                    }
-                } catch (err) {
-                    console.error(err);
-                    messageP.textContent = '网络请求失败';
-                    messageP.className = 'error-message';
+                if (res.status === 403 && data.error === 'WEAK_PASSWORD') {
+                    // 触发强制改密流程
+                    document.getElementById('login-form').classList.add('hidden');
+                    document.getElementById('change-pass-form').classList.remove('hidden');
+                    document.getElementById('cp-user').value = user;
+                    document.getElementById('cp-old-pass').value = pass;
+                    return;
                 }
-            });
-        });
+
+                if (res.ok) {
+                    if (data.warning === 'LICENSE_MISSING') {
+                        alert("警告：您的账户是会员，但您未提供许可证或许可证错误，您将以普通用户身份登录。");
+                    }
+                    window.location.href = data.redirect;
+                } else {
+                    errorDiv.textContent = data.error || "登录失败";
+                    errorDiv.style.display = 'block';
+                }
+            } catch (e) {
+                console.error(e);
+                errorDiv.textContent = "网络错误";
+                errorDiv.style.display = 'block';
+            }
+        }
+
+        async function handleChangePass() {
+            const user = document.getElementById('cp-user').value;
+            const oldPass = document.getElementById('cp-old-pass').value;
+            const newPass = document.getElementById('cp-new-pass').value;
+            const confirmPass = document.getElementById('cp-confirm-pass').value;
+            const errorDiv = document.getElementById('change-pass-error');
+
+            if (newPass !== confirmPass) {
+                errorDiv.textContent = "两次输入的密码不一致";
+                errorDiv.style.display = 'block';
+                return;
+            }
+
+            try {
+                const res = await fetch(API_BASE + '/change-password', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username: user, oldPassword: oldPass, newPassword: newPass })
+                });
+                const data = await res.json();
+                if (res.ok) {
+                    alert("密码修改成功，请使用新密码重新登录");
+                    location.reload();
+                } else {
+                    errorDiv.textContent = data.error;
+                    errorDiv.style.display = 'block';
+                }
+            } catch (e) {
+                errorDiv.textContent = "网络错误";
+                errorDiv.style.display = 'block';
+            }
+        }
     </script>
 </body>
 </html>
-`;
+  `;
+}
