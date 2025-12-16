@@ -43,13 +43,7 @@ export default {
             return new Response(htmlContent, { headers: { "Content-Type": "text/html;charset=UTF-8" } });
         }
 
-        // 2. 查看 user.json (加密数据)
-        if (url.pathname === "/user.json") {
-            const data = await env.USER_DB.get("users_data");
-            return new Response(data || "[]", { headers });
-        }
-
-        // 3. 注册
+        // 2. 注册
         if (url.pathname === "/api/register" && request.method === "POST") {
             const { username, password } = await request.json();
             let users = JSON.parse(await env.USER_DB.get("users_data") || "[]");
@@ -65,7 +59,7 @@ export default {
             return new Response(JSON.stringify({ success: true, message: "注册成功" }), { headers });
         }
 
-        // 4. 登录
+        // 3. 登录
         if (url.pathname === "/api/login" && request.method === "POST") {
             const { username, password } = await request.json();
             const users = JSON.parse(await env.USER_DB.get("users_data") || "[]");
