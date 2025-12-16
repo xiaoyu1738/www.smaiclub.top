@@ -280,27 +280,149 @@ async function decryptData(encryptedText, secretKey, salt) {
 async function generateCommonScript(env) {
     return `
 (function() {
-    // 封装主逻辑
-    function initAuthBar() {
-        // 防止重复初始化
-        if (document.getElementById('smai-auth-bar')) return;
+    function initAuthWidget() {
+        if (document.getElementById('smai-auth-widget')) return;
 
         // 1. 创建 UI 样式
         const style = document.createElement('style');
         style.innerHTML = \`
-            #smai-auth-bar {
-                position: fixed; top: 0; left: 0; z-index: 2147483647; /* 调高层级，防止被遮挡 */
-                background: rgba(0,0,0,0.85); color: white;
-                padding: 8px 15px; border-radius: 0 0 10px 0;
-                font-family: system-ui, -apple-system, sans-serif; font-size: 14px;
-                display: flex; gap: 15px; align-items: center;
-                backdrop-filter: blur(4px); box-shadow: 0 2px 10px rgba(0,0,0,0.2);
-                transition: transform 0.3s ease;
+            /* 容器：左上角悬浮 */
+            #smai-auth-widget {
+                position: fixed;
+                top: 15px;
+                left: 15px;
+                z-index: 2147483647;
+                font-family: 'Segoe UI', system-ui, sans-serif;
             }
-            #smai-auth-bar a { color: #4CAF50; text-decoration: none; cursor: pointer; font-weight: 500; }
-            #smai-auth-bar a:hover { text-decoration: underline; color: #66BB6A; }
-            #smai-auth-bar .vip-badge { background: linear-gradient(45deg, #FFD700, #FFA500); color: black; padding: 2px 6px; border-radius: 4px; font-weight: bold; font-size: 11px; box-shadow: 0 1px 4px rgba(0,0,0,0.2); }
-            /* 模态框样式保持不变... */
+
+            /* 头像/按钮 */
+            .smai-avatar-btn {
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                background: rgba(255, 255, 255, 0.95);
+                color: #333;
+                padding: 6px 14px;
+                border-radius: 30px;
+                box-shadow: 0 4px 15px rgba(0,0,0,0.15);
+                cursor: pointer;
+                border: 1px solid rgba(0,0,0,0.05);
+                transition: all 0.3s ease;
+                backdrop-filter: blur(8px);
+                user-select: none;
+            }
+
+            .smai-avatar-btn:hover {
+                transform: translateY(-2px);
+                box-shadow: 0 6px 20px rgba(0,0,0,0.2);
+                background: white;
+            }
+
+            .smai-avatar-icon {
+                width: 28px;
+                height: 28px;
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                border-radius: 50%;
+                color: white;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-weight: bold;
+                font-size: 14px;
+            }
+
+            .smai-user-name {
+                font-size: 14px;
+                font-weight: 600;
+                max-width: 100px;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                white-space: nowrap;
+            }
+
+            .smai-arrow {
+                font-size: 10px;
+                color: #777;
+                transition: transform 0.3s;
+            }
+
+            /* 下拉菜单 */
+            .smai-dropdown {
+                position: absolute;
+                top: 100%;
+                left: 0;
+                margin-top: 10px;
+                background: white;
+                border-radius: 12px;
+                box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+                width: 200px;
+                overflow: hidden;
+                transform-origin: top left;
+                transform: scale(0.95);
+                opacity: 0;
+                pointer-events: none;
+                transition: all 0.2s cubic-bezier(0.165, 0.84, 0.44, 1);
+                border: 1px solid #f0f0f0;
+            }
+
+            .smai-dropdown.show {
+                transform: scale(1);
+                opacity: 1;
+                pointer-events: auto;
+            }
+
+            .smai-dropdown-header {
+                padding: 15px;
+                background: #f8f9fa;
+                border-bottom: 1px solid #eee;
+            }
+
+            .smai-role-badge {
+                display: inline-block;
+                padding: 2px 8px;
+                background: #eee;
+                color: #555;
+                border-radius: 4px;
+                font-size: 11px;
+                margin-top: 4px;
+                font-weight: bold;
+            }
+
+            .smai-role-vip {
+                background: linear-gradient(45deg, #FFD700, #FFA500);
+                color: white;
+                text-shadow: 0 1px 2px rgba(0,0,0,0.1);
+            }
+
+            .smai-menu-item {
+                display: block;
+                padding: 12px 15px;
+                color: #333;
+                text-decoration: none;
+                font-size: 14px;
+                cursor: pointer;
+                transition: background 0.2s;
+                border-bottom: 1px solid #f9f9f9;
+            }
+
+            .smai-menu-item:last-child {
+                border-bottom: none;
+            }
+
+            .smai-menu-item:hover {
+                background: #f0f7ff;
+                color: #0066cc;
+            }
+
+            .smai-menu-danger {
+                color: #ff4d4f;
+            }
+            .smai-menu-danger:hover {
+                background: #fff1f0;
+                color: #ff4d4f;
+            }
+
+            /* 模态框 (购买会员/设置许可证用) */
             #smai-auth-modal {
                 position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
                 background: white; color: black; padding: 25px; border-radius: 12px;
@@ -319,25 +441,24 @@ async function generateCommonScript(env) {
         \`;
         document.head.appendChild(style);
 
-        // 2. 创建 DOM
-        const bar = document.createElement('div');
-        bar.id = 'smai-auth-bar';
-        bar.innerHTML = '<span>SMAI CLUB</span>'; // 初始加载文字
-        document.body.appendChild(bar);
+        // 2. 创建 DOM 结构
+        const wrapper = document.createElement('div');
+        wrapper.id = 'smai-auth-widget';
+        document.body.appendChild(wrapper);
 
-        // 模态框
+        // 模态框元素
         const overlay = document.createElement('div'); overlay.id = 'smai-auth-overlay';
-        // 点击遮罩层关闭
-        overlay.onclick = function() { 
-            document.getElementById('smai-auth-modal').style.display = 'none'; 
-            this.style.display = 'none'; 
-        };
-        document.body.appendChild(overlay);
-        
         const modal = document.createElement('div'); modal.id = 'smai-auth-modal';
+        document.body.appendChild(overlay);
         document.body.appendChild(modal);
 
-        // 3. 暴露全局方法 (保持不变)
+        // 点击遮罩关闭
+        overlay.onclick = function() { 
+            modal.style.display = 'none';
+            this.style.display = 'none'; 
+        };
+
+        // 3. 核心逻辑
         window.logout = async function() {
             await fetch('https://login.smaiclub.top/api/logout', { method: 'POST', credentials: 'include' });
             location.reload();
@@ -348,7 +469,6 @@ async function generateCommonScript(env) {
             const data = await res.json();
             
             if (!data.loggedIn) {
-                alert("请先登录账户才能购买会员！");
                 window.location.href = "https://login.smaiclub.top";
                 return;
             }
@@ -366,13 +486,11 @@ async function generateCommonScript(env) {
         };
 
         window.showSetLicenseModal = function() {
-            const overlay = document.getElementById('smai-auth-overlay');
-            const modal = document.getElementById('smai-auth-modal');
             overlay.style.display = 'block';
             modal.style.display = 'flex';
             modal.innerHTML = \`
                 <h3>设置会员许可证</h3>
-                <p style="color:#666;font-size:13px;line-height:1.4">重要：请牢记此密钥，每次登录会员账户时需要输入。<br><span style="color:#d32f2f">丢失无法找回！</span></p>
+                <p style="color:#666;font-size:13px;line-height:1.4">请牢记此密钥，登录时需要输入。<br><span style="color:#d32f2f">丢失无法找回！</span></p>
                 <input type="text" id="new-license-key" placeholder="输入您的专属密钥">
                 <button onclick="submitLicense()">保存并激活</button>
             \`;
@@ -397,17 +515,37 @@ async function generateCommonScript(env) {
             }
         };
 
-        // 4. 检查登录状态逻辑
+        // 切换下拉菜单
+        window.toggleSmaiDropdown = function(e) {
+            e.stopPropagation();
+            const dropdown = document.querySelector('.smai-dropdown');
+            const arrow = document.querySelector('.smai-arrow');
+            if (dropdown) {
+                dropdown.classList.toggle('show');
+                if(arrow) arrow.style.transform = dropdown.classList.contains('show') ? 'rotate(180deg)' : 'rotate(0deg)';
+            }
+        };
+
+        // 点击页面其他地方关闭菜单
+        document.addEventListener('click', () => {
+            const dropdown = document.querySelector('.smai-dropdown');
+            const arrow = document.querySelector('.smai-arrow');
+            if (dropdown && dropdown.classList.contains('show')) {
+                dropdown.classList.remove('show');
+                if(arrow) arrow.style.transform = 'rotate(0deg)';
+            }
+        });
+
+        // 检查登录状态并渲染
         async function checkAuth() {
             try {
-                const res = await fetch('https://login.smaiclub.top/api/me', {
-                    credentials: 'include' 
-                });
+                const res = await fetch('https://login.smaiclub.top/api/me', { credentials: 'include' });
                 const data = await res.json();
                 
                 if (data.loggedIn) {
                     renderLoggedIn(data);
-                    if (data.role === 'vip' && !data.hasLicense) {
+                    // 如果是VIP但没有许可证，强制弹出设置
+                    if ((data.role === 'vip' || data.role === 'svip') && !data.hasLicense) {
                         window.showSetLicenseModal(); 
                     }
                 } else {
@@ -415,51 +553,59 @@ async function generateCommonScript(env) {
                 }
             } catch (e) {
                 console.error("Auth check failed", e);
-                const bar = document.getElementById('smai-auth-bar');
-                if(bar) bar.innerHTML = '<span style="color:#ff5252">连接服务器失败</span>';
+                renderGuest(); // 出错时显示为未登录
             }
         }
 
         function renderGuest() {
-            const bar = document.getElementById('smai-auth-bar');
-            if(bar) bar.innerHTML = \`
-                <span style="opacity:0.7">SMAICLUB</span>
-                <span style="width:1px;height:12px;background:#555"></span>
-                <span>未登录</span>
-                <a href="https://login.smaiclub.top">去登录/注册</a>
+            const wrapper = document.getElementById('smai-auth-widget');
+            wrapper.innerHTML = \`
+                <div class="smai-avatar-btn" onclick="window.location.href='https://login.smaiclub.top'">
+                    <div class="smai-avatar-icon" style="background:#888">G</div>
+                    <span class="smai-user-name">登录</span>
+                </div>
             \`;
         }
 
         function renderLoggedIn(user) {
-            const bar = document.getElementById('smai-auth-bar');
-            let roleHtml = '<span style="color:#ccc;font-size:12px;border:1px solid #555;padding:1px 4px;border-radius:3px">普通用户</span>';
-            let actionHtml = '<a onclick="window.buyMembership()">购买会员</a>';
+            const wrapper = document.getElementById('smai-auth-widget');
+            const firstLetter = user.username.charAt(0).toUpperCase();
             
+            let roleLabel = '普通用户';
+            let roleClass = '';
+            let buyItem = \`<div class="smai-menu-item" onclick="window.buyMembership()">💎 购买会员</div>\`;
+
             if (user.role === 'vip' || user.role === 'svip') {
-                roleHtml = \`<span class="vip-badge">\${user.role.toUpperCase()}</span>\`;
-                actionHtml = '<span style="color:#aaa;font-size:12px">已解锁会员权益</span>'; 
+                roleLabel = user.role.toUpperCase();
+                roleClass = 'smai-role-vip';
+                buyItem = ''; // 已是会员不显示购买
             }
 
-            if(bar) bar.innerHTML = \`
-                <span style="opacity:0.7">SMAICLUB</span>
-                <span style="width:1px;height:12px;background:#555"></span>
-                <span>\${user.username}</span>
-                \${roleHtml}
-                <span style="width:1px;height:12px;background:#555"></span>
-                \${actionHtml}
-                <a onclick="window.logout()" style="color:#ff5252;margin-left:5px">[退出]</a>
+            wrapper.innerHTML = \`
+                <div class="smai-avatar-btn" onclick="window.toggleSmaiDropdown(event)">
+                    <div class="smai-avatar-icon">\${firstLetter}</div>
+                    <span class="smai-user-name">\${user.username}</span>
+                    <span class="smai-arrow">▼</span>
+                </div>
+
+                <div class="smai-dropdown">
+                    <div class="smai-dropdown-header">
+                        <div style="font-weight:bold">\${user.username}</div>
+                        <span class="smai-role-badge \${roleClass}">\${roleLabel}</span>
+                    </div>
+                    \${buyItem}
+                    <div class="smai-menu-item smai-menu-danger" onclick="window.logout()">🚪 退出登录</div>
+                </div>
             \`;
         }
 
-        // 立即执行检查
         checkAuth();
     }
 
-    // --- 核心修复：等待 DOM 加载完成 ---
     if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', initAuthBar);
+        document.addEventListener('DOMContentLoaded', initAuthWidget);
     } else {
-        initAuthBar();
+        initAuthWidget();
     }
 })();
     `;
