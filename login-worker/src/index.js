@@ -280,152 +280,187 @@ async function decryptData(encryptedText, secretKey, salt) {
 async function generateCommonScript(env) {
     return `
 (function() {
-    // 1. 创建 UI 样式
-    const style = document.createElement('style');
-    style.innerHTML = \`
-        #smai-auth-bar {
-            position: fixed; top: 0; left: 0; z-index: 99999;
-            background: rgba(0,0,0,0.8); color: white;
-            padding: 5px 15px; border-radius: 0 0 10px 0;
-            font-family: sans-serif; font-size: 14px;
-            display: flex; gap: 10px; align-items: center;
-        }
-        #smai-auth-bar a { color: #4CAF50; text-decoration: none; cursor: pointer; }
-        #smai-auth-bar .vip-badge { background: gold; color: black; padding: 2px 5px; border-radius: 4px; font-weight: bold; font-size: 12px; }
-        #smai-auth-modal {
-            position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
-            background: white; color: black; padding: 20px; border-radius: 8px;
-            box-shadow: 0 0 20px rgba(0,0,0,0.5); z-index: 100000; display: none;
-            flex-direction: column; gap: 10px; width: 300px;
-        }
-        #smai-auth-modal input { padding: 8px; border: 1px solid #ccc; }
-        #smai-auth-modal button { padding: 8px; background: #2196F3; color: white; border: none; cursor: pointer; }
-        #smai-auth-overlay {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.5); z-index: 99999; display: none;
-        }
-    \`;
-    document.head.appendChild(style);
+    // 封装主逻辑
+    function initAuthBar() {
+        // 防止重复初始化
+        if (document.getElementById('smai-auth-bar')) return;
 
-    // 2. 创建 DOM
-    const bar = document.createElement('div');
-    bar.id = 'smai-auth-bar';
-    bar.innerHTML = '正在加载...';
-    document.body.appendChild(bar);
+        // 1. 创建 UI 样式
+        const style = document.createElement('style');
+        style.innerHTML = \`
+            #smai-auth-bar {
+                position: fixed; top: 0; left: 0; z-index: 2147483647; /* 调高层级，防止被遮挡 */
+                background: rgba(0,0,0,0.85); color: white;
+                padding: 8px 15px; border-radius: 0 0 10px 0;
+                font-family: system-ui, -apple-system, sans-serif; font-size: 14px;
+                display: flex; gap: 15px; align-items: center;
+                backdrop-filter: blur(4px); box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+                transition: transform 0.3s ease;
+            }
+            #smai-auth-bar a { color: #4CAF50; text-decoration: none; cursor: pointer; font-weight: 500; }
+            #smai-auth-bar a:hover { text-decoration: underline; color: #66BB6A; }
+            #smai-auth-bar .vip-badge { background: linear-gradient(45deg, #FFD700, #FFA500); color: black; padding: 2px 6px; border-radius: 4px; font-weight: bold; font-size: 11px; box-shadow: 0 1px 4px rgba(0,0,0,0.2); }
+            /* 模态框样式保持不变... */
+            #smai-auth-modal {
+                position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+                background: white; color: black; padding: 25px; border-radius: 12px;
+                box-shadow: 0 10px 40px rgba(0,0,0,0.4); z-index: 2147483648; display: none;
+                flex-direction: column; gap: 15px; width: 320px;
+            }
+            #smai-auth-modal h3 { margin: 0 0 5px 0; color: #333; }
+            #smai-auth-modal input { padding: 10px; border: 1px solid #ddd; border-radius: 6px; outline: none; }
+            #smai-auth-modal input:focus { border-color: #2196F3; }
+            #smai-auth-modal button { padding: 10px; background: #2196F3; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; }
+            #smai-auth-modal button:hover { background: #1976D2; }
+            #smai-auth-overlay {
+                position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+                background: rgba(0,0,0,0.6); z-index: 2147483647; display: none; backdrop-filter: blur(2px);
+            }
+        \`;
+        document.head.appendChild(style);
 
-    // 模态框 (用于设置许可证)
-    const overlay = document.createElement('div'); overlay.id = 'smai-auth-overlay';
-    document.body.appendChild(overlay);
-    const modal = document.createElement('div'); modal.id = 'smai-auth-modal';
-    document.body.appendChild(modal);
+        // 2. 创建 DOM
+        const bar = document.createElement('div');
+        bar.id = 'smai-auth-bar';
+        bar.innerHTML = '<span>SMAI CLUB</span>'; // 初始加载文字
+        document.body.appendChild(bar);
 
-    // 3. 检查登录状态
-    async function checkAuth() {
-        try {
-            // 请求 Login Worker 获取状态
-            const res = await fetch('https://login.smaiclub.top/api/me', {
-                credentials: 'include' // 必须带上 Cookie
-            });
+        // 模态框
+        const overlay = document.createElement('div'); overlay.id = 'smai-auth-overlay';
+        // 点击遮罩层关闭
+        overlay.onclick = function() { 
+            document.getElementById('smai-auth-modal').style.display = 'none'; 
+            this.style.display = 'none'; 
+        };
+        document.body.appendChild(overlay);
+        
+        const modal = document.createElement('div'); modal.id = 'smai-auth-modal';
+        document.body.appendChild(modal);
+
+        // 3. 暴露全局方法 (保持不变)
+        window.logout = async function() {
+            await fetch('https://login.smaiclub.top/api/logout', { method: 'POST', credentials: 'include' });
+            location.reload();
+        };
+
+        window.buyMembership = async function() {
+            const res = await fetch('https://login.smaiclub.top/api/me', { credentials: 'include' });
             const data = await res.json();
             
-            if (data.loggedIn) {
-                renderLoggedIn(data);
-                if (data.role === 'vip' && !data.hasLicense) {
-                    showSetLicenseModal(); // VIP但没设置许可证，强制弹出
+            if (!data.loggedIn) {
+                alert("请先登录账户才能购买会员！");
+                window.location.href = "https://login.smaiclub.top";
+                return;
+            }
+
+            if (confirm("确定要购买(假的)会员吗？购买后需要设置许可证。")) {
+                const buyRes = await fetch('https://login.smaiclub.top/api/buy', { 
+                    method: 'POST', 
+                    credentials: 'include' 
+                });
+                if (buyRes.ok) {
+                    alert("购买成功！请立即设置您的许可证。警告：许可证丢失无法找回！");
+                    window.showSetLicenseModal();
                 }
-            } else {
-                renderGuest();
             }
-        } catch (e) {
-            console.error("Auth check failed", e);
-            bar.innerHTML = 'Auth Error';
-        }
-    }
+        };
 
-    function renderGuest() {
-        bar.innerHTML = \`
-            <span>未登录</span>
-            <a href="https://login.smaiclub.top">去登录/注册</a>
-        \`;
-    }
+        window.showSetLicenseModal = function() {
+            const overlay = document.getElementById('smai-auth-overlay');
+            const modal = document.getElementById('smai-auth-modal');
+            overlay.style.display = 'block';
+            modal.style.display = 'flex';
+            modal.innerHTML = \`
+                <h3>设置会员许可证</h3>
+                <p style="color:#666;font-size:13px;line-height:1.4">重要：请牢记此密钥，每次登录会员账户时需要输入。<br><span style="color:#d32f2f">丢失无法找回！</span></p>
+                <input type="text" id="new-license-key" placeholder="输入您的专属密钥">
+                <button onclick="submitLicense()">保存并激活</button>
+            \`;
+        };
 
-    function renderLoggedIn(user) {
-        let roleHtml = '<span style="color:#ccc">普通用户</span>';
-        let actionHtml = '<a onclick="window.buyMembership()">购买会员</a>';
-        
-        if (user.role === 'vip' || user.role === 'svip') {
-            roleHtml = \`<span class="vip-badge">\${user.role.toUpperCase()}</span>\`;
-            actionHtml = '<span>已拥有会员</span>'; // 或者升级逻辑
-        }
-
-        bar.innerHTML = \`
-            <span>欢迎, \${user.username}</span>
-            \${roleHtml}
-            \${actionHtml}
-            <a onclick="window.logout()">[退出]</a>
-        \`;
-    }
-
-    // 暴露全局方法
-    window.logout = async function() {
-        await fetch('https://login.smaiclub.top/api/logout', { method: 'POST', credentials: 'include' });
-        location.reload();
-    };
-
-    window.buyMembership = async function() {
-        // 先检查是否登录
-        const res = await fetch('https://login.smaiclub.top/api/me', { credentials: 'include' });
-        const data = await res.json();
-        
-        if (!data.loggedIn) {
-            alert("请先登录账户才能购买会员！");
-            window.location.href = "https://login.smaiclub.top";
-            return;
-        }
-
-        if (confirm("确定要购买(假的)会员吗？购买后需要设置许可证。")) {
-            const buyRes = await fetch('https://login.smaiclub.top/api/buy', { 
-                method: 'POST', 
-                credentials: 'include' 
+        window.submitLicense = async function() {
+            const key = document.getElementById('new-license-key').value;
+            if(!key) return alert("密钥不能为空");
+            
+            const res = await fetch('https://login.smaiclub.top/api/set-license', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ licenseKey: key }),
+                credentials: 'include'
             });
-            if (buyRes.ok) {
-                alert("购买成功！请立即设置您的许可证。警告：许可证丢失无法找回！");
-                showSetLicenseModal();
+            
+            if (res.ok) {
+                alert("许可证设置成功！请重新登录以启用会员权限。");
+                await window.logout(); 
+            } else {
+                alert("设置失败");
+            }
+        };
+
+        // 4. 检查登录状态逻辑
+        async function checkAuth() {
+            try {
+                const res = await fetch('https://login.smaiclub.top/api/me', {
+                    credentials: 'include' 
+                });
+                const data = await res.json();
+                
+                if (data.loggedIn) {
+                    renderLoggedIn(data);
+                    if (data.role === 'vip' && !data.hasLicense) {
+                        window.showSetLicenseModal(); 
+                    }
+                } else {
+                    renderGuest();
+                }
+            } catch (e) {
+                console.error("Auth check failed", e);
+                const bar = document.getElementById('smai-auth-bar');
+                if(bar) bar.innerHTML = '<span style="color:#ff5252">连接服务器失败</span>';
             }
         }
-    };
 
-    window.showSetLicenseModal = function() {
-        overlay.style.display = 'block';
-        modal.style.display = 'flex';
-        modal.innerHTML = \`
-            <h3>设置会员许可证</h3>
-            <p style="color:red;font-size:12px">重要：请牢记此密钥，每次登录会员账户时需要输入。丢失无法找回！</p>
-            <input type="text" id="new-license-key" placeholder="输入您的专属密钥">
-            <button onclick="submitLicense()">保存许可证</button>
-        \`;
-    };
-
-    window.submitLicense = async function() {
-        const key = document.getElementById('new-license-key').value;
-        if(!key) return alert("密钥不能为空");
-        
-        const res = await fetch('https://login.smaiclub.top/api/set-license', {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({ licenseKey: key }),
-            credentials: 'include'
-        });
-        
-        if (res.ok) {
-            alert("许可证设置成功！请重新登录以启用会员权限。");
-            await window.logout(); // 强制登出让用户用新密钥登录
-        } else {
-            alert("设置失败");
+        function renderGuest() {
+            const bar = document.getElementById('smai-auth-bar');
+            if(bar) bar.innerHTML = \`
+                <span style="opacity:0.7">SMAICLUB</span>
+                <span style="width:1px;height:12px;background:#555"></span>
+                <span>未登录</span>
+                <a href="https://login.smaiclub.top">去登录/注册</a>
+            \`;
         }
-    };
 
-    checkAuth();
+        function renderLoggedIn(user) {
+            const bar = document.getElementById('smai-auth-bar');
+            let roleHtml = '<span style="color:#ccc;font-size:12px;border:1px solid #555;padding:1px 4px;border-radius:3px">普通用户</span>';
+            let actionHtml = '<a onclick="window.buyMembership()">购买会员</a>';
+            
+            if (user.role === 'vip' || user.role === 'svip') {
+                roleHtml = \`<span class="vip-badge">\${user.role.toUpperCase()}</span>\`;
+                actionHtml = '<span style="color:#aaa;font-size:12px">已解锁会员权益</span>'; 
+            }
+
+            if(bar) bar.innerHTML = \`
+                <span style="opacity:0.7">SMAICLUB</span>
+                <span style="width:1px;height:12px;background:#555"></span>
+                <span>\${user.username}</span>
+                \${roleHtml}
+                <span style="width:1px;height:12px;background:#555"></span>
+                \${actionHtml}
+                <a onclick="window.logout()" style="color:#ff5252;margin-left:5px">[退出]</a>
+            \`;
+        }
+
+        // 立即执行检查
+        checkAuth();
+    }
+
+    // --- 核心修复：等待 DOM 加载完成 ---
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initAuthBar);
+    } else {
+        initAuthBar();
+    }
 })();
     `;
 }
