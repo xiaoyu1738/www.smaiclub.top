@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SMAI CLUB | 斯麦俱乐部</title>
     <!-- 【新增】引入 Login Worker 提供的通用认证脚本 -->
-    <!-- 这会自动处理登录状态显示、购买逻辑和许可证弹窗 -->
     <script src="https://login.smaiclub.top/common-auth.js"></script>
 
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=SF+Pro+Display:wght@300;400;500;600;700&display=swap">
@@ -95,12 +94,13 @@
             font-weight: 500 !important;
         }
 
+        /* 商店链接指向新页面 */
         .shop-link {
             color: #28a745;
             -webkit-text-fill-color: initial;
             opacity: 1 !important;
             font-weight: 500 !important;
-            cursor: pointer; /* 确保鼠标是手型 */
+            cursor: pointer;
         }
 
         .exhibition-link {
@@ -173,7 +173,7 @@
             display: flex;
             align-items: center;
             font-weight: 500;
-            cursor: pointer; /* 确保鼠标变为手型 */
+            cursor: pointer;
         }
 
         .hero-link:hover {
@@ -626,13 +626,12 @@
 <nav class="navbar">
     <a href="#" class="logo">SMAI CLUB</a>
     <ul class="nav-links">
-        <!-- 关键修改点：href 修改为 #，onclick 直接触发 window.buyMembership() -->
-        <li><a href="#" class="shop-link" onclick="window.buyMembership(); return false;">购买</a></li>
+        <li><a href="https://www.smaiclub.top/shop/" class="shop-link">购买</a></li>
         <li><a href="https://news.smaiclub.top/" class="news-link">新闻</a></li>
         <li><a href="#">首页</a></li>
         <li><a href="https://hall.smaiclub.top/" class="exhibition-link">展览馆</a></li>
         <li><a href="#">联系我们</a></li>
-        <li><a href="#">用户中心</a></li>
+        <!-- 用户中心已被 Auth 脚本自动注入的头像/登录按钮取代 -->
     </ul>
     <div class="menu-toggle">
         <i class="fas fa-bars"></i>
@@ -646,8 +645,8 @@
         <p>全球精英专属俱乐部，为您提供无与伦比的奢华体验、独家活动和顶级社交网络。</p>
         <div class="hero-links">
             <a href="#" class="hero-link">了解更多 <i class="fas fa-chevron-right"></i></a>
-            <!-- 【新增】绑定购买事件 -->
-            <a href="javascript:void(0)" class="hero-link" onclick="window.buyMembership()">立即加入 <i class="fas fa-chevron-right"></i></a>
+            <!-- 更新购买链接 -->
+            <a href="https://www.smaiclub.top/shop/" class="hero-link">立即加入 <i class="fas fa-chevron-right"></i></a>
         </div>
     </div>
 </section>
@@ -669,8 +668,8 @@
                 <li>优先预订特权</li>
                 <li>24小时会员专线</li>
             </ul>
-            <!-- 【新增】绑定购买事件 -->
-            <button class="tier-btn" onclick="window.buyMembership()">加入SMAI VIP</button>
+            <!-- 更新购买链接 -->
+            <button class="tier-btn" onclick="window.location.href='https://www.smaiclub.top/shop/'">加入SMAI VIP</button>
         </div>
         <div class="tier">
             <h3>SMAI SVIP I</h3>
@@ -683,8 +682,8 @@
                 <li>专属社交活动邀请</li>
                 <li>私人定制旅行规划</li>
             </ul>
-            <!-- 【新增】绑定购买事件 -->
-            <button class="tier-btn" onclick="window.buyMembership()">加入SMAI SVIP I</button>
+            <!-- 更新购买链接 -->
+            <button class="tier-btn" onclick="window.location.href='https://www.smaiclub.top/shop/'">加入SMAI SVIP I</button>
         </div>
         <div class="tier">
             <h3>SMAI SVIP II</h3>
@@ -698,8 +697,8 @@
                 <li>私人安全顾问</li>
                 <li>专属资产管理服务</li>
             </ul>
-            <!-- 【新增】绑定购买事件 -->
-            <button class="tier-btn" onclick="window.buyMembership()">加入SMAI SVIP II</button>
+            <!-- 更新购买链接 -->
+            <button class="tier-btn" onclick="window.location.href='https://www.smaiclub.top/shop/'">加入SMAI SVIP II</button>
         </div>
     </div>
 </section>
@@ -807,8 +806,8 @@
 <section class="cta">
     <h2>准备好加入精英圈了吗？</h2>
     <p>立即申请成为SMAI CLUB会员，开启非凡人生。</p>
-    <!-- 【新增】绑定购买事件 -->
-    <a href="javascript:void(0)" class="cta-btn" onclick="window.buyMembership()">立即申请</a>
+    <!-- 更新购买链接 -->
+    <a href="https://www.smaiclub.top/shop/" class="cta-btn">立即申请</a>
 </section>
 
 <footer class="footer">
@@ -867,10 +866,6 @@
     menuToggle.addEventListener('click', function() {
         navLinks.classList.toggle('active');
     });
-
-    // 原本为shop-link添加的跳转逻辑已经被行内onclick替代，为了保险起见，我们可以移除或注释掉这段JS，或者确保它不会干扰行内事件。
-    // 由于行内事件 onclick="window.buyMembership(); return false;" 优先级很高且阻止了默认行为，下面的代码实际上不会执行，或者执行了也不影响。
-    // 但为了代码整洁，我移除了原本针对 .shop-link 的 window.location.href = 'shop' 的事件监听器。
 
     // 为新闻链接添加单独的重定向
     document.querySelector('.news-link').addEventListener('click', function(e) {
