@@ -376,11 +376,17 @@ async function generateCommonScript() {
 
     async function initAuth() {
         // 1. 检查页面是否有导航栏容器
-        // www & news 使用 .nav-links
-        let navContainer = document.querySelector('.nav-links');
+        // 优先寻找专门的 auth-container，否则回退到 .nav-links
+        let targetContainer = document.querySelector('.auth-container');
+        let isList = false;
+
+        if (!targetContainer) {
+            targetContainer = document.querySelector('.nav-links');
+            isList = true; // 如果是插在 ul 中，需要用 li
+        }
 
         // 如果没有导航栏，直接退出，不显示任何 UI
-        if (!navContainer) return;
+        if (!targetContainer) return;
 
         // 2. 获取用户状态
         try {
@@ -388,8 +394,11 @@ async function generateCommonScript() {
             const data = await res.json();
             
             // 3. 渲染按钮
-            const li = document.createElement('li');
-            li.className = 'smai-auth-li';
+            // 如果容器不是 UL，则创建 div，否则创建 li
+            const wrapper = document.createElement(isList ? 'li' : 'div');
+            wrapper.className = 'smai-auth-wrapper';
+            // 保持原有样式类名以便兼容
+            if(isList) wrapper.classList.add('smai-auth-li');
             
             if (data.loggedIn) {
                 // 已登录
@@ -398,7 +407,7 @@ async function generateCommonScript() {
                 const isVip = data.role.startsWith('vip') || data.role.startsWith('svip');
                 const avatarChar = data.username.charAt(0).toUpperCase();
 
-                li.innerHTML = \`
+                wrapper.innerHTML = \`
                     <div class="smai-auth-btn" onclick="toggleSmaiMenu(event)">
                         <div class="smai-avatar-img">\${avatarChar}</div>
                         <span>\${isVip ? roleName : data.username}</span>
@@ -415,14 +424,14 @@ async function generateCommonScript() {
                 \`;
             } else {
                 // 未登录
-                li.innerHTML = \`
+                wrapper.innerHTML = \`
                     <a href="https://login.smaiclub.top" class="smai-auth-btn">
                         <i class="fas fa-user"></i> 登录 / 注册
                     </a>
                 \`;
             }
 
-            navContainer.appendChild(li);
+            targetContainer.appendChild(wrapper);
 
         } catch (e) {
             console.error("Auth init error:", e);

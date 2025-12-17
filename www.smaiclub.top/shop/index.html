@@ -64,6 +64,8 @@
             list-style: none;
             align-items: center;
             height: 100%;
+            flex-grow: 1;
+            justify-content: center;
         }
 
         .nav-links li {
@@ -421,6 +423,7 @@
         <li><a href="https://news.smaiclub.top">新闻</a></li>
         <li><a href="https://hall.smaiclub.top">展览馆</a></li>
     </ul>
+    <div class="auth-container"></div>
 </nav>
 
 <div class="page-container">
@@ -468,7 +471,23 @@
         <div class="form-grid">
             <div class="form-group">
                 <label>国家/地区</label>
-                <input type="text" id="country" placeholder="例如：中国" required onblur="validateField('country')">
+                <select id="country" required onchange="validateField('country'); validateField('phone'); validateField('name');">
+                    <option value="" disabled selected>请选择国家/地区</option>
+                    <option value="China">中国 (China)</option>
+                    <option value="Hong Kong">中国香港 (Hong Kong)</option>
+                    <option value="Macau">中国澳门 (Macau)</option>
+                    <option value="Taiwan">中国台湾 (Taiwan)</option>
+                    <option value="USA">美国 (USA)</option>
+                    <option value="UK">英国 (UK)</option>
+                    <option value="Japan">日本 (Japan)</option>
+                    <option value="Korea">韩国 (Korea)</option>
+                    <option value="Singapore">新加坡 (Singapore)</option>
+                    <option value="Canada">加拿大 (Canada)</option>
+                    <option value="Australia">澳大利亚 (Australia)</option>
+                    <option value="Germany">德国 (Germany)</option>
+                    <option value="France">法国 (France)</option>
+                    <option value="Other">其他 (Other)</option>
+                </select>
                 <div class="error-msg" id="error-country"></div>
             </div>
 
@@ -670,7 +689,7 @@
 
     // --- 验证逻辑 ---
     const VALIDATION_RULES = {
-        chineseRegion: /^(中国|香港|澳门|台湾|China|Hong Kong|Macau|Taiwan)$/i,
+        chineseRegions: ['China', 'Hong Kong', 'Macau', 'Taiwan'],
         nameCN: /^[\u4e00-\u9fa5]+$/, // 仅中文
         nameOther: /^[a-zA-Z\s]+$/,    // 仅字母和空格
         phoneCN: /^1[3-9]\d{9}$/,      // 中国手机号 11位
@@ -689,18 +708,18 @@
         if (!el) return true; // Safety check
 
         const val = el.value.trim();
-        const countryVal = document.getElementById('country').value.trim();
+        const countryVal = document.getElementById('country').value;
         const errEl = document.getElementById('error-' + field);
 
         let isValid = true;
         let errMsg = "";
 
         // Determine context (is Chinese region?)
-        const isChineseRegion = VALIDATION_RULES.chineseRegion.test(countryVal);
+        const isChineseRegion = VALIDATION_RULES.chineseRegions.includes(countryVal);
 
         switch(field) {
             case 'country':
-                if (val.length < 2) { isValid = false; errMsg = "请输入有效的国家/地区"; }
+                if (!val || val === "") { isValid = false; errMsg = "请选择国家/地区"; }
                 break;
             case 'name':
                 if (isChineseRegion) {
@@ -710,7 +729,7 @@
                 }
                 break;
             case 'phone':
-                if (isChineseRegion || val.startsWith('+86')) {
+                if (isChineseRegion) {
                     let cleanVal = val.replace(/^\+86/, '').trim();
                     if (!VALIDATION_RULES.phoneCN.test(cleanVal)) { isValid = false; errMsg = "请输入有效的11位手机号"; }
                 } else {
@@ -728,6 +747,7 @@
                 }
                 break;
             case 'card':
+                // 只有选择了银行卡支付才校验
                 if (selectedPaymentMethod === 'card') {
                     if (!VALIDATION_RULES.card.test(val.replace(/\s/g, ''))) { isValid = false; errMsg = "请输入16-19位银行卡号"; }
                 }
@@ -747,10 +767,12 @@
             el.classList.remove('invalid');
             if (errEl) errEl.style.display = 'none';
         }
+        console.log(`Validation for ${field}: ${isValid}`);
         return isValid;
     }
 
     async function processPurchase() {
+        console.log("processPurchase called");
         if (!selectedTier) return showAlert("请先选择会员等级");
         if (!selectedPaymentMethod) return showAlert("请选择支付方式");
 
@@ -760,12 +782,16 @@
 
         let allValid = true;
         fields.forEach(f => {
-            if (!validateField(f)) allValid = false;
+            if (!validateField(f)) {
+                console.log(`Validation failed for ${f}`);
+                allValid = false;
+            }
         });
 
         if (!allValid) return showAlert("请检查表单中红色的错误项", "表单错误");
 
         // 检查登录状态
+        console.log("Checking login status...");
         const authRes = await fetch('https://login.smaiclub.top/api/me', { credentials: 'include' });
         const authData = await authRes.json();
 
@@ -776,7 +802,11 @@
         }
 
         const info = {};
-        fields.forEach(f => info[f] = document.getElementById(f).value.trim());
+        fields.forEach(f => {
+            let elId = f;
+            if (f === 'card') elId = 'card-num';
+            info[f] = document.getElementById(elId).value.trim();
+        });
 
         const btn = document.querySelector('.submit-btn');
         const originalText = btn.innerHTML;
@@ -784,6 +814,7 @@
         btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 正在处理支付...';
 
         try {
+            console.log("Submitting purchase...");
             const res = await fetch('https://login.smaiclub.top/api/buy', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -795,16 +826,18 @@
             });
 
             if (res.ok) {
+                console.log("Purchase success!");
                 document.getElementById('step3').classList.add('active');
                 showModal('success-modal');
             } else {
                 const err = await res.json();
+                console.error("Purchase error:", err);
                 showAlert("购买失败: " + (err.error || "未知错误"));
                 btn.disabled = false;
                 btn.innerHTML = originalText;
             }
         } catch (e) {
-            console.error(e);
+            console.error("Network error:", e);
             showAlert("网络错误，请重试");
             btn.disabled = false;
             btn.innerHTML = originalText;

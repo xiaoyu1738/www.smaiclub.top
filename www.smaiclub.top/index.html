@@ -63,6 +63,8 @@
             list-style: none;
             align-items: center;
             height: 100%;
+            flex-grow: 1; /* 让导航链接区域占据剩余空间 */
+            justify-content: center; /* 居中剩余的按钮 */
         }
 
         .nav-links li {
@@ -631,8 +633,9 @@
         <li><a href="#">首页</a></li>
         <li><a href="https://hall.smaiclub.top/" class="exhibition-link">展览馆</a></li>
         <li><a href="#">联系我们</a></li>
-        <!-- 用户中心已被 Auth 脚本自动注入的头像/登录按钮取代 -->
     </ul>
+    <!-- 独立的认证按钮容器 -->
+    <div class="auth-container"></div>
     <div class="menu-toggle">
         <i class="fas fa-bars"></i>
     </div>

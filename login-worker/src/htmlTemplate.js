@@ -236,6 +236,22 @@ export function htmlTemplate() {
     <script>
         const API_BASE = window.location.origin + '/api';
 
+        // 页面加载时检查登录状态
+        document.addEventListener('DOMContentLoaded', async () => {
+            try {
+                const res = await fetch(API_BASE + '/me', { credentials: 'include' });
+                const data = await res.json();
+                if (data.loggedIn) {
+                    showNotification("您已登录，正在跳转...", "success");
+                    setTimeout(() => window.location.href = "https://www.smaiclub.top", 1000);
+                    // 隐藏表单以防闪烁
+                    document.querySelector('.container').style.display = 'none';
+                }
+            } catch (e) {
+                console.error("Auth check failed", e);
+            }
+        });
+
         function toggleForm(type) {
             const loginForm = document.getElementById('login-form');
             const regForm = document.getElementById('register-form');
