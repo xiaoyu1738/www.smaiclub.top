@@ -310,45 +310,72 @@ async function generateCommonScript() {
     // 动态注入 CSS
     const style = document.createElement('style');
     style.innerHTML = \`
-        .smai-auth-li { margin-left: auto !important; position: relative; list-style:none; }
+        /* 浮动容器 */
+        #smai-auth-mount {
+            position: fixed;
+            top: 15px;
+            left: 15px;
+            z-index: 10000;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            display: flex;
+            align-items: center;
+        }
+
         .smai-auth-btn {
-            background: linear-gradient(135deg, #0071e3, #00c6fb);
+            background: rgba(29, 29, 31, 0.8);
+            backdrop-filter: blur(12px);
             color: white !important;
             padding: 8px 16px;
-            border-radius: 20px;
+            border-radius: 9999px;
             font-weight: 500;
             text-decoration: none;
             display: flex;
             align-items: center;
-            gap: 6px;
+            gap: 8px;
             cursor: pointer;
-            transition: transform 0.2s;
+            transition: all 0.2s ease;
             font-size: 14px;
-            border: none;
+            border: 1px solid rgba(255, 255, 255, 0.1);
             outline: none;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
         }
-        .smai-auth-btn:hover { transform: scale(1.05); }
-        .smai-avatar-img { width: 24px; height: 24px; border-radius: 50%; background: rgba(255,255,255,0.2); display: flex; align-items: center; justify-content: center; font-size: 12px; }
+        .smai-auth-btn:hover {
+            transform: scale(1.02);
+            background: rgba(29, 29, 31, 0.95);
+        }
+
+        .smai-avatar-img {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #0071e3, #42a5f5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            color: white;
+            font-weight: bold;
+        }
 
         /* 下拉菜单 */
         .smai-auth-dropdown {
             position: absolute;
             top: 100%;
-            right: 0;
+            left: 0;
             margin-top: 12px;
             background: rgba(29, 29, 31, 0.95);
             backdrop-filter: blur(20px);
             border-radius: 12px;
-            width: 200px;
+            width: 220px;
             box-shadow: 0 10px 40px rgba(0,0,0,0.3);
             border: 1px solid rgba(255,255,255,0.1);
             display: none;
             flex-direction: column;
             overflow: hidden;
-            z-index: 9999;
+            z-index: 10001;
         }
-        .smai-auth-dropdown.show { display: flex; animation: fadeInDown 0.2s ease; }
-        @keyframes fadeInDown { from { opacity:0; transform:translateY(-10px); } to { opacity:1; transform:translateY(0); } }
+        .smai-auth-dropdown.show { display: flex; animation: smaiFadeIn 0.2s ease; }
+        @keyframes smaiFadeIn { from { opacity:0; transform:translateY(-10px); } to { opacity:1; transform:translateY(0); } }
 
         .smai-drop-header { padding: 15px; border-bottom: 1px solid rgba(255,255,255,0.1); }
         .smai-drop-user { color: white; font-weight: 600; font-size: 15px; }
@@ -361,77 +388,65 @@ async function generateCommonScript() {
             text-decoration: none;
             font-size: 14px;
             transition: background 0.2s;
-            display: block;
+            display: flex;
+            align-items: center;
+            gap: 10px;
         }
         .smai-drop-item:hover { background: rgba(255,255,255,0.1); color: white; }
         .smai-drop-danger { color: #ff453a; }
         .smai-drop-danger:hover { background: rgba(255, 69, 58, 0.1); }
 
-        /* Fallback container for pages without navbar */
-        #smai-fallback-nav {
-            position: fixed; top: 20px; right: 20px; z-index: 9999;
-        }
+        .smai-icon { width: 16px; text-align: center; }
     \`;
     document.head.appendChild(style);
 
     async function initAuth() {
-        // 1. 检查页面是否有导航栏容器
-        // 优先寻找专门的 auth-container，否则回退到 .nav-links
-        let targetContainer = document.querySelector('.auth-container');
-        let isList = false;
-
-        if (!targetContainer) {
-            targetContainer = document.querySelector('.nav-links');
-            isList = true; // 如果是插在 ul 中，需要用 li
+        // 1. 查找或创建挂载点
+        let mountPoint = document.getElementById('smai-auth-mount');
+        if (!mountPoint) {
+            mountPoint = document.createElement('div');
+            mountPoint.id = 'smai-auth-mount';
+            document.body.appendChild(mountPoint);
         }
-
-        // 如果没有导航栏，直接退出，不显示任何 UI
-        if (!targetContainer) return;
 
         // 2. 获取用户状态
         try {
             const res = await fetch('https://login.smaiclub.top/api/me', { credentials: 'include' });
             const data = await res.json();
             
-            // 3. 渲染按钮
-            // 如果容器不是 UL，则创建 div，否则创建 li
-            const wrapper = document.createElement(isList ? 'li' : 'div');
-            wrapper.className = 'smai-auth-wrapper';
-            // 保持原有样式类名以便兼容
-            if(isList) wrapper.classList.add('smai-auth-li');
-            
+            // 3. 渲染内容
             if (data.loggedIn) {
                 // 已登录
-                const roleMap = { 'vip': 'VIP', 'svip1': 'SVIP I', 'svip2': 'SVIP II', 'user': '普通用户' };
-                const roleName = roleMap[data.role] || data.role.toUpperCase();
-                const isVip = data.role.startsWith('vip') || data.role.startsWith('svip');
+                const roleMap = { 'vip': 'VIP', 'svip1': 'SVIP I', 'svip2': 'SVIP II', 'user': 'User' };
+                const roleName = roleMap[data.role] || (data.role ? data.role.toUpperCase() : 'USER');
+                const isVip = data.role && (data.role.startsWith('vip') || data.role.startsWith('svip'));
                 const avatarChar = data.username.charAt(0).toUpperCase();
 
-                wrapper.innerHTML = \`
+                mountPoint.innerHTML = \`
                     <div class="smai-auth-btn" onclick="toggleSmaiMenu(event)">
                         <div class="smai-avatar-img">\${avatarChar}</div>
-                        <span>\${isVip ? roleName : data.username}</span>
-                        <i class="fas fa-caret-down" style="font-size:10px"></i>
+                        <span>\${data.username}</span>
+                        <span style="font-size:10px; opacity:0.7;">▼</span>
                     </div>
                     <div class="smai-auth-dropdown" id="smai-user-menu">
                         <div class="smai-drop-header">
                             <div class="smai-drop-user">\${data.username}</div>
                             <span class="smai-drop-role \${isVip ? 'smai-role-vip' : ''}">\${roleName}</span>
                         </div>
-                        \${!isVip ? '<a href="https://www.smaiclub.top/shop/" class="smai-drop-item">💎 升级会员</a>' : ''}
-                        <div class="smai-drop-item smai-drop-danger" onclick="logoutSmai()">退出登录</div>
+                        \${!isVip ? '<a href="https://www.smaiclub.top/shop/" class="smai-drop-item"><span class="smai-icon">💎</span> 升级会员</a>' : ''}
+                        <div class="smai-drop-item smai-drop-danger" onclick="logoutSmai()">
+                            <span class="smai-icon">🚪</span> 退出登录
+                        </div>
                     </div>
                 \`;
             } else {
                 // 未登录
-                wrapper.innerHTML = \`
+                mountPoint.innerHTML = \`
                     <a href="https://login.smaiclub.top" class="smai-auth-btn">
-                        <i class="fas fa-user"></i> 登录 / 注册
+                        <span>登录 / 注册</span>
                     </a>
                 \`;
             }
-
-            targetContainer.appendChild(wrapper);
 
         } catch (e) {
             console.error("Auth init error:", e);

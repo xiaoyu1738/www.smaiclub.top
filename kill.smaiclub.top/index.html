@@ -7,205 +7,236 @@
     <script src="https://login.smaiclub.top/common-auth.js"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
     <style>
         :root {
-            --terminal-bg: #0d0d0d;
-            --terminal-text: #00ff41;
-            --terminal-dim: #008f11;
-            --accent: #ff0000;
-            --highlight: #ffff00;
+            --terminal-bg: #050505;
+            --terminal-text: #0f0;
+            --terminal-dim: #005f00;
+            --accent: #ff003c;
+            --highlight: #fcee0a;
             --border: #333;
+            --scanline: rgba(18, 16, 16, 0.5);
+            --font-main: 'JetBrains Mono', monospace;
+            --font-display: 'Share Tech Mono', monospace;
         }
+
+        * { box-sizing: border-box; }
 
         body {
             background-color: var(--terminal-bg);
             color: var(--terminal-text);
-            font-family: 'JetBrains Mono', 'Courier New', monospace;
-            max-width: 900px;
+            font-family: var(--font-main);
+            max-width: 960px;
             margin: 0 auto;
-            padding: 40px 20px;
+            padding: 60px 20px;
             line-height: 1.6;
-            background-image: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
-            background-size: 100% 2px, 3px 100%;
+            overflow-x: hidden;
+            text-shadow: 0 0 5px rgba(0, 255, 0, 0.5);
         }
 
-        /* CRT Screen flicker effect */
+        /* CRT Effects */
+        body::before {
+            content: " ";
+            display: block;
+            position: fixed;
+            top: 0; left: 0; bottom: 0; right: 0;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
+            background-size: 100% 2px, 3px 100%;
+            pointer-events: none;
+            z-index: 1000;
+        }
+
         @keyframes flicker {
-            0% { opacity: 0.97; }
-            5% { opacity: 0.95; }
-            10% { opacity: 0.9; }
-            15% { opacity: 0.95; }
-            20% { opacity: 0.99; }
-            50% { opacity: 0.95; }
-            100% { opacity: 0.98; }
+            0% { opacity: 0.97; } 5% { opacity: 0.95; } 10% { opacity: 0.9; } 15% { opacity: 0.95; } 20% { opacity: 0.99; } 50% { opacity: 0.95; } 100% { opacity: 0.98; }
         }
 
         body::after {
             content: " ";
             display: block;
             position: fixed;
-            top: 0;
-            left: 0;
-            bottom: 0;
-            right: 0;
+            top: 0; left: 0; bottom: 0; right: 0;
             background: rgba(18, 16, 16, 0.1);
             opacity: 0;
-            z-index: 2;
+            z-index: 1000;
             pointer-events: none;
             animation: flicker 0.15s infinite;
         }
         
         .header {
-            border-bottom: 2px solid var(--terminal-dim);
-            padding-bottom: 20px;
-            margin-bottom: 40px;
+            border-bottom: 2px solid var(--terminal-text);
+            padding-bottom: 30px;
+            margin-bottom: 50px;
             text-align: center;
             text-transform: uppercase;
-            letter-spacing: 2px;
+            position: relative;
         }
 
         .header h1 {
-            font-size: 2.5rem;
-            margin-bottom: 5px;
-            text-shadow: 0 0 10px var(--terminal-dim);
+            font-family: var(--font-display);
+            font-size: 4rem;
+            margin-bottom: 10px;
+            letter-spacing: 5px;
+            text-shadow: 2px 0 var(--accent), -2px 0 var(--highlight);
+            animation: glitch 2s infinite linear alternate-reverse;
+        }
+
+        @keyframes glitch {
+            0% { text-shadow: 2px 0 var(--accent), -2px 0 var(--highlight); transform: skew(0deg); }
+            10% { text-shadow: 2px 0 var(--accent), -2px 0 var(--highlight); transform: skew(0deg); }
+            20% { text-shadow: 2px 0 var(--accent), -2px 0 var(--highlight); transform: skew(0deg); }
+            21% { text-shadow: -2px 0 var(--accent), 2px 0 var(--highlight); transform: skew(10deg); }
+            22% { text-shadow: 2px 0 var(--accent), -2px 0 var(--highlight); transform: skew(0deg); }
+            100% { text-shadow: 2px 0 var(--accent), -2px 0 var(--highlight); transform: skew(0deg); }
         }
 
         .header p {
-            color: var(--terminal-dim);
-            font-size: 0.9rem;
+            color: var(--terminal-text);
+            font-size: 1rem;
+            letter-spacing: 2px;
+            opacity: 0.8;
         }
         
         .warning {
-            color: #ff3333;
-            background-color: rgba(50, 0, 0, 0.5);
+            color: #000;
+            background-color: var(--accent);
             padding: 15px;
-            border: 1px dashed #ff3333;
-            margin-bottom: 30px;
+            margin-bottom: 40px;
             font-weight: bold;
             text-align: center;
+            font-family: var(--font-display);
+            letter-spacing: 1px;
+            border: 2px solid var(--accent);
+            animation: warningFlash 1.5s infinite;
+        }
+
+        @keyframes warningFlash {
+            0% { opacity: 1; }
+            50% { opacity: 0.8; }
+            100% { opacity: 1; }
         }
         
         .listings-container {
             display: grid;
-            gap: 20px;
+            gap: 24px;
         }
 
         .listing {
-            background-color: rgba(26, 26, 26, 0.8);
-            padding: 20px;
-            border: 1px solid var(--border);
+            background-color: rgba(0, 20, 0, 0.4);
+            padding: 24px;
+            border: 1px solid var(--terminal-dim);
             position: relative;
-            transition: all 0.3s ease;
-        }
-
-        .listing::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 4px;
-            height: 100%;
-            background-color: var(--border);
-            transition: background-color 0.3s;
+            transition: all 0.2s ease;
+            clip-path: polygon(0 0, 100% 0, 100% calc(100% - 20px), calc(100% - 20px) 100%, 0 100%);
         }
 
         .listing:hover {
             border-color: var(--terminal-text);
-            box-shadow: 0 0 15px rgba(0, 255, 65, 0.1);
-        }
-
-        .listing:hover::before {
-            background-color: var(--terminal-text);
+            background-color: rgba(0, 30, 0, 0.6);
+            transform: translateX(5px);
+            box-shadow: -5px 5px 0px rgba(0, 255, 0, 0.2);
         }
 
         .listing h2 {
             margin-top: 0;
-            font-size: 1.2rem;
+            font-family: var(--font-display);
+            font-size: 1.5rem;
             color: #fff;
             display: flex;
             align-items: center;
+            letter-spacing: 1px;
         }
 
         .listing h2::before {
-            content: '>';
-            margin-right: 10px;
-            color: var(--terminal-text);
+            content: '>>';
+            margin-right: 15px;
+            color: var(--accent);
+            font-size: 1rem;
         }
 
         .meta {
-            font-size: 0.85rem;
+            font-size: 0.8rem;
             color: #888;
-            margin-bottom: 10px;
+            margin-bottom: 15px;
             display: flex;
-            gap: 15px;
+            gap: 10px;
+            flex-wrap: wrap;
         }
 
         .meta span {
-            background: #222;
-            padding: 2px 6px;
+            background: #111;
+            padding: 4px 8px;
+            border: 1px solid #333;
+            color: var(--terminal-text);
+        }
+
+        .listing p {
+            color: #ccc;
+            margin-bottom: 10px;
+            font-size: 0.95rem;
         }
         
         .price {
-            color: var(--highlight);
+            color: var(--highlight) !important;
             font-weight: bold;
-            font-size: 1.1rem;
-            margin: 15px 0;
+            font-size: 1.2rem !important;
+            margin: 20px 0;
+            font-family: var(--font-display);
         }
         
         .button {
-            background-color: transparent;
+            background-color: black;
             color: var(--terminal-text);
             border: 1px solid var(--terminal-text);
-            padding: 8px 20px;
+            padding: 10px 24px;
             text-decoration: none;
             display: inline-block;
-            font-family: inherit;
+            font-family: var(--font-display);
             cursor: pointer;
             text-transform: uppercase;
-            font-size: 0.9rem;
+            font-size: 1rem;
             transition: all 0.2s;
             position: relative;
-            overflow: hidden;
         }
         
         .button:hover {
             background-color: var(--terminal-text);
             color: #000;
-            box-shadow: 0 0 10px var(--terminal-text);
+            box-shadow: 0 0 15px var(--terminal-text);
         }
         
         .footer {
-            margin-top: 60px;
-            font-size: 0.75rem;
+            margin-top: 80px;
+            font-size: 0.8rem;
             color: #444;
-            border-top: 1px dashed var(--border);
-            padding-top: 20px;
+            border-top: 2px solid var(--border);
+            padding-top: 30px;
             text-align: center;
+            font-family: var(--font-display);
         }
         
         .pgp-key {
             font-size: 0.7em;
-            background-color: #000;
-            color: #555;
-            padding: 15px;
-            margin-top: 15px;
+            background-color: #080808;
+            color: #333;
+            padding: 20px;
+            margin-top: 30px;
             overflow-x: auto;
-            border: 1px solid #222;
+            border: 1px solid #111;
             text-align: left;
+            opacity: 0.7;
         }
 
         @media (max-width: 600px) {
-            .meta {
-                flex-direction: column;
-                gap: 5px;
-            }
+            .header h1 { font-size: 2.5rem; }
+            .meta { flex-direction: column; gap: 5px; }
+            .meta span { width: fit-content; }
         }
     </style>
 </head>
 <body>
     <div class="header">
-        <h1>* SMAI CLUB H *</h1>
+        <h1>SMAI CLUB H</h1>
         <p>SECURE CONNECTION ESTABLISHED // ENCRYPTED: AES-256</p>
     </div>
 

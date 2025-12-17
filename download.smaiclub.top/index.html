@@ -7,17 +7,17 @@
     <script src="https://login.smaiclub.top/common-auth.js"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
     <style>
         :root {
-            --primary-color: #2563eb;
-            --primary-hover: #1d4ed8;
-            --bg-color: #f8fafc;
-            --text-color: #1e293b;
-            --text-muted: #64748b;
-            --card-bg: #ffffff;
-            --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-            --shadow-hover: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            --primary-color: #3b82f6;
+            --primary-hover: #2563eb;
+            --bg-color: #0f172a;
+            --card-bg: rgba(30, 41, 59, 0.7);
+            --text-main: #f1f5f9;
+            --text-muted: #94a3b8;
+            --border-color: rgba(255, 255, 255, 0.08);
+            --highlight: #06b6d4;
         }
 
         * {
@@ -29,24 +29,55 @@
         body {
             font-family: 'Inter', system-ui, -apple-system, sans-serif;
             background-color: var(--bg-color);
-            color: var(--text-color);
+            color: var(--text-main);
             line-height: 1.5;
             padding: 40px 20px;
             min-height: 100vh;
+            overflow-x: hidden;
+            position: relative;
+        }
+
+        /* Ambient Mesh Background */
+        body::before {
+            content: '';
+            position: fixed;
+            top: -20%;
+            right: -20%;
+            width: 80%;
+            height: 80%;
+            background: radial-gradient(circle at center, rgba(59, 130, 246, 0.15), transparent 60%);
+            z-index: -1;
+            filter: blur(60px);
+        }
+
+        body::after {
+            content: '';
+            position: fixed;
+            bottom: -20%;
+            left: -20%;
+            width: 80%;
+            height: 80%;
+            background: radial-gradient(circle at center, rgba(6, 182, 212, 0.1), transparent 60%);
+            z-index: -1;
+            filter: blur(60px);
         }
 
         .header {
             text-align: center;
-            margin-bottom: 60px;
-            padding-top: 40px;
+            margin-bottom: 80px;
+            padding-top: 60px;
         }
 
         .header h1 {
-            font-size: 3rem;
-            color: var(--text-color);
-            margin-bottom: 16px;
-            font-weight: 800;
-            letter-spacing: -0.025em;
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 3.5rem;
+            color: var(--text-main);
+            margin-bottom: 20px;
+            font-weight: 700;
+            letter-spacing: -0.03em;
+            background: linear-gradient(to right, #fff, #94a3b8);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
         }
 
         .header p {
@@ -58,7 +89,7 @@
 
         .download-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
             gap: 40px;
             max-width: 1200px;
             margin: 0 auto;
@@ -66,51 +97,57 @@
 
         .download-card {
             background-color: var(--card-bg);
-            border-radius: 16px;
-            box-shadow: var(--shadow);
+            border-radius: 20px;
+            backdrop-filter: blur(12px);
             overflow: hidden;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            border: 1px solid rgba(0,0,0,0.05);
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            border: 1px solid var(--border-color);
             display: flex;
             flex-direction: column;
+            position: relative;
         }
 
         .download-card:hover {
-            transform: translateY(-8px);
-            box-shadow: var(--shadow-hover);
+            transform: translateY(-8px) scale(1.01);
+            border-color: rgba(59, 130, 246, 0.3);
+            box-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.5);
         }
 
         .card-image {
-            height: 200px;
-            background: linear-gradient(135deg, #e0e7ff 0%, #f3f4f6 100%);
+            height: 220px;
+            background: linear-gradient(135deg, rgba(59, 130, 246, 0.1) 0%, rgba(15, 23, 42, 0.2) 100%);
             display: flex;
             align-items: center;
             justify-content: center;
-            color: #4f46e5;
-            font-size: 1.5rem;
+            color: var(--primary-color);
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 1.75rem;
             font-weight: 700;
             letter-spacing: 0.05em;
             position: relative;
         }
 
+        /* Grid Pattern Overlay */
         .card-image::after {
             content: '';
             position: absolute;
             top: 0; left: 0; right: 0; bottom: 0;
-            background-image: radial-gradient(#cbd5e1 1px, transparent 1px);
+            background-image:
+                linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px);
             background-size: 20px 20px;
-            opacity: 0.3;
         }
 
         .card-content {
-            padding: 32px;
+            padding: 36px;
             flex-grow: 1;
             display: flex;
             flex-direction: column;
         }
 
         .card-content h3 {
-            color: var(--text-color);
+            font-family: 'Space Grotesk', sans-serif;
+            color: var(--text-main);
             margin-bottom: 12px;
             font-size: 1.5rem;
             font-weight: 700;
@@ -118,42 +155,45 @@
 
         .card-content p {
             color: var(--text-muted);
-            margin-bottom: 24px;
+            margin-bottom: 30px;
             line-height: 1.6;
+            font-size: 0.95rem;
             flex-grow: 1;
         }
 
         .password-tag {
             display: inline-block;
-            background: #f1f5f9;
-            padding: 4px 8px;
-            border-radius: 4px;
-            font-size: 0.85rem;
-            color: #475569;
+            background: rgba(59, 130, 246, 0.1);
+            padding: 4px 10px;
+            border-radius: 6px;
+            font-size: 0.8rem;
+            color: var(--primary-color);
             margin-left: 8px;
-            font-family: monospace;
+            font-family: 'Inter', monospace;
+            border: 1px solid rgba(59, 130, 246, 0.2);
         }
 
         .download-btn {
             display: inline-flex;
             align-items: center;
             justify-content: center;
-            background-color: var(--primary-color);
+            background: linear-gradient(135deg, var(--primary-color), var(--primary-hover));
             color: white;
             text-decoration: none;
-            padding: 12px 24px;
-            border-radius: 8px;
+            padding: 14px 28px;
+            border-radius: 12px;
             font-weight: 600;
-            transition: background-color 0.2s;
+            transition: all 0.2s;
             width: 100%;
+            border: 1px solid rgba(255,255,255,0.1);
         }
 
         .download-btn:hover {
-            background-color: var(--primary-hover);
+            box-shadow: 0 0 20px rgba(59, 130, 246, 0.4);
         }
 
         .download-btn svg {
-            margin-right: 8px;
+            margin-right: 10px;
         }
 
         .file-info {
@@ -161,15 +201,35 @@
             justify-content: space-between;
             margin-top: 24px;
             padding-top: 20px;
-            border-top: 1px solid #f1f5f9;
-            color: #94a3b8;
-            font-size: 0.875rem;
+            border-top: 1px solid var(--border-color);
+            color: #64748b;
+            font-size: 0.8rem;
             font-weight: 500;
+            font-family: 'Space Grotesk', monospace;
+        }
+
+        /* Coming Soon State */
+        .card-disabled .card-image {
+            background: linear-gradient(135deg, rgba(255,255,255,0.03) 0%, rgba(15, 23, 42, 0) 100%);
+            color: #475569;
+        }
+
+        .card-disabled .download-btn {
+            background: #1e293b;
+            color: #475569;
+            cursor: not-allowed;
+            border-color: #334155;
+        }
+
+        .card-disabled:hover {
+            border-color: var(--border-color);
+            transform: none;
+            box-shadow: none;
         }
 
         @media (max-width: 640px) {
             .header h1 {
-                font-size: 2.25rem;
+                font-size: 2.5rem;
             }
             .download-grid {
                 grid-template-columns: 1fr;
@@ -186,51 +246,51 @@
     <div class="download-grid">
         <!-- 卡片1 -->
         <div class="download-card">
-            <div class="card-image">SMAI TOOLKIT</div>
+            <div class="card-image">TOOLKIT</div>
             <div class="card-content">
                 <h3>软件安装包</h3>
-                <p>SMAI Club 官方最新版本的综合工具包，包含常用功能组件。<br><span class="password-tag">密码: 1234</span></p>
+                <p>SMAI Club 官方最新版本的综合工具包，包含常用功能组件。<br><span class="password-tag">PW: 1234</span></p>
                 <a href="https://wwnr.lanzoum.com/iCNAW2vg40ji" class="download-btn" target="_blank">
                     <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
                     立即下载
                 </a>
                 <div class="file-info">
-                    <span>📦 66.6 KB</span>
-                    <span>v0.01 Alpha</span>
+                    <span>ZIP ARCHIVE</span>
+                    <span>66.6 KB</span>
                 </div>
             </div>
         </div>
 
         <!-- 卡片2 -->
         <div class="download-card">
-            <div class="card-image">SMAI APP</div>
+            <div class="card-image">APP v2.0</div>
             <div class="card-content">
                 <h3>SMAI 客户端</h3>
-                <p>含有独特功能的斯麦定制软件，提供更多互动体验。<br><span class="password-tag">密码: SMAI</span></p>
+                <p>含有独特功能的斯麦定制软件，提供更多互动体验。<br><span class="password-tag">PW: SMAI</span></p>
                 <a href="https://wwo.lanzouu.com/ijYLJ36ryfab" class="download-btn" target="_blank">
-                    <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                    <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"></path></svg>
                     立即下载
                 </a>
                 <div class="file-info">
-                    <span>📦 213 KB</span>
-                    <span>v2.0 Stable</span>
+                    <span>ANDROID APK</span>
+                    <span>213 KB</span>
                 </div>
             </div>
         </div>
 
         <!-- 卡片3 -->
-        <div class="download-card">
-            <div class="card-image">COMING SOON</div>
+        <div class="download-card card-disabled">
+            <div class="card-image">LOCKED</div>
             <div class="card-content">
                 <h3>神秘文件</h3>
                 <p>敬请期待下一个版本的神秘内容发布。目前仅为占位。</p>
-                <a href="#" class="download-btn" style="background-color: #cbd5e1; cursor: not-allowed;">
+                <a href="#" class="download-btn" onclick="return false;">
                     <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
                     暂未开放
                 </a>
                 <div class="file-info">
-                    <span>📦 0 MB</span>
-                    <span>未知格式</span>
+                    <span>UNKNOWN</span>
+                    <span>0 MB</span>
                 </div>
             </div>
         </div>

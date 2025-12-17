@@ -9,23 +9,26 @@
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&family=Plus+Jakarta+Sans:wght@500;700;800&display=swap" rel="stylesheet">
 
     <style>
         :root {
             --primary-color: #6366f1;
+            --primary-hover: #4f46e5;
             --secondary-color: #a855f7;
             --bg-gradient: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%);
             --glass-bg: rgba(255, 255, 255, 0.05);
             --glass-border: rgba(255, 255, 255, 0.1);
             --text-main: #f8fafc;
             --text-muted: #94a3b8;
+            --font-heading: 'Plus Jakarta Sans', sans-serif;
+            --font-body: 'Inter', sans-serif;
         }
 
         html, body {
             margin: 0;
             padding: 0;
-            font-family: 'Inter', sans-serif;
+            font-family: var(--font-body);
             background: var(--bg-gradient);
             color: var(--text-main);
             min-height: 100vh;
@@ -57,7 +60,7 @@
             width: 100%;
             max-width: 1200px;
             margin: 0 auto;
-            padding: 40px 20px;
+            padding: 60px 20px 40px;
             flex: 1;
             display: flex;
             flex-direction: column;
@@ -65,23 +68,30 @@
         }
 
         h1 {
-            font-size: 3rem;
+            font-family: var(--font-heading);
+            font-size: 3.5rem;
             font-weight: 800;
             text-align: center;
-            margin-bottom: 1rem;
+            margin-bottom: 1.5rem;
             background: linear-gradient(to right, #818cf8, #c084fc);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
-            letter-spacing: -0.05em;
+            letter-spacing: -0.03em;
             text-shadow: 0 10px 30px rgba(0,0,0,0.2);
         }
 
         .subtitle {
             text-align: center;
             color: var(--text-muted);
-            margin-bottom: 3rem;
-            font-size: 1.1rem;
-            max-width: 600px;
+            margin-bottom: 4rem;
+            font-size: 1.15rem;
+            max-width: 650px;
+            line-height: 1.6;
+            background: rgba(15, 23, 42, 0.5);
+            padding: 15px 30px;
+            border-radius: 50px;
+            border: 1px solid var(--glass-border);
+            backdrop-filter: blur(5px);
         }
 
         /* The drop area is now primarily handled by the ncmc-list component's empty state,
@@ -91,21 +101,36 @@
             display: flex;
             flex-direction: column;
             gap: 2rem;
+            background: rgba(15, 23, 42, 0.3);
+            border-radius: 24px;
+            padding: 20px;
+            border: 1px solid var(--glass-border);
+            box-shadow: 0 20px 40px -10px rgba(0,0,0,0.3);
         }
 
         /* Attribution and Footer */
         .footer {
-            padding: 20px;
+            padding: 30px;
             text-align: center;
             color: var(--text-muted);
             font-size: 0.9rem;
             margin-bottom: 60px; /* Space for audio player */
+            border-top: 1px solid var(--glass-border);
+            width: 100%;
+            background: rgba(15, 23, 42, 0.8);
+            backdrop-filter: blur(10px);
+        }
+
+        .footer p {
+            max-width: 1200px;
+            margin: 0 auto;
         }
 
         .footer a {
             color: var(--primary-color);
             text-decoration: none;
             transition: color 0.2s;
+            font-weight: 600;
         }
 
         .footer a:hover {
@@ -117,24 +142,37 @@
         .status-bar {
             position: fixed;
             top: 20px;
-            right: 20px;
-            background: rgba(15, 23, 42, 0.8);
+            left: 50%;
+            transform: translateX(-50%) translateY(-20px);
+            background: rgba(15, 23, 42, 0.9);
             backdrop-filter: blur(10px);
-            padding: 10px 20px;
+            padding: 10px 24px;
             border-radius: 50px;
             border: 1px solid var(--glass-border);
             color: var(--text-main);
             font-size: 0.9rem;
             opacity: 0;
-            transform: translateY(-20px);
-            transition: all 0.3s ease;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             z-index: 100;
             box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            display: flex;
+            align-items: center;
+            gap: 10px;
         }
 
         .status-bar.show {
             opacity: 1;
-            transform: translateY(0);
+            transform: translateX(-50%) translateY(0);
+        }
+
+        .status-bar::before {
+            content: '';
+            display: block;
+            width: 8px;
+            height: 8px;
+            background-color: #10b981;
+            border-radius: 50%;
+            box-shadow: 0 0 10px #10b981;
         }
 
         /* GitHub Corner */
@@ -160,9 +198,10 @@
         @media (max-width: 500px) {
             .github-corner:hover .octo-arm { animation: none; }
             .github-corner .octo-arm { animation: octocat-wave 560ms ease-in-out; }
+            h1 { font-size: 2.5rem; }
         }
 
-        /* Web Component Slots */
+        /* Web Component Slots Styling */
         ncmc-list {
             display: block;
             width: 100%;
@@ -174,6 +213,9 @@
             left: 0;
             width: 100%;
             z-index: 50;
+            background: rgba(15, 23, 42, 0.95);
+            backdrop-filter: blur(20px);
+            border-top: 1px solid var(--glass-border);
         }
     </style>
 
@@ -212,7 +254,9 @@
         const ncmcListElement = document.querySelector('ncmc-list');
 
         function showStatus(msg) {
-            statusMessageDiv.textContent = msg;
+            statusMessageDiv.childNodes[statusMessageDiv.childNodes.length - 1].textContent = msg; // update text node only to keep dot
+            if(statusMessageDiv.childNodes.length === 1) statusMessageDiv.textContent = msg; // fallback
+
             statusMessageDiv.classList.add('show');
             setTimeout(() => {
                 statusMessageDiv.classList.remove('show');
