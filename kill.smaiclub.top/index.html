@@ -10,37 +10,60 @@
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
     <style>
         :root {
-            --terminal-bg: #0d0d0d;
-            --terminal-text: #00ff41;
-            --terminal-dim: #008f11;
-            --accent: #ff0000;
-            --highlight: #ffff00;
-            --border: #333;
+            --terminal-bg: #050505;
+            --terminal-text: #33ff00;
+            --terminal-dim: #1a8000;
+            --accent: #ff003c;
+            --highlight: #ffee00;
+            --border: #1a1a1a;
+            --neon-glow: 0 0 10px rgba(51, 255, 0, 0.4);
+            --crt-scanline: rgba(18, 16, 16, 0.1);
+        }
+
+        * {
+            box-sizing: border-box;
         }
 
         body {
             background-color: var(--terminal-bg);
             color: var(--terminal-text);
             font-family: 'JetBrains Mono', 'Courier New', monospace;
-            max-width: 900px;
+            max-width: 1000px;
             margin: 0 auto;
-            padding: 40px 20px;
+            padding: 80px 20px 40px;
             line-height: 1.6;
-            background-image: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
+            overflow-x: hidden;
+        }
+
+        /* Scanline Background */
+        body::before {
+            content: " ";
+            display: block;
+            position: fixed;
+            top: 0;
+            left: 0;
+            bottom: 0;
+            right: 0;
+            background:
+                linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%),
+                linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
             background-size: 100% 2px, 3px 100%;
+            z-index: -1;
+            pointer-events: none;
         }
 
-        /* CRT Screen flicker effect */
+        /* CRT Flicker */
         @keyframes flicker {
-            0% { opacity: 0.97; }
-            5% { opacity: 0.95; }
-            10% { opacity: 0.9; }
-            15% { opacity: 0.95; }
-            20% { opacity: 0.99; }
+            0% { opacity: 0.95; }
+            5% { opacity: 0.9; }
+            10% { opacity: 0.95; }
+            15% { opacity: 0.99; }
             50% { opacity: 0.95; }
-            100% { opacity: 0.98; }
+            55% { opacity: 0.9; }
+            100% { opacity: 0.95; }
         }
 
+        /* CRT Overlay */
         body::after {
             content: " ";
             display: block;
@@ -49,157 +72,200 @@
             left: 0;
             bottom: 0;
             right: 0;
-            background: rgba(18, 16, 16, 0.1);
-            opacity: 0;
-            z-index: 2;
+            background: radial-gradient(circle, rgba(0,0,0,0) 60%, rgba(0,0,0,0.4) 100%);
+            z-index: 999;
             pointer-events: none;
             animation: flicker 0.15s infinite;
         }
         
         .header {
-            border-bottom: 2px solid var(--terminal-dim);
+            border-bottom: 2px solid var(--terminal-text);
             padding-bottom: 20px;
-            margin-bottom: 40px;
-            text-align: center;
-            text-transform: uppercase;
-            letter-spacing: 2px;
+            margin-bottom: 60px;
+            text-align: left;
+            position: relative;
         }
 
         .header h1 {
-            font-size: 2.5rem;
-            margin-bottom: 5px;
-            text-shadow: 0 0 10px var(--terminal-dim);
+            font-size: 4rem;
+            margin: 0;
+            text-shadow: var(--neon-glow);
+            letter-spacing: -2px;
+            line-height: 1;
         }
 
-        .header p {
-            color: var(--terminal-dim);
-            font-size: 0.9rem;
+        .header-sub {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+            margin-top: 10px;
         }
-        
-        .warning {
-            color: #ff3333;
-            background-color: rgba(50, 0, 0, 0.5);
-            padding: 15px;
-            border: 1px dashed #ff3333;
-            margin-bottom: 30px;
+
+        .status-badge {
+            background: var(--terminal-text);
+            color: #000;
+            padding: 2px 8px;
             font-weight: bold;
-            text-align: center;
+            font-size: 0.8rem;
         }
         
+        .warning-box {
+            border: 1px solid var(--accent);
+            color: var(--accent);
+            padding: 20px;
+            margin-bottom: 40px;
+            background: rgba(255, 0, 60, 0.05);
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            box-shadow: 0 0 15px rgba(255, 0, 60, 0.1);
+        }
+
+        .warning-icon {
+            font-size: 2rem;
+            animation: blink 1s infinite;
+        }
+
+        @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
+
         .listings-container {
             display: grid;
-            gap: 20px;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 30px;
         }
 
         .listing {
-            background-color: rgba(26, 26, 26, 0.8);
-            padding: 20px;
-            border: 1px solid var(--border);
+            background-color: rgba(10, 10, 10, 0.8);
+            border: 1px solid var(--terminal-dim);
+            padding: 25px;
             position: relative;
-            transition: all 0.3s ease;
+            transition: all 0.2s ease;
+            display: flex;
+            flex-direction: column;
         }
 
-        .listing::before {
-            content: '';
+        /* Corner accents */
+        .listing::after {
+            content: "";
             position: absolute;
-            top: 0;
-            left: 0;
-            width: 4px;
-            height: 100%;
-            background-color: var(--border);
-            transition: background-color 0.3s;
+            bottom: -1px;
+            right: -1px;
+            width: 10px;
+            height: 10px;
+            border-bottom: 2px solid var(--terminal-text);
+            border-right: 2px solid var(--terminal-text);
+            transition: all 0.2s;
         }
 
         .listing:hover {
             border-color: var(--terminal-text);
-            box-shadow: 0 0 15px rgba(0, 255, 65, 0.1);
+            box-shadow: 0 0 20px rgba(51, 255, 0, 0.1);
+            transform: translateY(-2px);
         }
 
-        .listing:hover::before {
-            background-color: var(--terminal-text);
+        .listing:hover::after {
+            width: 100%;
+            height: 100%;
+            opacity: 0.1;
+            background: var(--terminal-text);
+            pointer-events: none;
+            border: none;
         }
 
         .listing h2 {
             margin-top: 0;
-            font-size: 1.2rem;
+            font-size: 1.3rem;
             color: #fff;
-            display: flex;
-            align-items: center;
-        }
-
-        .listing h2::before {
-            content: '>';
-            margin-right: 10px;
-            color: var(--terminal-text);
+            margin-bottom: 15px;
+            text-transform: uppercase;
         }
 
         .meta {
-            font-size: 0.85rem;
-            color: #888;
-            margin-bottom: 10px;
+            font-size: 0.75rem;
+            color: var(--terminal-dim);
+            margin-bottom: 15px;
             display: flex;
-            gap: 15px;
+            flex-wrap: wrap;
+            gap: 8px;
         }
 
         .meta span {
-            background: #222;
+            border: 1px solid var(--terminal-dim);
             padding: 2px 6px;
         }
         
+        .desc {
+            flex-grow: 1;
+            font-size: 0.9rem;
+            color: #ccc;
+            margin-bottom: 20px;
+        }
+
         .price {
             color: var(--highlight);
             font-weight: bold;
-            font-size: 1.1rem;
-            margin: 15px 0;
+            font-size: 1.2rem;
+            margin-bottom: 20px;
+            text-shadow: 0 0 5px rgba(255, 238, 0, 0.3);
+            display: flex;
+            align-items: center;
+            gap: 10px;
         }
         
+        .price::before {
+            content: "$";
+            font-size: 0.8em;
+            color: var(--terminal-dim);
+        }
+
         .button {
-            background-color: transparent;
+            background: transparent;
             color: var(--terminal-text);
             border: 1px solid var(--terminal-text);
-            padding: 8px 20px;
+            padding: 10px 0;
+            text-align: center;
             text-decoration: none;
-            display: inline-block;
-            font-family: inherit;
-            cursor: pointer;
             text-transform: uppercase;
+            font-weight: bold;
             font-size: 0.9rem;
             transition: all 0.2s;
-            position: relative;
-            overflow: hidden;
+            cursor: pointer;
         }
         
         .button:hover {
-            background-color: var(--terminal-text);
+            background: var(--terminal-text);
             color: #000;
-            box-shadow: 0 0 10px var(--terminal-text);
+            box-shadow: 0 0 15px var(--terminal-text);
         }
         
         .footer {
-            margin-top: 60px;
-            font-size: 0.75rem;
-            color: #444;
-            border-top: 1px dashed var(--border);
-            padding-top: 20px;
-            text-align: center;
+            margin-top: 80px;
+            border-top: 1px solid var(--border);
+            padding-top: 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            flex-wrap: wrap;
+            gap: 20px;
+            font-size: 0.8rem;
+            color: var(--terminal-dim);
         }
         
         .pgp-key {
+            font-family: monospace;
             font-size: 0.7em;
-            background-color: #000;
-            color: #555;
-            padding: 15px;
-            margin-top: 15px;
-            overflow-x: auto;
-            border: 1px solid #222;
-            text-align: left;
+            background: #000;
+            padding: 10px;
+            border: 1px solid var(--border);
+            color: #444;
+            max-width: 400px;
+            white-space: pre-wrap;
         }
 
-        @media (max-width: 600px) {
-            .meta {
-                flex-direction: column;
-                gap: 5px;
-            }
+        @media (max-width: 768px) {
+            .header h1 { font-size: 2.5rem; }
+            .listings-container { grid-template-columns: 1fr; }
+            .footer { flex-direction: column; }
         }
     </style>
 </head>
