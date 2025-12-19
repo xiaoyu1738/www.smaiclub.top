@@ -10,4 +10,4 @@ routes = [
 [[d1_databases]]
 binding = "DB"
 database_name = "user_db"
-database_id = "978636c9-a9db-43fa-953e-5f14eb9dd8e2"
+database_id = "0b100581-db8c-46a3-92f8-55d2ee05c30a"
