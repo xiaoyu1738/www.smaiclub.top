@@ -10,12 +10,13 @@
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
     <style>
         :root {
-            --terminal-bg: #0d0d0d;
+            --terminal-bg: #050505;
             --terminal-text: #00ff41;
             --terminal-dim: #008f11;
             --accent: #ff0000;
             --highlight: #ffff00;
             --border: #333;
+            --glow: 0 0 10px var(--terminal-text), 0 0 20px var(--terminal-text);
         }
 
         body {
@@ -24,20 +25,36 @@
             font-family: 'JetBrains Mono', 'Courier New', monospace;
             max-width: 900px;
             margin: 0 auto;
-            padding: 40px 20px;
+            padding: 60px 20px;
             line-height: 1.6;
-            background-image: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
-            background-size: 100% 2px, 3px 100%;
+            overflow-x: hidden;
+        }
+
+        /* Scanlines */
+        body::before {
+            content: " ";
+            display: block;
+            position: fixed;
+            top: 0; left: 0; bottom: 0; right: 0;
+            background: linear-gradient(
+                to bottom,
+                rgba(18, 16, 16, 0) 50%,
+                rgba(0, 0, 0, 0.4) 50%
+            );
+            background-size: 100% 4px;
+            z-index: 100;
+            pointer-events: none;
         }
 
         /* CRT Screen flicker effect */
         @keyframes flicker {
             0% { opacity: 0.97; }
-            5% { opacity: 0.95; }
+            5% { opacity: 0.92; }
             10% { opacity: 0.9; }
             15% { opacity: 0.95; }
-            20% { opacity: 0.99; }
-            50% { opacity: 0.95; }
+            20% { opacity: 0.98; }
+            50% { opacity: 0.94; }
+            80% { opacity: 0.96; }
             100% { opacity: 0.98; }
         }
 
@@ -45,13 +62,10 @@
             content: " ";
             display: block;
             position: fixed;
-            top: 0;
-            left: 0;
-            bottom: 0;
-            right: 0;
-            background: rgba(18, 16, 16, 0.1);
+            top: 0; left: 0; bottom: 0; right: 0;
+            background: rgba(0, 255, 65, 0.02);
             opacity: 0;
-            z-index: 2;
+            z-index: 100;
             pointer-events: none;
             animation: flicker 0.15s infinite;
         }
@@ -62,13 +76,22 @@
             margin-bottom: 40px;
             text-align: center;
             text-transform: uppercase;
-            letter-spacing: 2px;
+            letter-spacing: 4px;
+            position: relative;
         }
 
         .header h1 {
-            font-size: 2.5rem;
+            font-size: 3rem;
             margin-bottom: 5px;
-            text-shadow: 0 0 10px var(--terminal-dim);
+            text-shadow: 0 0 15px var(--terminal-text);
+            animation: textGlitch 3s infinite;
+        }
+
+        @keyframes textGlitch {
+            0% { text-shadow: 2px 0 var(--accent), -2px 0 blue; }
+            2% { text-shadow: 2px 0 var(--accent), -2px 0 blue; }
+            4% { text-shadow: none; }
+            100% { text-shadow: none; }
         }
 
         .header p {
@@ -92,11 +115,18 @@
         }
 
         .listing {
-            background-color: rgba(26, 26, 26, 0.8);
+            background-color: rgba(10, 10, 10, 0.9);
             padding: 20px;
             border: 1px solid var(--border);
             position: relative;
-            transition: all 0.3s ease;
+            transition: all 0.2s ease;
+            clip-path: polygon(
+                0 0,
+                100% 0,
+                100% calc(100% - 10px),
+                calc(100% - 10px) 100%,
+                0 100%
+            );
         }
 
         .listing::before {
@@ -104,19 +134,22 @@
             position: absolute;
             top: 0;
             left: 0;
-            width: 4px;
+            width: 2px;
             height: 100%;
             background-color: var(--border);
-            transition: background-color 0.3s;
+            transition: background-color 0.2s, width 0.2s, box-shadow 0.2s;
         }
 
         .listing:hover {
             border-color: var(--terminal-text);
-            box-shadow: 0 0 15px rgba(0, 255, 65, 0.1);
+            box-shadow: 0 0 10px rgba(0, 255, 65, 0.2);
+            transform: translateX(5px);
         }
 
         .listing:hover::before {
             background-color: var(--terminal-text);
+            width: 4px;
+            box-shadow: 0 0 10px var(--terminal-text);
         }
 
         .listing h2 {
