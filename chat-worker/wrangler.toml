@@ -15,7 +15,7 @@ bindings = [
 
 [[migrations]]
 tag = "v1"
-new_classes = ["ChatRoom"]
+new_sqlite_classes = ["ChatRoom"]
 
 # Chat Database (New)
 [[d1_databases]]
