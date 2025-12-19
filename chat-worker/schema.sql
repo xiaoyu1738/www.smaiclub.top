@@ -1,23 +1,26 @@
 DROP TABLE IF EXISTS messages;
+DROP TABLE IF EXISTS rooms;
+
+-- Rooms Table
+CREATE TABLE rooms (
+    id INTEGER PRIMARY KEY,
+    name TEXT NOT NULL,
+    is_private INTEGER DEFAULT 0,
+    owner TEXT NOT NULL,
+    created_at INTEGER NOT NULL,
+    last_accessed INTEGER NOT NULL
+);
+
+-- Messages Table
 CREATE TABLE messages (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    room_id TEXT NOT NULL,
-    username TEXT NOT NULL,
-    role TEXT,
+    room_id INTEGER NOT NULL,
+    iv TEXT NOT NULL,
     content TEXT NOT NULL,
+    sender TEXT NOT NULL,
     created_at INTEGER NOT NULL
 );
 
-DROP TABLE IF EXISTS rooms;
-CREATE TABLE rooms (
-    id TEXT PRIMARY KEY,
-    name TEXT NOT NULL,
-    description TEXT,
-    min_role_level INTEGER DEFAULT 0
-);
-
--- Seed initial rooms
-INSERT INTO rooms (id, name, description, min_role_level) VALUES
-('lobby', '公共大厅', '欢迎所有人', 0),
-('vip', 'VIP 休息室', 'VIP 会员专属', 1),
-('svip', 'SVIP 俱乐部', 'SVIP 尊享', 2);
+-- Seed "Issues" Room (Emergency Mode)
+INSERT INTO rooms (id, name, is_private, owner, created_at, last_accessed)
+VALUES (1, 'Issues', 0, 'system', 1735689600000, 1735689600000);

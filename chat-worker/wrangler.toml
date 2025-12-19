@@ -17,8 +17,18 @@ bindings = [
 tag = "v1"
 new_classes = ["ChatRoom"]
 
-# D1 数据库配置
+# Chat Database (New)
 [[d1_databases]]
-binding = "DB"
+binding = "CHAT_DB"
 database_name = "prod-chat-db"
-database_id = "764b8e99-492d-4640-a369-a06c7c90a40d"
+database_id = "2b3109cb-9d56-4262-984d-c2a2eb38156c"
+
+# User Database (Existing)
+[[d1_databases]]
+binding = "USER_DB"
+database_name = "user_db"
+database_id = "0b100581-db8c-46a3-92f8-55d2ee05c30a"
+
+# Cleanup Cron
+[triggers]
+crons = ["*/15 * * * *"] # Every 15 minutes

@@ -1,125 +1,183 @@
-import { ChatRoom } from './chatRoom.js';
-import { htmlTemplate } from './htmlTemplate.js'; // We will put frontend code here or serve it
+import { ChatRoom } from './ChatRoom.js';
+import { generateRoomKey, getUserFromRequest, getEffectiveRole, getTierLimits } from './utils.js';
 
 export { ChatRoom };
-
-const corsHeaders = {
-    "Access-Control-Allow-Origin": "https://www.smaiclub.top", // Allow main site? Or self?
-    "Access-Control-Allow-Methods": "GET, HEAD, POST, OPTIONS",
-    "Access-Control-Allow-Headers": "Content-Type, Authorization, Cookie",
-    "Access-Control-Allow-Credentials": "true",
-};
 
 export default {
     async fetch(request, env, ctx) {
         const url = new URL(request.url);
 
-        // Handle CORS
+        // CORS Headers
+        const corsHeaders = {
+            "Access-Control-Allow-Origin": request.headers.get("Origin") || "*",
+            "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+            "Access-Control-Allow-Headers": "Content-Type, Authorization, Cookie, Room-Key",
+            "Access-Control-Allow-Credentials": "true",
+        };
+
         if (request.method === "OPTIONS") {
             return new Response(null, { headers: corsHeaders });
         }
 
-        // Serve Frontend
-        if (url.pathname === "/" || url.pathname === "/index.html") {
-            return new Response(htmlTemplate(), { headers: { "Content-Type": "text/html" } });
-        }
+        // --- 1. Create Room (POST /api/rooms) ---
+        if (request.method === "POST" && url.pathname === "/api/rooms") {
+            try {
+                const user = await getUserFromRequest(request, env);
+                if (!user) return new Response("Unauthorized", { status: 401, headers: corsHeaders });
 
-        // API: List Rooms
-        if (url.pathname === "/api/rooms") {
-            const rooms = await env.DB.prepare("SELECT * FROM rooms").all();
-            return new Response(JSON.stringify(rooms.results), {
-                headers: { "Content-Type": "application/json", ...corsHeaders }
-            });
-        }
+                const role = getEffectiveRole(user);
+                const limits = getTierLimits(role);
+                const body = await request.json();
 
-        // API: Chat Room (WebSocket & History)
-        // /api/room/:roomId/websocket
-        // /api/room/:roomId/history
-        if (url.pathname.startsWith("/api/room/")) {
-            const pathParts = url.pathname.split('/');
-            const roomId = pathParts[3];
-            const action = pathParts[4];
+                // 1. Check Global ID Limit (Fail-safe)
+                const countResult = await env.CHAT_DB.prepare("SELECT COUNT(*) as count FROM rooms").first();
+                if (countResult.count >= 99990) {
+                     return new Response(JSON.stringify({
+                         error: "EMERGENCY_MODE",
+                         message: "System busy. Contact Admin."
+                     }), { status: 503, headers: corsHeaders });
+                }
 
-            // 1. Auth Check (Simplistic: Call Login Worker or Verify Token)
-            // Since we don't have direct access to shared secret here effectively without env,
-            // we will assume the browser sends cookies.
-            // But we need to verify them.
-            // For this task, I'll simulate auth verification by checking if a header or param exists,
-            // OR ideally, we assume the user has a valid 'auth_token' cookie and we verify it.
-            // To properly verify, we need the SAME SECRET as login-worker.
-            // I will assume `env.SECRET_KEY` is set.
+                // 2. Check User Creation Limit (Monthly)
+                const currentMonthStart = new Date();
+                currentMonthStart.setDate(1);
+                currentMonthStart.setHours(0,0,0,0);
+                const createdCount = await env.CHAT_DB.prepare(
+                    "SELECT COUNT(*) as count FROM rooms WHERE owner = ? AND created_at >= ?"
+                ).bind(user.username, currentMonthStart.getTime()).first();
 
-            let user = await getUserFromCookie(request, env);
-            if (!user) {
-                return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: corsHeaders });
+                if (createdCount.count >= limits.roomLimit) {
+                    return new Response(JSON.stringify({ error: "Creation limit reached for this month" }), { status: 403, headers: corsHeaders });
+                }
+
+                // 3. Generate Room Data
+                const roomKey = await generateRoomKey();
+
+                // Calculate Hash of Key for storage/verification
+                const enc = new TextEncoder();
+                const keyData = enc.encode(roomKey);
+                const hashBuffer = await crypto.subtle.digest("SHA-256", keyData);
+                const hashArray = Array.from(new Uint8Array(hashBuffer));
+                const keyHash = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+
+                // Find unused ID
+                let roomId = null;
+                for (let i = 0; i < 5; i++) {
+                    const candidate = Math.floor(Math.random() * 99999) + 2;
+                    const existing = await env.CHAT_DB.prepare("SELECT 1 FROM rooms WHERE id = ?").bind(candidate).first();
+                    if (!existing) {
+                        roomId = candidate;
+                        break;
+                    }
+                }
+                if (!roomId) return new Response(JSON.stringify({ error: "Could not allocate ID, try again" }), { status: 500, headers: corsHeaders });
+
+                // 4. Create in D1
+                try {
+                    await env.CHAT_DB.prepare(
+                        "INSERT INTO rooms (id, name, is_private, owner, created_at, last_accessed) VALUES (?, ?, ?, ?, ?, ?)"
+                    ).bind(roomId, body.name || `Room ${roomId}`, body.isPrivate ? 1 : 0, user.username, Date.now(), Date.now()).run();
+                } catch (e) {
+                     return new Response(JSON.stringify({
+                         error: "EMERGENCY_MODE",
+                         message: "Database Error. Contact Admin."
+                     }), { status: 503, headers: corsHeaders });
+                }
+
+                // 5. Initialize DO (Store KeyHash & ID)
+                const id = env.CHAT_ROOM.idFromName(roomId.toString());
+                const stub = env.CHAT_ROOM.get(id);
+
+                await stub.fetch(new Request("http://internal/init", {
+                    method: "POST",
+                    body: JSON.stringify({ keyHash, roomId })
+                }));
+
+                return new Response(JSON.stringify({
+                    success: true,
+                    roomId,
+                    roomKey
+                }), { status: 201, headers: corsHeaders });
+
+            } catch (e) {
+                return new Response(JSON.stringify({ error: e.message }), { status: 500, headers: corsHeaders });
             }
-
-            // Check Access Level
-            // Get room info
-            const room = await env.DB.prepare("SELECT * FROM rooms WHERE id = ?").bind(roomId).first();
-            if (!room) return new Response("Room not found", { status: 404 });
-
-            const roleLevels = { 'user': 0, 'vip': 1, 'svip1': 2, 'svip2': 3 };
-            const userLevel = roleLevels[user.role] || 0;
-            if (userLevel < room.min_role_level) {
-                return new Response(JSON.stringify({ error: "Insufficient permissions" }), { status: 403, headers: corsHeaders });
-            }
-
-            // 2. Forward to Durable Object
-            const id = env.CHAT_ROOM.idFromName(roomId);
-            const obj = env.CHAT_ROOM.get(id);
-
-            // Append user info to URL for DO to use
-            const doUrl = new URL(request.url);
-            doUrl.searchParams.set("username", user.username);
-            doUrl.searchParams.set("role", user.role);
-
-            // Re-create request with new URL
-            const newRequest = new Request(doUrl.toString(), request);
-            return obj.fetch(newRequest);
         }
 
-        return new Response("Not Found", { status: 404 });
+        // --- 2. Join/Connect Room (WebSocket) ---
+        if (url.pathname.startsWith("/api/rooms/")) {
+            // Path: /api/rooms/:id/websocket
+            const match = url.pathname.match(/\/api\/rooms\/(\d+)\/websocket/);
+            if (match) {
+                const roomId = match[1];
+                const key = url.searchParams.get("key");
+
+                // Auth Check
+                const user = await getUserFromRequest(request, env);
+                if (!user) return new Response("Unauthorized", { status: 401, headers: corsHeaders });
+
+                // Check if Room exists in D1 (or if it's Room 1)
+                const room = await env.CHAT_DB.prepare("SELECT * FROM rooms WHERE id = ?").bind(roomId).first();
+
+                // Allow Room 1 even if logic failed elsewhere, as long as it's seeded
+                if (!room && roomId !== '1' && roomId !== '000001') {
+                    return new Response("Room not found", { status: 404, headers: corsHeaders });
+                }
+
+                // Get DO
+                // Use string ID for consistency
+                const id = env.CHAT_ROOM.idFromName(parseInt(roomId).toString());
+                const stub = env.CHAT_ROOM.get(id);
+
+                // Update URL with user info for DO to use
+                const doUrl = new URL(request.url);
+                doUrl.searchParams.set("username", user.username);
+                doUrl.searchParams.set("role", getEffectiveRole(user));
+
+                return stub.fetch(new Request(doUrl.toString(), request));
+            }
+        }
+
+        return new Response("Not Found", { status: 404, headers: corsHeaders });
+    },
+
+    // --- Scheduled Cleanup (Fail-safe Protocol) ---
+    async scheduled(event, env, ctx) {
+        // 1. Check Triggers
+        let emergency = false;
+        try {
+            const count = await env.CHAT_DB.prepare("SELECT COUNT(*) as count FROM rooms").first();
+            if (count.count >= 99990) emergency = true;
+        } catch (e) {
+            emergency = true;
+        }
+
+        if (emergency) {
+            console.log("Emergency Mode Cleanup Triggered");
+            const THIRTY_DAYS = 30 * 24 * 60 * 60 * 1000;
+            const cutoff = Date.now() - THIRTY_DAYS;
+
+            const { results } = await env.CHAT_DB.prepare(
+                "SELECT id FROM rooms WHERE last_accessed < ?"
+            ).bind(cutoff).all();
+
+            for (const row of results) {
+                const roomId = row.id;
+
+                try {
+                    // Delete Messages
+                    await env.CHAT_DB.prepare("DELETE FROM messages WHERE room_id = ?").bind(roomId).run();
+                    // Delete Room
+                    await env.CHAT_DB.prepare("DELETE FROM rooms WHERE id = ?").bind(roomId).run();
+
+                    // Destroy DO
+                    const id = env.CHAT_ROOM.idFromName(roomId.toString());
+                    const stub = env.CHAT_ROOM.get(id);
+                    ctx.waitUntil(stub.fetch("http://internal/destroy", { method: "POST" }));
+                } catch(e) {
+                    console.error("Cleanup failed for room", roomId, e);
+                }
+            }
+        }
     }
 };
-
-// --- Auth Helper (Duplicated from login-worker, ideally shared package) ---
-async function getUserFromCookie(request, env) {
-    const cookieHeader = request.headers.get("Cookie");
-    if (!cookieHeader) return null;
-
-    // Parse cookies
-    const cookies = {};
-    cookieHeader.split(';').forEach(c => {
-        const [k, v] = c.split('=');
-        if(k && v) cookies[k.trim()] = decodeURI(v.trim());
-    });
-
-    const token = cookies['auth_token'];
-    if (!token) return null;
-
-    try {
-        // Decrypt
-        // Note: This requires env.SECRET_KEY to match login-worker's key
-        const sessionStr = await decryptData(token, env.SECRET_KEY, "SESSION_SALT");
-        const session = JSON.parse(sessionStr);
-        return session; // { username, role, ... }
-    } catch (e) {
-        return null;
-    }
-}
-
-async function decryptData(encryptedText, secretKey, salt) {
-    if (!secretKey) return null; // If key missing in env, fail safe
-    const [ivB64, dataB64] = encryptedText.split(":");
-    const iv = Uint8Array.from(atob(ivB64), c => c.charCodeAt(0));
-    const data = Uint8Array.from(atob(dataB64), c => c.charCodeAt(0));
-    const enc = new TextEncoder();
-    const keyMaterial = await crypto.subtle.importKey("raw", enc.encode(secretKey), "PBKDF2", false, ["deriveKey"]);
-    const key = await crypto.subtle.deriveKey(
-        { name: "PBKDF2", salt: enc.encode(salt), iterations: 100000, hash: "SHA-256" },
-        keyMaterial, { name: "AES-GCM", length: 256 }, false, ["decrypt"]
-    );
-    const decrypted = await crypto.subtle.decrypt({ name: "AES-GCM", iv }, key, data);
-    return new TextDecoder().decode(decrypted);
-}
