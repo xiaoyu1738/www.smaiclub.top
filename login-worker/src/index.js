@@ -44,13 +44,6 @@ export default {
                 const user = await getUserFromCookie(request, env);
                 if (!user) return new Response(JSON.stringify({ loggedIn: false }), { headers: responseHeaders });
 
-                // 处理会员等级显示
-                let displayRole = user.role;
-                if (displayRole === 'svip') {
-                    // 如果存储的是 svip1/svip2，前端可能需要区分，这里暂时统称 svip 或者根据具体值返回
-                    // 假设 DB 中存的是 'svip1', 'svip2', 'vip'
-                }
-
                 // sessionRole 是经过许可证验证后的实际权限
                 const effectiveRole = user.sessionRole || user.role || 'user';
 
@@ -115,7 +108,6 @@ export default {
 
                 // VIP 验证逻辑
                 if (['vip', 'svip1', 'svip2'].includes(user.role)) {
-                    // 如果用户已设置许可证，则必须验证
                     if (user.licenseKey) {
                         if (!licenseKey) {
                             return jsonResp({ error: "LICENSE_REQUIRED", message: "请输入会员许可证以继续" }, 403, responseHeaders);
@@ -125,8 +117,6 @@ export default {
                             return jsonResp({ error: "LICENSE_INVALID", message: "许可证错误" }, 403, responseHeaders);
                         }
                     } else {
-                        // VIP 但未设置许可证？（理论上不应发生，除非是旧数据）
-                        // 允许登录但降级，或者提示去设置
                         warning = "LICENSE_NOT_SET";
                         sessionRole = 'user';
                     }
@@ -148,8 +138,6 @@ export default {
             // --- 修改密码 ---
             if (url.pathname === "/api/change-password") {
                 const { username, oldPassword, newPassword } = body;
-
-                // D1 获取用户
                 const user = await env.DB.prepare('SELECT * FROM users WHERE username = ?').bind(username).first();
                 if (!user) return jsonResp({ error: "用户不存在" }, 404, responseHeaders);
 
@@ -159,8 +147,6 @@ export default {
                 if (!PASSWORD_REGEX.test(newPassword)) return jsonResp({ error: "新密码强度不足" }, 400, responseHeaders);
 
                 const newEncrypted = await encryptData(newPassword, env.SECRET_KEY, user.salt);
-
-                // D1 更新密码
                 await env.DB.prepare('UPDATE users SET password = ? WHERE username = ?').bind(newEncrypted, username).run();
 
                 return jsonResp({ success: true }, 200, responseHeaders);
@@ -179,7 +165,6 @@ export default {
                     return jsonResp({ error: "请提供个人信息" }, 400, responseHeaders);
                 }
 
-                // 防止降级逻辑
                 const roleLevels = { 'user': 0, 'vip': 1, 'svip1': 2, 'svip2': 3 };
                 const currentLevel = roleLevels[user.role] || 0;
                 const newLevel = roleLevels[tier] || 0;
@@ -191,7 +176,6 @@ export default {
                 const lastPurchase = Date.now();
                 const personalInfoStr = JSON.stringify(personalInfo);
 
-                // D1 更新用户 (购买)
                 await env.DB.prepare(
                     'UPDATE users SET role = ?, licensePending = 1, personalInfo = ?, lastPurchase = ? WHERE username = ?'
                 ).bind(tier, personalInfoStr, lastPurchase, user.username).run();
@@ -208,13 +192,10 @@ export default {
                 if (!licenseKey || licenseKey.length < 4) return jsonResp({ error: "许可证太短" }, 400, responseHeaders);
 
                 const encryptedLicense = await encryptData(licenseKey, env.SECRET_KEY, user.salt);
-
-                // D1 更新用户 (设置许可证)
                 await env.DB.prepare(
                     'UPDATE users SET licenseKey = ?, licensePending = NULL WHERE username = ?'
                 ).bind(encryptedLicense, user.username).run();
 
-                // 设置完成后，自动清除当前 session 强制用户重登以应用新权限
                 const cookie = `auth_token=; Path=/; Domain=.smaiclub.top; Max-Age=0; Secure; SameSite=None`;
                 return new Response(JSON.stringify({ success: true }), {
                      headers: { "Content-Type": "application/json", "Set-Cookie": cookie, ...responseHeaders }
@@ -250,18 +231,9 @@ async function getUserFromCookie(request, env) {
     try {
         const sessionStr = await decryptData(token, env.SECRET_KEY, "SESSION_SALT");
         const session = JSON.parse(sessionStr);
-        // D1 获取用户
         const user = await env.DB.prepare('SELECT * FROM users WHERE username = ?').bind(session.username).first();
         if (!user) return null;
-
         user.sessionRole = session.role;
-        // 自动解析 JSON 字段 (虽然 SQL 返回的是 TEXT/NULL，需要手动解析吗？
-        // D1 返回的 TEXT 字段是字符串，如果我们在 JS 中存储了 JSON string，这里需要解析吗？
-        // 为了兼容之前的 user.personalInfo 访问，如果需要的话可以解析，但目前代码中 user.personalInfo 只是在 buy 接口存储，
-        // 在 get 中并没有用到 specific fields，只是返回整个 user 给前端显示 role 等。
-        // 为了安全，我们通常不返回 personalInfo 给前端，除非特定 API。
-        // /api/me 接口里没有返回 personalInfo。所以这里不需要解析。
-
         return user;
     } catch (e) {
         return null;
@@ -307,156 +279,217 @@ async function decryptData(encryptedText, secretKey, salt) {
 async function generateCommonScript() {
     return `
 (function() {
-    // 动态注入 CSS
     const style = document.createElement('style');
     style.innerHTML = \`
-        .smai-auth-li { margin-left: auto !important; position: relative; list-style:none; }
+        #smai-global-auth {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            z-index: 10000;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+        }
+
         .smai-auth-btn {
-            background: linear-gradient(135deg, #0071e3, #00c6fb);
+            background: rgba(29, 29, 31, 0.7);
+            backdrop-filter: blur(15px);
+            -webkit-backdrop-filter: blur(15px);
             color: white !important;
-            padding: 8px 16px;
-            border-radius: 20px;
+            padding: 6px 14px;
+            border-radius: 50px;
             font-weight: 500;
             text-decoration: none;
             display: flex;
             align-items: center;
-            gap: 6px;
+            gap: 8px;
             cursor: pointer;
-            transition: transform 0.2s;
+            transition: all 0.3s ease;
             font-size: 14px;
-            border: none;
-            outline: none;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
         }
-        .smai-auth-btn:hover { transform: scale(1.05); }
-        .smai-avatar-img { width: 24px; height: 24px; border-radius: 50%; background: rgba(255,255,255,0.2); display: flex; align-items: center; justify-content: center; font-size: 12px; }
 
-        /* 下拉菜单 */
+        .smai-auth-btn:hover {
+            background: rgba(29, 29, 31, 0.9);
+            transform: translateY(-1px);
+            box-shadow: 0 6px 16px rgba(0, 0, 0, 0.15);
+            border-color: rgba(255, 255, 255, 0.2);
+        }
+
+        .smai-avatar-img {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #0071e3, #00c6fb);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            font-weight: 600;
+            color: white;
+        }
+
         .smai-auth-dropdown {
             position: absolute;
             top: 100%;
-            right: 0;
-            margin-top: 12px;
+            left: 0;
+            margin-top: 10px;
             background: rgba(29, 29, 31, 0.95);
             backdrop-filter: blur(20px);
-            border-radius: 12px;
-            width: 200px;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+            -webkit-backdrop-filter: blur(20px);
+            border-radius: 14px;
+            width: 220px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.3);
             border: 1px solid rgba(255,255,255,0.1);
-            display: none;
+            opacity: 0;
+            visibility: hidden;
+            transform: translateY(-10px);
+            transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
             flex-direction: column;
             overflow: hidden;
-            z-index: 9999;
+            transform-origin: top left;
         }
-        .smai-auth-dropdown.show { display: flex; animation: fadeInDown 0.2s ease; }
-        @keyframes fadeInDown { from { opacity:0; transform:translateY(-10px); } to { opacity:1; transform:translateY(0); } }
 
-        .smai-drop-header { padding: 15px; border-bottom: 1px solid rgba(255,255,255,0.1); }
-        .smai-drop-user { color: white; font-weight: 600; font-size: 15px; }
-        .smai-drop-role { font-size: 11px; padding: 2px 6px; border-radius: 4px; background: #333; color: #aaa; margin-top: 4px; display: inline-block; }
-        .smai-role-vip { background: linear-gradient(45deg, #FFD700, #FFA500); color: black; }
+        .smai-auth-dropdown.show {
+            opacity: 1;
+            visibility: visible;
+            transform: translateY(0);
+        }
+
+        .smai-drop-header {
+            padding: 16px;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            background: rgba(255,255,255,0.02);
+        }
+
+        .smai-drop-user {
+            color: white;
+            font-weight: 600;
+            font-size: 15px;
+            margin-bottom: 4px;
+        }
+
+        .smai-drop-role {
+            font-size: 11px;
+            padding: 2px 8px;
+            border-radius: 10px;
+            background: #444;
+            color: #ddd;
+            display: inline-block;
+            font-weight: 500;
+        }
+
+        .smai-role-vip {
+            background: linear-gradient(90deg, #FFD700, #FFA500);
+            color: #1a1a1a;
+            font-weight: bold;
+        }
 
         .smai-drop-item {
-            padding: 12px 15px;
-            color: #ddd;
+            padding: 12px 16px;
+            color: #ccc;
             text-decoration: none;
             font-size: 14px;
-            transition: background 0.2s;
-            display: block;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+            border-left: 2px solid transparent;
         }
-        .smai-drop-item:hover { background: rgba(255,255,255,0.1); color: white; }
-        .smai-drop-danger { color: #ff453a; }
-        .smai-drop-danger:hover { background: rgba(255, 69, 58, 0.1); }
 
-        /* Fallback container for pages without navbar */
-        #smai-fallback-nav {
-            position: fixed; top: 20px; right: 20px; z-index: 9999;
+        .smai-drop-item:hover {
+            background: rgba(255,255,255,0.1);
+            color: white;
+            border-left-color: #0071e3;
+        }
+
+        .smai-drop-danger {
+            color: #ff453a;
+        }
+
+        .smai-drop-danger:hover {
+            background: rgba(255, 69, 58, 0.15);
+            color: #ff453a;
+            border-left-color: #ff453a;
         }
     \`;
     document.head.appendChild(style);
 
     async function initAuth() {
-        // 1. 检查页面是否有导航栏容器
-        // 优先寻找专门的 auth-container，否则回退到 .nav-links
-        let targetContainer = document.querySelector('.auth-container');
-        let isList = false;
+        const existingContainer = document.getElementById('smai-global-auth');
+        if (existingContainer) return;
 
-        if (!targetContainer) {
-            targetContainer = document.querySelector('.nav-links');
-            isList = true; // 如果是插在 ul 中，需要用 li
-        }
+        const container = document.createElement('div');
+        container.id = 'smai-global-auth';
+        document.body.appendChild(container);
 
-        // 如果没有导航栏，直接退出，不显示任何 UI
-        if (!targetContainer) return;
-
-        // 2. 获取用户状态
         try {
             const res = await fetch('https://login.smaiclub.top/api/me', { credentials: 'include' });
             const data = await res.json();
             
-            // 3. 渲染按钮
-            // 如果容器不是 UL，则创建 div，否则创建 li
-            const wrapper = document.createElement(isList ? 'li' : 'div');
-            wrapper.className = 'smai-auth-wrapper';
-            // 保持原有样式类名以便兼容
-            if(isList) wrapper.classList.add('smai-auth-li');
-            
             if (data.loggedIn) {
-                // 已登录
-                const roleMap = { 'vip': 'VIP', 'svip1': 'SVIP I', 'svip2': 'SVIP II', 'user': '普通用户' };
+                const roleMap = { 'vip': 'VIP', 'svip1': 'SVIP I', 'svip2': 'SVIP II', 'user': 'User' };
                 const roleName = roleMap[data.role] || data.role.toUpperCase();
                 const isVip = data.role.startsWith('vip') || data.role.startsWith('svip');
                 const avatarChar = data.username.charAt(0).toUpperCase();
 
-                wrapper.innerHTML = \`
-                    <div class="smai-auth-btn" onclick="toggleSmaiMenu(event)">
+                container.innerHTML = \`
+                    <div class="smai-auth-btn" id="smai-auth-trigger">
                         <div class="smai-avatar-img">\${avatarChar}</div>
-                        <span>\${isVip ? roleName : data.username}</span>
-                        <i class="fas fa-caret-down" style="font-size:10px"></i>
+                        <span>\${data.username}</span>
+                        <svg width="10" height="6" viewBox="0 0 10 6" fill="none" xmlns="http://www.w3.org/2000/svg" style="opacity:0.7">
+                            <path d="M1 1L5 5L9 1" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
                     </div>
                     <div class="smai-auth-dropdown" id="smai-user-menu">
                         <div class="smai-drop-header">
                             <div class="smai-drop-user">\${data.username}</div>
                             <span class="smai-drop-role \${isVip ? 'smai-role-vip' : ''}">\${roleName}</span>
                         </div>
-                        \${!isVip ? '<a href="https://www.smaiclub.top/shop/" class="smai-drop-item">💎 升级会员</a>' : ''}
+                        \${!isVip ? '<a href="https://www.smaiclub.top/shop/" class="smai-drop-item">💎 购买会员</a>' : ''}
                         <div class="smai-drop-item smai-drop-danger" onclick="logoutSmai()">退出登录</div>
                     </div>
                 \`;
+
+                // Bind events
+                const trigger = document.getElementById('smai-auth-trigger');
+                const menu = document.getElementById('smai-user-menu');
+
+                trigger.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    menu.classList.toggle('show');
+                });
+
             } else {
-                // 未登录
-                wrapper.innerHTML = \`
+                container.innerHTML = \`
                     <a href="https://login.smaiclub.top" class="smai-auth-btn">
-                        <i class="fas fa-user"></i> 登录 / 注册
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                            <circle cx="12" cy="7" r="4"></circle>
+                        </svg>
+                        登录
                     </a>
                 \`;
             }
-
-            targetContainer.appendChild(wrapper);
 
         } catch (e) {
             console.error("Auth init error:", e);
         }
     }
 
-    // 全局函数
-    window.toggleSmaiMenu = function(e) {
-        e.stopPropagation();
-        const menu = document.getElementById('smai-user-menu');
-        if (menu) menu.classList.toggle('show');
-    };
-
     window.logoutSmai = async function() {
         await fetch('https://login.smaiclub.top/api/logout', { method: 'POST', credentials: 'include' });
         window.location.reload();
     };
 
-    // 点击其他地方关闭菜单
-    document.addEventListener('click', () => {
+    document.addEventListener('click', (e) => {
         const menu = document.getElementById('smai-user-menu');
-        if (menu) menu.classList.remove('show');
+        const trigger = document.getElementById('smai-auth-trigger');
+        if (menu && menu.classList.contains('show') && !menu.contains(e.target) && !trigger.contains(e.target)) {
+            menu.classList.remove('show');
+        }
     });
 
-    // 启动
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', initAuth);
     } else {
