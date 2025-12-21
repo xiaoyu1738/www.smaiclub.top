@@ -10,14 +10,16 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
         :root {
-            --primary-color: #2563eb;
-            --primary-hover: #1d4ed8;
-            --bg-color: #f8fafc;
-            --text-color: #1e293b;
-            --text-muted: #64748b;
-            --card-bg: #ffffff;
-            --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-            --shadow-hover: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            /* App Store Dark Mode Aesthetic */
+            --primary-color: #0A84FF; /* iOS Blue */
+            --primary-hover: #409CFF;
+            --bg-color: #1c1c1e; /* Deep Grey Background */
+            --text-color: #f5f5f7; /* Off-white text */
+            --text-muted: #86868b; /* Grey text */
+            --card-bg: #2c2c2e; /* Lighter Grey Card */
+            --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3), 0 2px 4px -1px rgba(0, 0, 0, 0.2);
+            --shadow-hover: 0 20px 25px -5px rgba(0, 0, 0, 0.4), 0 10px 10px -5px rgba(0, 0, 0, 0.2);
+            --border-radius: 18px;
         }
 
         * {
@@ -27,8 +29,8 @@
         }
 
         body {
-            font-family: 'Inter', system-ui, -apple-system, sans-serif;
-            background-color: var(--bg-color);
+            font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background-color: #000000;
             color: var(--text-color);
             line-height: 1.5;
             padding: 40px 20px;
@@ -39,67 +41,84 @@
             text-align: center;
             margin-bottom: 60px;
             padding-top: 40px;
+            position: relative;
+        }
+
+        /* Gradient Header Effect */
+        .header::before {
+            content: '';
+            position: absolute;
+            top: -100px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 100%;
+            height: 300px;
+            background: radial-gradient(circle, rgba(10, 132, 255, 0.15) 0%, transparent 70%);
+            pointer-events: none;
+            z-index: -1;
         }
 
         .header h1 {
-            font-size: 3rem;
+            font-size: 3.5rem;
             color: var(--text-color);
             margin-bottom: 16px;
-            font-weight: 800;
-            letter-spacing: -0.025em;
+            font-weight: 700;
+            letter-spacing: -0.02em;
         }
 
         .header p {
             color: var(--text-muted);
-            font-size: 1.125rem;
+            font-size: 1.25rem;
             max-width: 600px;
             margin: 0 auto;
         }
 
         .download-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-            gap: 40px;
+            grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+            gap: 30px;
             max-width: 1200px;
             margin: 0 auto;
         }
 
         .download-card {
             background-color: var(--card-bg);
-            border-radius: 16px;
+            border-radius: var(--border-radius);
             box-shadow: var(--shadow);
             overflow: hidden;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            border: 1px solid rgba(0,0,0,0.05);
+            transition: all 0.4s cubic-bezier(0.25, 1, 0.5, 1);
+            border: 1px solid rgba(255,255,255,0.05);
             display: flex;
             flex-direction: column;
         }
 
         .download-card:hover {
-            transform: translateY(-8px);
+            transform: scale(1.02);
             box-shadow: var(--shadow-hover);
+            background-color: #3a3a3c;
         }
 
         .card-image {
-            height: 200px;
-            background: linear-gradient(135deg, #e0e7ff 0%, #f3f4f6 100%);
+            height: 220px;
+            background: linear-gradient(135deg, #323232 0%, #1c1c1e 100%);
             display: flex;
             align-items: center;
             justify-content: center;
-            color: #4f46e5;
-            font-size: 1.5rem;
+            color: var(--primary-color);
+            font-size: 1.8rem;
             font-weight: 700;
             letter-spacing: 0.05em;
             position: relative;
+            text-shadow: 0 2px 10px rgba(0,0,0,0.5);
         }
 
         .card-image::after {
             content: '';
             position: absolute;
             top: 0; left: 0; right: 0; bottom: 0;
-            background-image: radial-gradient(#cbd5e1 1px, transparent 1px);
-            background-size: 20px 20px;
-            opacity: 0.3;
+            background-image: radial-gradient(rgba(255,255,255,0.1) 1px, transparent 1px);
+            background-size: 24px 24px;
+            opacity: 0.5;
         }
 
         .card-content {
@@ -111,9 +130,9 @@
 
         .card-content h3 {
             color: var(--text-color);
-            margin-bottom: 12px;
-            font-size: 1.5rem;
-            font-weight: 700;
+            margin-bottom: 10px;
+            font-size: 1.4rem;
+            font-weight: 600;
         }
 
         .card-content p {
@@ -121,35 +140,41 @@
             margin-bottom: 24px;
             line-height: 1.6;
             flex-grow: 1;
+            font-size: 0.95rem;
         }
 
         .password-tag {
             display: inline-block;
-            background: #f1f5f9;
+            background: rgba(255,255,255,0.1);
             padding: 4px 8px;
-            border-radius: 4px;
+            border-radius: 6px;
             font-size: 0.85rem;
-            color: #475569;
+            color: #d1d1d6;
             margin-left: 8px;
-            font-family: monospace;
+            font-family: 'SF Mono', SFMono-Regular, ui-monospace, monospace;
+            border: 1px solid rgba(255,255,255,0.1);
         }
 
         .download-btn {
             display: inline-flex;
             align-items: center;
             justify-content: center;
-            background-color: var(--primary-color);
-            color: white;
+            background-color: rgba(255,255,255,0.1);
+            color: var(--primary-color);
             text-decoration: none;
             padding: 12px 24px;
-            border-radius: 8px;
+            border-radius: 20px;
             font-weight: 600;
-            transition: background-color 0.2s;
+            transition: all 0.2s;
             width: 100%;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            font-size: 0.8rem;
         }
 
         .download-btn:hover {
-            background-color: var(--primary-hover);
+            background-color: var(--primary-color);
+            color: white;
         }
 
         .download-btn svg {
@@ -161,9 +186,9 @@
             justify-content: space-between;
             margin-top: 24px;
             padding-top: 20px;
-            border-top: 1px solid #f1f5f9;
-            color: #94a3b8;
-            font-size: 0.875rem;
+            border-top: 1px solid rgba(255,255,255,0.1);
+            color: #636366;
+            font-size: 0.8rem;
             font-weight: 500;
         }
 

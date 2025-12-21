@@ -1,14 +1,24 @@
 /* --- 基本样式 --- */
+@font-face {
+    font-family: 'Rye';
+    src: url('https://fonts.gstatic.com/s/rye/v15/XoHm2YD5S7wQo9Wk.woff2') format('woff2');
+}
+
 body {
-    font-family: 'Times New Roman', 'SimHei', 'Microsoft YaHei', 'Noto Sans SC', serif; /* 更像旧报纸/海报的字体 */
+    font-family: 'Times New Roman', 'SimHei', 'Microsoft YaHei', 'Noto Sans SC', serif;
     max-width: 800px;
-    margin: 50px auto;
+    margin: 80px auto 50px auto; /* Added top margin for auth widget */
     padding: 40px;
-    border: 15px solid #3e2723; /* 深棕色木纹质感边框 */
-    background-color: #fdf5e6; /* 老旧纸张颜色 */
-    background-image: url("data:image/svg+xml,%3Csvg width='100' height='100' viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M11 18c3.866 0 7-3.134 7-7s-3.134-7-7-7-7 3.134-7 7 3.134 7 7 7zm48 25c3.866 0 7-3.134 7-7s-3.134-7-7-7-7 3.134-7 7 3.134 7 7 7zm-43-7c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zm63 31c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zM34 90c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zm56-76c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zM12 86c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm28-65c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm23-11c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm-6 60c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm29 22c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zM32 63c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm57-13c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm-9-21c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM60 91c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM35 41c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM12 60c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2z' fill='%23d7ccc8' fill-opacity='0.4' fill-rule='evenodd'/%3E%3C/svg%3E");
-    box-shadow: 0 10px 30px rgba(0,0,0,0.5), inset 0 0 60px rgba(0,0,0,0.1);
+    border: 15px solid #3e2723;
+    border-image: url("data:image/svg+xml,%3Csvg width='30' height='30' viewBox='0 0 30 30' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M0 0h30v30H0z' fill='%233e2723'/%3E%3Cpath d='M0 15h30M15 0v30' stroke='%23271c19' stroke-width='2'/%3E%3C/svg%3E") 30 repeat;
+    background-color: #fdf5e6;
+    background-image:
+        radial-gradient(#d7ccc8 1px, transparent 1px),
+        url("data:image/svg+xml,%3Csvg width='100' height='100' viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.15'/%3E%3C/svg%3E");
+    background-size: 20px 20px, auto;
+    box-shadow: 0 20px 50px rgba(0,0,0,0.6), inset 0 0 120px rgba(62, 39, 35, 0.4);
     position: relative;
+    color: #3e2723;
 }
 
 /* 钉子效果 */
@@ -21,8 +31,8 @@ body::before {
     width: 20px;
     height: 20px;
     border-radius: 50%;
-    background: radial-gradient(circle at 30% 30%, #90a4ae, #37474f);
-    box-shadow: 0 2px 4px rgba(0,0,0,0.4);
+    background: radial-gradient(circle at 30% 30%, #5d4037, #3e2723);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.5);
     z-index: 10;
 }
 
