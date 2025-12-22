@@ -65,6 +65,14 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
+            padding-left: 160px; /* Space for Global Auth Widget */
+        }
+
+        @media (max-width: 768px) {
+            .navbar-container {
+                padding-left: 0;
+                padding-top: 60px; /* Stack vertically on mobile */
+            }
         }
 
         .logo {

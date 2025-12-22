@@ -57,7 +57,7 @@
             width: 100%;
             max-width: 1200px;
             margin: 0 auto;
-            padding: 40px 20px;
+            padding: 80px 20px 40px; /* Top padding increased for global login widget */
             flex: 1;
             display: flex;
             flex-direction: column;
@@ -84,8 +84,6 @@
             max-width: 600px;
         }
 
-        /* The drop area is now primarily handled by the ncmc-list component's empty state,
-           but we keep this wrapper for layout structure */
         .app-workspace {
             width: 100%;
             display: flex;
@@ -93,13 +91,12 @@
             gap: 2rem;
         }
 
-        /* Attribution and Footer */
         .footer {
             padding: 20px;
             text-align: center;
             color: var(--text-muted);
             font-size: 0.9rem;
-            margin-bottom: 60px; /* Space for audio player */
+            margin-bottom: 60px;
         }
 
         .footer a {
@@ -113,7 +110,6 @@
             text-decoration: underline;
         }
 
-        /* Status Message */
         .status-bar {
             position: fixed;
             top: 20px;
@@ -137,7 +133,7 @@
             transform: translateY(0);
         }
 
-        /* GitHub Corner */
+        /* GitHub Corner adjusted to not overlap with potential right-side elements, but login is left */
         .github-corner svg {
             fill: var(--text-main);
             color: #0f172a;
@@ -162,7 +158,6 @@
             .github-corner .octo-arm { animation: octocat-wave 560ms ease-in-out; }
         }
 
-        /* Web Component Slots */
         ncmc-list {
             display: block;
             width: 100%;
