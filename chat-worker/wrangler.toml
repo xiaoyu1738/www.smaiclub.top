@@ -17,17 +17,14 @@ bindings = [
 tag = "v1"
 new_sqlite_classes = ["ChatRoom"]
 
-# Chat Database (New)
+# Chat Database
 [[d1_databases]]
 binding = "CHAT_DB"
 database_name = "prod-chat-db"
 database_id = "2b3109cb-9d56-4262-984d-c2a2eb38156c"
 
-# User Database (Existing)
-[[d1_databases]]
-binding = "USER_DB"
-database_name = "user_db"
-database_id = "0b100581-db8c-46a3-92f8-55d2ee05c30a"
+# 注意：用户认证现在通过调用 login.smaiclub.top/api/me 接口实现
+# 不再需要 USER_DB 绑定和 SECRET_KEY
 
 # Cleanup Cron
 [triggers]
