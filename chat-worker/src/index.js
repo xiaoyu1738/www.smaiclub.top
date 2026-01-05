@@ -1,4 +1,5 @@
 import { ChatRoom } from './ChatRoom.js';
+import { htmlTemplate } from './htmlTemplate.js';
 import { generateRoomKey, getUserFromRequest, getEffectiveRole, getTierLimits } from './utils.js';
 
 export { ChatRoom };
@@ -17,6 +18,11 @@ export default {
 
         if (request.method === "OPTIONS") {
             return new Response(null, { headers: corsHeaders });
+        }
+
+        // --- Serve Frontend ---
+        if (url.pathname === "/" && request.method === "GET") {
+             return new Response(htmlTemplate(), { headers: { "Content-Type": "text/html" } });
         }
 
         // --- 1. Create Room (POST /api/rooms) ---
