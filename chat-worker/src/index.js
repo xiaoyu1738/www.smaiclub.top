@@ -29,7 +29,7 @@ export default {
         if (request.method === "POST" && url.pathname === "/api/rooms") {
             try {
                 const user = await getUserFromRequest(request, env);
-                if (!user) return new Response("Unauthorized", { status: 401, headers: corsHeaders });
+                if (!user) return new Response(JSON.stringify({ error: "Unauthorized", message: "请先登录" }), { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
 
                 const role = getEffectiveRole(user);
                 const limits = getTierLimits(role);
@@ -120,14 +120,14 @@ export default {
 
                 // Auth Check
                 const user = await getUserFromRequest(request, env);
-                if (!user) return new Response("Unauthorized", { status: 401, headers: corsHeaders });
+                if (!user) return new Response(JSON.stringify({ error: "Unauthorized", message: "请先登录" }), { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
 
                 // Check if Room exists in D1 (or if it's Room 1)
                 const room = await env.CHAT_DB.prepare("SELECT * FROM rooms WHERE id = ?").bind(roomId).first();
 
                 // Allow Room 1 even if logic failed elsewhere, as long as it's seeded
                 if (!room && roomId !== '1' && roomId !== '000001') {
-                    return new Response("Room not found", { status: 404, headers: corsHeaders });
+                    return new Response(JSON.stringify({ error: "Room not found", message: "房间不存在" }), { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } });
                 }
 
                 // Get DO
@@ -144,7 +144,7 @@ export default {
             }
         }
 
-        return new Response("Not Found", { status: 404, headers: corsHeaders });
+        return new Response(JSON.stringify({ error: "Not Found", message: "页面不存在" }), { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     },
 
     // --- Scheduled Cleanup (Fail-safe Protocol) ---

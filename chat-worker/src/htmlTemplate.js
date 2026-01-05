@@ -135,9 +135,18 @@ export function htmlTemplate() {
            const res = await fetch('/api/rooms', {
              method: 'POST',
              headers: { 'Content-Type': 'application/json' },
+             credentials: 'include',
              body: JSON.stringify({ name, isPrivate })
            });
-           const data = await res.json();
+           
+           // 处理非 JSON 响应（如 "Unauthorized"）
+           const text = await res.text();
+           let data;
+           try {
+             data = JSON.parse(text);
+           } catch (e) {
+             throw new Error(text || 'Request failed');
+           }
            if (!res.ok) throw new Error(data.message || data.error || "Failed to create");
            
            onCreated({ id: data.roomId, key: data.roomKey, name: name || ('Room ' + data.roomId) });
