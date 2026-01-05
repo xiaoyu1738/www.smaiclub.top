@@ -128,3 +128,28 @@ async function decryptData(encryptedText, secretKey, salt) {
     const decrypted = await crypto.subtle.decrypt({ name: "AES-GCM", iv }, key, data);
     return new TextDecoder().decode(decrypted);
 }
+
+// 统一的错误处理中间件
+export async function handleErrors(request, func) {
+  try {
+    return await func();
+  } catch (err) {
+    console.error("Worker Error:", err);
+    
+    // 如果是 Response 对象直接抛出（比如某些库的设计），直接返回
+    if (err instanceof Response) {
+      return err;
+    }
+
+    return new Response(JSON.stringify({
+      error: err.message || "Internal Server Error",
+      stack: err.stack // 开发环境可以显示，生产环境建议移除
+    }), {
+      status: 500,
+      headers: {
+        "Content-Type": "application/json",
+        "Access-Control-Allow-Origin": "*"
+      }
+    });
+  }
+}
