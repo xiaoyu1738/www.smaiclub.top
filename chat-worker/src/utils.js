@@ -86,45 +86,36 @@ export function getEffectiveRole(user) {
 
 // --- Auth Helper ---
 
+/**
+ * 通过调用 login-worker 的 /api/me 接口验证用户身份
+ * 这样不需要在 chat-worker 中配置 SECRET_KEY
+ */
 export async function getUserFromRequest(request, env) {
   const cookieHeader = request.headers.get("Cookie");
   if (!cookieHeader) return null;
 
-  const cookies = {};
-  cookieHeader.split(';').forEach(c => {
-    const [k, v] = c.split('=');
-    if (k && v) cookies[k.trim()] = decodeURI(v.trim());
-  });
-
-  const token = cookies['auth_token'];
-  if (!token) return null;
-
   try {
-    const sessionStr = await decryptData(token, env.SECRET_KEY, "SESSION_SALT");
-    const session = JSON.parse(sessionStr);
+    // 调用 login-worker 的 /api/me 接口验证用户
+    const response = await fetch('https://login.smaiclub.top/api/me', {
+      headers: {
+        'Cookie': cookieHeader
+      }
+    });
 
-    // Fetch full user from DB to check lastPurchase/Role
-    const user = await env.USER_DB.prepare('SELECT * FROM users WHERE username = ?').bind(session.username).first();
-    return user;
+    if (!response.ok) return null;
+
+    const data = await response.json();
+    
+    if (!data.loggedIn) return null;
+
+    // 返回用户信息，格式与之前兼容
+    return {
+      username: data.username,
+      role: data.effectiveRole || data.role || 'user',
+      lastPurchase: Date.now() // 由于 /api/me 不返回 lastPurchase，我们假设有效
+    };
   } catch (e) {
+    console.error("getUserFromRequest error:", e.message);
     return null;
   }
-}
-
-async function decryptData(encryptedText, secretKey, salt) {
-    const parts = encryptedText.split(":");
-    if (parts.length !== 2) throw new Error("Invalid format");
-
-    const iv = Uint8Array.from(atob(parts[0]), c => c.charCodeAt(0));
-    const data = Uint8Array.from(atob(parts[1]), c => c.charCodeAt(0));
-
-    const enc = new TextEncoder();
-    const keyMaterial = await crypto.subtle.importKey("raw", enc.encode(secretKey), "PBKDF2", false, ["deriveKey"]);
-    const key = await crypto.subtle.deriveKey(
-        { name: "PBKDF2", salt: enc.encode(salt), iterations: 100000, hash: "SHA-256" },
-        keyMaterial, { name: "AES-GCM", length: 256 }, false, ["decrypt"]
-    );
-
-    const decrypted = await crypto.subtle.decrypt({ name: "AES-GCM", iv }, key, data);
-    return new TextDecoder().decode(decrypted);
 }
