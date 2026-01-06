@@ -11,6 +11,19 @@ CREATE TABLE rooms (
     last_accessed INTEGER NOT NULL
 );
 
+CREATE INDEX idx_rooms_owner ON rooms(owner);
+
+-- Room Members Table
+CREATE TABLE room_members (
+    room_id INTEGER NOT NULL,
+    user_id TEXT NOT NULL,
+    joined_at INTEGER NOT NULL,
+    PRIMARY KEY (room_id, user_id),
+    FOREIGN KEY (room_id) REFERENCES rooms(id) ON DELETE CASCADE
+);
+
+CREATE INDEX idx_room_members_user ON room_members(user_id);
+
 -- Messages Table
 CREATE TABLE messages (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -27,4 +40,5 @@ VALUES (1, 'Issues', 0, 'system', 1735689600000, 1735689600000);
 
 -- Command to clear all rooms except Emergency Room (ID 1)
 -- DELETE FROM messages WHERE room_id != 1;
+-- DELETE FROM room_members WHERE room_id != 1;
 -- DELETE FROM rooms WHERE id != 1;

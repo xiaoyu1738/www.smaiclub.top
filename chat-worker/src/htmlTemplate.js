@@ -6,6 +6,7 @@ export function htmlTemplate() {
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>SMAI Chat | 安全加密聊天</title>
   <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://login.smaiclub.top/common-auth.js"></script>
   <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
   <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
@@ -108,31 +109,124 @@ export function htmlTemplate() {
 
     // --- Components ---
 
-    function Landing({ user, onJoin, onCreate, onEmergency }) {
-      return (
-        <div className="glass w-full max-w-md p-8 rounded-2xl shadow-2xl flex flex-col items-center text-center animate-[fadeIn_0.5s_ease-out] bg-black/40 backdrop-blur-md border border-white/10">
-          <div className="w-20 h-20 bg-gradient-to-tr from-blue-500 to-purple-600 rounded-full flex items-center justify-center mb-6 shadow-lg">
-            <i className="fas fa-comments text-3xl text-white"></i>
-          </div>
-          <h1 className="text-3xl font-bold mb-2 bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-purple-400">SMAI Chat</h1>
-          <p className="text-gray-400 mb-8">安全、加密、即时的通讯体验</p>
-          
-          <div className="w-full space-y-4">
-             <button onClick={onCreate} className="w-full py-3.5 btn-gradient rounded-xl font-medium text-white flex items-center justify-center gap-2">
-                <i className="fas fa-plus"></i> 创建房间
-             </button>
-             <button onClick={onJoin} className="w-full py-3.5 bg-white/10 hover:bg-white/20 border border-white/10 rounded-xl font-medium text-white transition flex items-center justify-center gap-2">
-                <i className="fas fa-sign-in-alt"></i> 加入房间
-             </button>
-          </div>
+    function Landing({ user, onJoin, onCreate, onEmergency, onEnterRoom }) {
+      const [rooms, setRooms] = useState({ owned: [], joined: [] });
+      const [loading, setLoading] = useState(true);
 
-          <button onClick={onEmergency} className="mt-6 text-xs text-red-400 hover:text-red-300 transition flex items-center gap-1 opacity-70 hover:opacity-100">
-             <i className="fas fa-exclamation-triangle"></i> 紧急/工单模式
-          </button>
-          
-          <div className="mt-8 text-xs text-gray-500">
-            Logged in as <span className="text-gray-300 font-medium">{user.username}</span>
-          </div>
+      useEffect(() => {
+        fetch('/api/user/rooms', { credentials: 'include' })
+          .then(res => res.json())
+          .then(data => {
+            if (data.owned || data.joined) {
+                setRooms({ owned: data.owned || [], joined: data.joined || [] });
+            }
+          })
+          .catch(console.error)
+          .finally(() => setLoading(false));
+      }, []);
+
+      const hasRooms = rooms.owned.length > 0 || rooms.joined.length > 0;
+
+      const RoomCard = ({ room, isOwner }) => (
+        <div onClick={() => onEnterRoom(room)} className="group relative bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl p-4 cursor-pointer transition-all hover:-translate-y-1 hover:shadow-lg">
+            <div className="flex justify-between items-start mb-2">
+                <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-blue-500/20 to-purple-500/20 flex items-center justify-center text-blue-400 group-hover:text-white group-hover:from-blue-500 group-hover:to-purple-500 transition-colors">
+                    <i className={\`fas \${isOwner ? 'fa-crown' : 'fa-users'}\`}></i>
+                </div>
+                {room.is_private === 1 && <i className="fas fa-lock text-xs text-gray-500"></i>}
+            </div>
+            <h3 className="font-medium text-white truncate mb-1">{room.name}</h3>
+            <p className="text-xs text-gray-500 truncate">ID: {room.id}</p>
+        </div>
+      );
+
+      return (
+        <div className="w-full max-w-5xl p-4 animate-[fadeIn_0.5s_ease-out]">
+            {/* Top Bar */}
+            <div className="absolute top-0 left-0 w-full p-6 flex justify-between items-start z-50 pointer-events-none">
+                {/* Left Actions */}
+                <div className="flex gap-3 pointer-events-auto">
+                    {hasRooms && (
+                        <>
+                            <button onClick={onCreate} className="w-10 h-10 rounded-full bg-blue-600 hover:bg-blue-500 text-white flex items-center justify-center shadow-lg transition tooltip-container group">
+                                <i className="fas fa-plus"></i>
+                                <span className="absolute left-12 bg-gray-800 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition whitespace-nowrap pointer-events-none">创建房间</span>
+                            </button>
+                            <button onClick={onJoin} className="w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 text-white border border-white/10 flex items-center justify-center shadow-lg transition group">
+                                <i className="fas fa-sign-in-alt"></i>
+                                <span className="absolute left-12 bg-gray-800 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition whitespace-nowrap pointer-events-none">加入房间</span>
+                            </button>
+                        </>
+                    )}
+                </div>
+
+                {/* Right Login Component */}
+                <div className="pointer-events-auto">
+                    <div id="auth-container-root"></div>
+                </div>
+            </div>
+
+            {loading ? (
+                <div className="flex justify-center mt-20"><i className="fas fa-circle-notch fa-spin text-2xl text-blue-500"></i></div>
+            ) : !hasRooms ? (
+                <div className="flex flex-col items-center justify-center min-h-[60vh]">
+                     <div className="glass w-full max-w-md p-8 rounded-2xl shadow-2xl flex flex-col items-center text-center bg-black/40 backdrop-blur-md border border-white/10">
+                        <div className="w-20 h-20 bg-gradient-to-tr from-blue-500 to-purple-600 rounded-full flex items-center justify-center mb-6 shadow-lg">
+                            <i className="fas fa-comments text-3xl text-white"></i>
+                        </div>
+                        <h1 className="text-3xl font-bold mb-2 bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-purple-400">SMAI Chat</h1>
+                        <p className="text-gray-400 mb-8">安全、加密、即时的通讯体验</p>
+                        
+                        <div className="w-full space-y-4">
+                            <button onClick={onCreate} className="w-full py-3.5 btn-gradient rounded-xl font-medium text-white flex items-center justify-center gap-2">
+                                <i className="fas fa-plus"></i> 创建房间
+                            </button>
+                            <button onClick={onJoin} className="w-full py-3.5 bg-white/10 hover:bg-white/20 border border-white/10 rounded-xl font-medium text-white transition flex items-center justify-center gap-2">
+                                <i className="fas fa-sign-in-alt"></i> 加入房间
+                            </button>
+                        </div>
+                        <button onClick={onEmergency} className="mt-6 text-xs text-red-400 hover:text-red-300 transition flex items-center gap-1 opacity-70 hover:opacity-100">
+                            <i className="fas fa-exclamation-triangle"></i> 紧急/工单模式
+                        </button>
+                    </div>
+                </div>
+            ) : (
+                <div className="mt-20 space-y-10">
+                     {/* Owned Rooms */}
+                     {rooms.owned.length > 0 && (
+                        <div>
+                            <h2 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
+                                <i className="fas fa-crown text-yellow-500"></i> 我拥有的房间
+                            </h2>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                                {rooms.owned.map(room => (
+                                    <RoomCard key={room.id} room={room} isOwner={true} />
+                                ))}
+                            </div>
+                        </div>
+                     )}
+
+                     {/* Joined Rooms */}
+                     {rooms.joined.length > 0 && (
+                        <div>
+                            <h2 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
+                                <i className="fas fa-history text-blue-400"></i> 我加入过的房间
+                            </h2>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                                {rooms.joined.map(room => (
+                                    <RoomCard key={room.id} room={room} isOwner={false} />
+                                ))}
+                            </div>
+                        </div>
+                     )}
+                     
+                     <div className="text-center mt-12">
+                        <button onClick={onEmergency} className="text-xs text-red-400 hover:text-red-300 transition inline-flex items-center gap-1 opacity-60 hover:opacity-100 border border-red-500/20 px-3 py-1.5 rounded-full hover:bg-red-500/10">
+                            <i className="fas fa-exclamation-triangle"></i> 紧急/工单模式入口
+                        </button>
+                     </div>
+                </div>
+            )}
         </div>
       );
     }
@@ -223,14 +317,26 @@ export function htmlTemplate() {
       );
     }
 
-    function JoinRoom({ onBack, onJoined }) {
-      const [roomId, setRoomId] = useState("");
+    function JoinRoom({ onBack, onJoined, initialRoomId }) {
+      const [roomId, setRoomId] = useState(initialRoomId || "");
       const [roomKey, setRoomKey] = useState("");
       const [loading, setLoading] = useState(false);
+
+      // Load key from localStorage if available for this room
+      useEffect(() => {
+          if (roomId) {
+              const savedKey = localStorage.getItem(\`room_key_\${roomId}\`);
+              if (savedKey) setRoomKey(savedKey);
+          }
+      }, [roomId]);
 
       const handleSubmit = (e) => {
         e.preventDefault();
         if(!roomId || !roomKey) return;
+        
+        // Save key for convenience
+        localStorage.setItem(\`room_key_\${roomId}\`, roomKey);
+        
         onJoined({ id: roomId, key: roomKey, name: 'Room ' + roomId });
       };
 
@@ -487,6 +593,7 @@ export function htmlTemplate() {
        const [view, setView] = useState("loading"); // loading, landing, create, join, chat
        const [user, setUser] = useState(null);
        const [room, setRoom] = useState(null);
+       const [joinId, setJoinId] = useState(""); // Pre-filled ID for join screen
 
        useEffect(() => {
           // Check Login
@@ -496,6 +603,11 @@ export function htmlTemplate() {
                 if (data.loggedIn) {
                    setUser({ username: data.username, role: data.effectiveRole });
                    setView("landing");
+                   
+                   // Initialize Common Auth UI
+                   if (window.CommonAuth) {
+                       window.CommonAuth.init('auth-container-root');
+                   }
                 } else {
                    window.location.href = "https://login.smaiclub.top?redirect=" + encodeURIComponent(window.location.href);
                 }
@@ -507,6 +619,14 @@ export function htmlTemplate() {
              });
        }, []);
 
+       // Re-init auth UI when view changes to landing
+       useEffect(() => {
+           if (view === 'landing' && window.CommonAuth) {
+               // Small delay to ensure DOM is ready
+               setTimeout(() => window.CommonAuth.init('auth-container-root'), 100);
+           }
+       }, [view]);
+
        if (view === 'loading') return (
           <div className="flex flex-col items-center gap-4">
              <i className="fas fa-spinner fa-spin text-3xl text-blue-500"></i>
@@ -517,10 +637,11 @@ export function htmlTemplate() {
        return (
           <React.Fragment>
              {view === 'landing' && (
-                <Landing 
-                   user={user} 
+                <Landing
+                   user={user}
                    onCreate={() => setView('create')}
-                   onJoin={() => setView('join')}
+                   onJoin={() => { setJoinId(""); setView('join'); }}
+                   onEnterRoom={(r) => { setJoinId(r.id.toString()); setView('join'); }}
                    onEmergency={() => {
                        setRoom({ id: '000001', key: 'smaiclub_issues', name: 'Emergency Channel' });
                        setView('chat');
@@ -528,19 +649,25 @@ export function htmlTemplate() {
                 />
              )}
              {view === 'create' && (
-                <CreateRoom 
+                <CreateRoom
                    onBack={() => setView('landing')}
-                   onCreated={(r) => { setRoom(r); setView('chat'); }}
+                   onCreated={(r) => {
+                       // Auto save key for creator
+                       localStorage.setItem(\`room_key_\${r.id}\`, r.key);
+                       setRoom(r);
+                       setView('chat');
+                   }}
                 />
              )}
              {view === 'join' && (
-                <JoinRoom 
+                <JoinRoom
+                   initialRoomId={joinId}
                    onBack={() => setView('landing')}
                    onJoined={(r) => { setRoom(r); setView('chat'); }}
                 />
              )}
              {view === 'chat' && room && (
-                <ChatRoom 
+                <ChatRoom
                    room={room}
                    user={user}
                    onLeave={() => { setRoom(null); setView('landing'); }}
