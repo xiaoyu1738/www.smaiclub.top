@@ -137,6 +137,7 @@ export class ChatRoom {
                     keyMaterial, { name: "AES-GCM", length: 256 }, false, ["encrypt", "decrypt"]
                  );
             } else {
+                // Now uses PBKDF2 derivation internally in utils.js
                 cryptoKey = await importRoomKey(clientKey);
             }
         } catch (e) {

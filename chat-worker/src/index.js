@@ -1,6 +1,6 @@
 import { ChatRoom } from './ChatRoom.js';
 import { htmlTemplate } from './htmlTemplate.js';
-import { generateRoomKey, getUserFromRequest, getEffectiveRole, getTierLimits } from './utils.js';
+import { generateRoomKey, validateCustomKey, getUserFromRequest, getEffectiveRole, getTierLimits } from './utils.js';
 
 export { ChatRoom };
 
@@ -57,7 +57,15 @@ export default {
                 }
 
                 // 3. Generate Room Data
-                const roomKey = await generateRoomKey();
+                let roomKey;
+                if (body.customKey) {
+                    if (!validateCustomKey(body.customKey)) {
+                        return new Response(JSON.stringify({ error: "Invalid custom key. Must be >8 and <20 chars, alphanumeric." }), { status: 400, headers: corsHeaders });
+                    }
+                    roomKey = body.customKey;
+                } else {
+                    roomKey = await generateRoomKey();
+                }
 
                 // Calculate Hash of Key for storage/verification
                 const enc = new TextEncoder();
