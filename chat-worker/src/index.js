@@ -25,6 +25,35 @@ export default {
              return new Response(htmlTemplate(), { headers: { "Content-Type": "text/html" } });
         }
 
+        // --- 0. Get User Rooms (GET /api/user/rooms) ---
+        if (request.method === "GET" && url.pathname === "/api/user/rooms") {
+            try {
+                const user = await getUserFromRequest(request, env);
+                if (!user) return new Response(JSON.stringify({ error: "Unauthorized", message: "请先登录" }), { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+
+                // 1. Get Owned Rooms
+                const owned = await env.CHAT_DB.prepare(
+                    "SELECT id, name, is_private, created_at FROM rooms WHERE owner = ? ORDER BY created_at DESC"
+                ).bind(user.username).all();
+
+                // 2. Get Joined Rooms (excluding owned ones if any overlap, though logic separates them)
+                const joined = await env.CHAT_DB.prepare(
+                    `SELECT r.id, r.name, r.is_private, rm.joined_at
+                     FROM rooms r
+                     JOIN room_members rm ON r.id = rm.room_id
+                     WHERE rm.user_id = ? AND r.owner != ?
+                     ORDER BY rm.joined_at DESC`
+                ).bind(user.username, user.username).all();
+
+                return new Response(JSON.stringify({
+                    owned: owned.results || [],
+                    joined: joined.results || []
+                }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+            } catch (e) {
+                return new Response(JSON.stringify({ error: e.message }), { status: 500, headers: corsHeaders });
+            }
+        }
+
         // --- 1. Create Room (POST /api/rooms) ---
         if (request.method === "POST" && url.pathname === "/api/rooms") {
             try {
@@ -91,6 +120,12 @@ export default {
                     await env.CHAT_DB.prepare(
                         "INSERT INTO rooms (id, name, is_private, owner, created_at, last_accessed) VALUES (?, ?, ?, ?, ?, ?)"
                     ).bind(roomId, body.name || `Room ${roomId}`, body.isPrivate ? 1 : 0, user.username, Date.now(), Date.now()).run();
+
+                    // Add owner to room_members
+                    await env.CHAT_DB.prepare(
+                        "INSERT INTO room_members (room_id, user_id, joined_at) VALUES (?, ?, ?)"
+                    ).bind(roomId, user.username, Date.now()).run();
+
                 } catch (e) {
                      return new Response(JSON.stringify({
                          error: "EMERGENCY_MODE",
@@ -147,6 +182,13 @@ export default {
                 const doUrl = new URL(request.url);
                 doUrl.searchParams.set("username", user.username);
                 doUrl.searchParams.set("role", getEffectiveRole(user));
+
+                // Record membership asynchronously (fire and forget)
+                ctx.waitUntil(
+                    env.CHAT_DB.prepare(
+                        "INSERT OR IGNORE INTO room_members (room_id, user_id, joined_at) VALUES (?, ?, ?)"
+                    ).bind(roomId, user.username, Date.now()).run()
+                );
 
                 return stub.fetch(new Request(doUrl.toString(), request));
             }
