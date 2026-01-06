@@ -3,22 +3,42 @@
 // --- Encryption (AES-GCM) ---
 
 export async function generateRoomKey() {
-  const key = await crypto.subtle.generateKey(
-    { name: "AES-GCM", length: 256 },
-    true,
-    ["encrypt", "decrypt"]
-  );
-  const raw = await crypto.subtle.exportKey("raw", key);
-  return btoa(String.fromCharCode(...new Uint8Array(raw)));
+  const chars = '0123456789abcdefghijklmnopqrstuvwxyz';
+  let result = '';
+  const randomValues = new Uint8Array(10);
+  crypto.getRandomValues(randomValues);
+  for (let i = 0; i < 10; i++) {
+    result += chars[randomValues[i] % chars.length];
+  }
+  return result;
 }
 
-export async function importRoomKey(keyBase64) {
+export function validateCustomKey(key) {
+  if (!key) return false;
+  if (key.length <= 8 || key.length >= 20) return false;
+  // Allow numbers and letters (upper and lower), no symbols
+  return /^[a-zA-Z0-9]+$/.test(key);
+}
+
+export async function importRoomKey(password) {
   try {
-    const raw = Uint8Array.from(atob(keyBase64), c => c.charCodeAt(0));
-    return await crypto.subtle.importKey(
+    const enc = new TextEncoder();
+    const keyMaterial = await crypto.subtle.importKey(
       "raw",
-      raw,
-      { name: "AES-GCM" },
+      enc.encode(password),
+      "PBKDF2",
+      false,
+      ["deriveKey"]
+    );
+    return await crypto.subtle.deriveKey(
+      {
+        name: "PBKDF2",
+        salt: enc.encode("SMAICLUB_CHAT_SALT"),
+        iterations: 10000,
+        hash: "SHA-256"
+      },
+      keyMaterial,
+      { name: "AES-GCM", length: 256 },
       false,
       ["encrypt", "decrypt"]
     );

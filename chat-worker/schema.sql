@@ -24,3 +24,7 @@ CREATE TABLE messages (
 -- Seed "Issues" Room (Emergency Mode)
 INSERT INTO rooms (id, name, is_private, owner, created_at, last_accessed)
 VALUES (1, 'Issues', 0, 'system', 1735689600000, 1735689600000);
+
+-- Command to clear all rooms except Emergency Room (ID 1)
+-- DELETE FROM messages WHERE room_id != 1;
+-- DELETE FROM rooms WHERE id != 1;

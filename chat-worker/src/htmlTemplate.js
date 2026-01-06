@@ -65,11 +65,27 @@ export function htmlTemplate() {
     const { useState, useEffect, useRef, useLayoutEffect } = React;
 
     // --- Crypto Utils ---
-    async function importRoomKey(keyBase64) {
+    async function importRoomKey(password) {
       try {
-        const raw = Uint8Array.from(atob(keyBase64), c => c.charCodeAt(0));
-        return await crypto.subtle.importKey(
-          "raw", raw, { name: "AES-GCM" }, false, ["encrypt", "decrypt"]
+        const enc = new TextEncoder();
+        const keyMaterial = await crypto.subtle.importKey(
+          "raw",
+          enc.encode(password),
+          "PBKDF2",
+          false,
+          ["deriveKey"]
+        );
+        return await crypto.subtle.deriveKey(
+          {
+            name: "PBKDF2",
+            salt: enc.encode("SMAICLUB_CHAT_SALT"),
+            iterations: 10000,
+            hash: "SHA-256"
+          },
+          keyMaterial,
+          { name: "AES-GCM", length: 256 },
+          false,
+          ["encrypt", "decrypt"]
         );
       } catch (e) {
         console.error("Key Import Failed", e);
@@ -123,6 +139,7 @@ export function htmlTemplate() {
 
     function CreateRoom({ onBack, onCreated }) {
       const [name, setName] = useState("");
+      const [customKey, setCustomKey] = useState("");
       const [isPrivate, setIsPrivate] = useState(true);
       const [loading, setLoading] = useState(false);
       const [error, setError] = useState(null);
@@ -132,11 +149,14 @@ export function htmlTemplate() {
         setLoading(true);
         setError(null);
         try {
+           const payload = { name, isPrivate };
+           if (customKey.trim()) payload.customKey = customKey.trim();
+
            const res = await fetch('/api/rooms', {
              method: 'POST',
              headers: { 'Content-Type': 'application/json' },
              credentials: 'include',
-             body: JSON.stringify({ name, isPrivate })
+             body: JSON.stringify(payload)
            });
            
            // 处理非 JSON 响应（如 "Unauthorized"）
@@ -171,9 +191,17 @@ export function htmlTemplate() {
           <form onSubmit={handleSubmit} className="space-y-5">
             <div>
               <label className="block text-xs font-medium text-gray-400 mb-1.5 uppercase tracking-wide">房间名称 (可选)</label>
-              <input type="text" value={name} onChange={e => setName(e.target.value)} 
+              <input type="text" value={name} onChange={e => setName(e.target.value)}
                  className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-blue-500 transition"
                  placeholder="给房间起个名字..." />
+            </div>
+
+            <div>
+              <label className="block text-xs font-medium text-gray-400 mb-1.5 uppercase tracking-wide">自定义密钥 (可选)</label>
+              <input type="text" value={customKey} onChange={e => setCustomKey(e.target.value)}
+                 className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-blue-500 transition font-mono text-sm"
+                 placeholder="留空随机生成 (8-20位字母数字)" />
+              <p className="text-[10px] text-gray-500 mt-1 ml-1">支持8-20位数字和字母 (大小写)，不支持符号</p>
             </div>
 
             <div className="flex items-center justify-between bg-white/5 p-4 rounded-xl border border-white/10">
@@ -239,12 +267,13 @@ export function htmlTemplate() {
     function ChatRoom({ room, user, onLeave }) {
        const [messages, setMessages] = useState([]);
        const [input, setInput] = useState("");
-       const [status, setStatus] = useState("connecting"); // connecting, connected, error
+       const [status, setStatus] = useState("connecting"); // connecting, connected, error, uncreated
        const [cryptoKey, setCryptoKey] = useState(null);
        const [showKey, setShowKey] = useState(false);
        
        const socketRef = useRef(null);
        const messagesEndRef = useRef(null);
+       const isConnectedRef = useRef(false);
 
        const scrollToBottom = () => {
           messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -284,9 +313,37 @@ export function htmlTemplate() {
              const wsUrl = protocol + "//" + window.location.host + "/api/rooms/" + room.id + "/websocket?key=" + encodeURIComponent(room.key);
              const ws = new WebSocket(wsUrl);
 
-             ws.onopen = () => setStatus("connected");
-             ws.onclose = () => setStatus("disconnected");
-             ws.onerror = () => setStatus("error");
+             ws.onopen = () => {
+                 isConnectedRef.current = true;
+                 setStatus("connected");
+             };
+
+             ws.onclose = async () => {
+                 if (isConnectedRef.current) {
+                     setStatus("disconnected");
+                     isConnectedRef.current = false;
+                 } else {
+                     // Handshake failed? Check if room exists
+                     try {
+                         const httpUrl = wsUrl.replace(/^ws/, 'http');
+                         const res = await fetch(httpUrl, { credentials: 'include' });
+                         if (res.status === 404) {
+                             const text = await res.text();
+                             if (text.includes("Room not found")) {
+                                 setStatus("uncreated");
+                                 return;
+                             }
+                         }
+                     } catch (e) {}
+                     setStatus("disconnected");
+                 }
+             };
+
+             ws.onerror = () => {
+                 // Only set error if we haven't determined it's uncreated
+                 // But onerror fires before onclose.
+                 // We can let onclose handle the final status.
+             };
 
              ws.onmessage = async (event) => {
                 try {
@@ -351,7 +408,8 @@ export function htmlTemplate() {
                    <div>
                       <h2 className="font-bold text-lg leading-tight">{room.name} <span className="text-xs font-normal text-gray-500 ml-2">ID: {room.id}</span></h2>
                       <div className="text-xs text-gray-400 flex items-center gap-1">
-                         {status === 'connected' ? 'Secure Connection' : 'Disconnected'}
+                         {status === 'connected' ? 'Secure Connection' :
+                          status === 'uncreated' ? 'Uncreated' : 'Disconnected'}
                          {status === 'connected' && <i className="fas fa-lock text-[10px]"></i>}
                       </div>
                    </div>
