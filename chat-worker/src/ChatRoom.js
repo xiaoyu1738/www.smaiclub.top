@@ -5,7 +5,7 @@ export class ChatRoom {
     this.state = state;
     this.env = env;
     this.sessions = new Set();
-    this.rateLimits = new Map(); // username -> { count, startTime, history: [] }
+    this.rateLimits = new Map(); // username -> { count, startTime }
   }
 
   async fetch(request) {
@@ -23,7 +23,6 @@ export class ChatRoom {
       const pair = new WebSocketPair();
       const [client, server] = Object.values(pair);
 
-      // Handle Session (awaiting not strictly necessary for handshake but good for flow)
       await this.handleSession(server, username, role, roomKey);
 
       return new Response(null, { status: 101, webSocket: client });
@@ -74,6 +73,8 @@ export class ChatRoom {
 
     // Verify Key Hash (Strict Mode)
     const storedHash = await this.state.storage.get("keyHash");
+    // const roomId = this.state.id.toString();
+
     let isAuthorized = false;
 
     if (storedHash) {
@@ -102,57 +103,16 @@ export class ChatRoom {
          return;
     }
 
-    const storedRoomId = await this.state.storage.get("roomId");
-    const roomId = storedRoomId || 0;
-
-    // --- Session Tracking: Start ---
-    let sessionId = null;
-    try {
-        const res = await this.env.CHAT_DB.prepare(
-            "INSERT INTO chat_sessions (room_id, user_id, start_time) VALUES (?, ?, ?) RETURNING id"
-        ).bind(roomId, username, Date.now()).first();
-        sessionId = res.id;
-    } catch (e) {
-        console.error("Session start failed", e);
-    }
-
-    // --- Load History ---
-    // Load messages since last session end (or default window if no last session)
-    try {
-        const lastSession = await this.env.CHAT_DB.prepare(
-            "SELECT end_time FROM chat_sessions WHERE room_id = ? AND user_id = ? AND id != ? ORDER BY end_time DESC LIMIT 1"
-        ).bind(roomId, username, sessionId || -1).first();
-
-        let startTime = 0;
-        if (lastSession && lastSession.end_time) {
-            startTime = lastSession.end_time;
-        }
-
-        // Fetch "Unsaved" (Unseen) messages from DB
-        const messages = await this.env.CHAT_DB.prepare(
-            "SELECT iv, content, sender, created_at as timestamp FROM messages WHERE room_id = ? AND created_at > ? ORDER BY created_at ASC LIMIT 100"
-        ).bind(roomId, startTime).all();
-
-        if (messages.results && messages.results.length > 0) {
-            webSocket.send(JSON.stringify({
-                type: 'history',
-                messages: messages.results
-            }));
-        }
-    } catch (e) {
-        console.error("History load failed", e);
-    }
-
-
     // Rate Limit Setup
     const limits = getTierLimits(role);
+    const storedRoomId = await this.state.storage.get("roomId");
 
     // Emergency Room Override
     if (storedRoomId == 1) {
          if (['fish', 'smaiclubadmin'].includes(username)) {
              // Unlimited
          } else {
-             limits.rateLimit = { count: 2, window: 5000 }; // Default strict
+             limits.msgLimit = 2;
          }
     }
 
@@ -161,8 +121,8 @@ export class ChatRoom {
         const msg = JSON.parse(event.data);
 
         // Rate Limit Check
-        if (!this.checkRateLimit(username, limits.rateLimit)) {
-             webSocket.send(JSON.stringify({ error: "发言频率过快" }));
+        if (!this.checkRateLimit(username, limits.msgLimit)) {
+             webSocket.send(JSON.stringify({ error: "Rate limit exceeded" }));
              return;
         }
 
@@ -191,36 +151,31 @@ export class ChatRoom {
         // Retrieve Room ID
         const intId = await this.state.storage.get("roomId") || 0;
 
-        // --- ENFORCE STORAGE CAP (Total Count Limit) ---
-            try {
-                // Check total count
-                const countRes = await this.env.CHAT_DB.prepare(
-                    "SELECT COUNT(*) as count FROM messages WHERE room_id = ?"
-                ).bind(intId).first();
-    
-                const currentCount = countRes.count;
-                const maxStorage = limits.msgStorage;
-    
-                if (currentCount >= maxStorage) {
-                    // Delete enough messages to make space for the new one (and clear any excess)
-                    // We want final count to be maxStorage (after insert), so we need currentCount - maxStorage + 1 deleted.
-                    const deleteCount = (currentCount - maxStorage) + 1;
-                    
-                    if (deleteCount > 0) {
-                        // Delete oldest 'deleteCount' messages
-                        await this.env.CHAT_DB.prepare(
-                            `DELETE FROM messages
-                             WHERE id IN (
-                                 SELECT id FROM messages
-                                 WHERE room_id = ?
-                                 ORDER BY created_at ASC
-                                 LIMIT ?
-                             )`
-                        ).bind(intId, deleteCount).run();
-                    }
+        // --- ENFORCE STORAGE CAP (7-Day Rolling Window) ---
+        // "If a room exceeds the "Msg Storage Cap" within a 7-day rolling window, oldest messages in that window should be dropped."
+        try {
+            const SEVEN_DAYS = 7 * 24 * 60 * 60 * 1000;
+            const windowStart = Date.now() - SEVEN_DAYS;
+
+            // Check current count in window
+            const countRes = await this.env.CHAT_DB.prepare(
+                "SELECT COUNT(*) as count FROM messages WHERE room_id = ? AND created_at > ?"
+            ).bind(intId, windowStart).first();
+
+            if (countRes.count >= limits.msgStorage) {
+                // Find and delete the oldest message in this window
+                // Note: Deleting just one or batch? Requirement says "oldest messages... should be dropped".
+                // We delete the oldest ONE to make space for the NEW one.
+                const oldest = await this.env.CHAT_DB.prepare(
+                    "SELECT id FROM messages WHERE room_id = ? AND created_at > ? ORDER BY created_at ASC LIMIT 1"
+                ).bind(intId, windowStart).first();
+
+                if (oldest) {
+                    await this.env.CHAT_DB.prepare("DELETE FROM messages WHERE id = ?").bind(oldest.id).run();
                 }
-    
-                // Insert New Message
+            }
+
+            // Insert New Message
             const result = await this.env.CHAT_DB.prepare(
                 `INSERT INTO messages (room_id, iv, content, sender, created_at) VALUES (?, ?, ?, ?, ?)`
             ).bind(intId, encrypted.iv, encrypted.content, encrypted.sender, Date.now()).run();
@@ -255,106 +210,28 @@ export class ChatRoom {
       }
     });
 
-    webSocket.addEventListener("close", async () => {
+    webSocket.addEventListener("close", () => {
       this.sessions.delete(webSocket);
-      // --- Session Tracking: End ---
-      if (sessionId) {
-          try {
-              await this.env.CHAT_DB.prepare(
-                  "UPDATE chat_sessions SET end_time = ? WHERE id = ?"
-              ).bind(Date.now(), sessionId).run();
-          } catch (e) {
-              console.error("Session end failed", e);
-          }
-      }
     });
-    
-    // Ensure cleanup alarm is scheduled
-    this.scheduleCleanup();
   }
 
-  async scheduleCleanup() {
-      // Schedule next alarm if not already scheduled
-      // We check roughly once a day for cleanup
-      const currentAlarm = await this.state.storage.getAlarm();
-      if (currentAlarm === null) {
-          // Set alarm for 24 hours from now
-          this.state.storage.setAlarm(Date.now() + 24 * 60 * 60 * 1000);
-      }
-  }
-
-  async alarm() {
-      // Perform Time-based Cleanup
-      try {
-          const roomId = await this.state.storage.get("roomId");
-          if (!roomId) return;
-
-          // 1. Get Room Owner Role & Created At
-          const room = await this.env.CHAT_DB.prepare(
-              "SELECT created_at, owner_role FROM rooms WHERE id = ?"
-          ).bind(roomId).first();
-
-          if (!room) return;
-
-          const limits = getTierLimits(room.owner_role || 'user');
-          const ONE_WEEK = 7 * 24 * 60 * 60 * 1000;
-          const now = Date.now();
-
-          // 2. Calculate Avg Msg/Week
-          let weeksAlive = (now - room.created_at) / ONE_WEEK;
-          if (weeksAlive < 1) weeksAlive = 1;
-
-          const msgCountRes = await this.env.CHAT_DB.prepare(
-              "SELECT COUNT(*) as count FROM messages WHERE room_id = ?"
-          ).bind(roomId).first();
-          
-          const avgMsgPerWeek = msgCountRes.count / weeksAlive;
-
-          // 3. Determine Delete Batch Size
-          let deleteBatch = 5;
-          if (avgMsgPerWeek > 1000) deleteBatch = 100;
-          else if (avgMsgPerWeek > 400) deleteBatch = 50;
-          else if (avgMsgPerWeek > 50) deleteBatch = 20;
-
-          // 4. Perform Deletion (Gradual Decay of Expired Messages)
-          const deleteCutoff = now - limits.autoDeleteTime;
-
-          await this.env.CHAT_DB.prepare(
-              `DELETE FROM messages
-               WHERE id IN (
-                   SELECT id FROM messages
-                   WHERE room_id = ? AND created_at < ?
-                   ORDER BY created_at ASC
-                   LIMIT ?
-               )`
-          ).bind(roomId, deleteCutoff, deleteBatch).run();
-
-      } catch (e) {
-          console.error("Alarm cleanup failed", e);
-      }
-
-      // Reschedule for next day
-      this.state.storage.setAlarm(Date.now() + 24 * 60 * 60 * 1000);
-  }
-
-  checkRateLimit(username, limitConfig) {
-      const { count, window } = limitConfig;
-      if (window === 0) return true; // No limit
-
+  checkRateLimit(username, limitPerHour) {
       const now = Date.now();
       let record = this.rateLimits.get(username);
 
       if (!record) {
-          record = { history: [] };
+          record = { count: 0, startTime: now };
           this.rateLimits.set(username, record);
       }
 
-      // Remove timestamps outside the window
-      record.history = record.history.filter(t => now - t < window);
+      if (now - record.startTime > 3600000) {
+          record.count = 0;
+          record.startTime = now;
+      }
 
-      if (record.history.length >= count) return false;
+      if (record.count >= limitPerHour) return false;
 
-      record.history.push(now);
+      record.count++;
       return true;
   }
 }

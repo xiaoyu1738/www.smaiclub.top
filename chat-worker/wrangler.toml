@@ -26,6 +26,6 @@ database_id = "2b3109cb-9d56-4262-984d-c2a2eb38156c"
 # 注意：用户认证现在通过调用 login.smaiclub.top/api/me 接口实现
 # 不再需要 USER_DB 绑定和 SECRET_KEY
 
-# Cleanup Cron (Removed - Moved to Durable Object Alarms)
-# [triggers]
-# crons = ["*/15 * * * *"]
+# Cleanup Cron
+[triggers]
+crons = ["*/15 * * * *"] # Every 15 minutes

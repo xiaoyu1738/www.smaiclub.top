@@ -227,58 +227,6 @@ export function htmlTemplate() {
                      </div>
                 </div>
             )}
-
-            {/* Delete Confirmation Modal */}
-            {deleteConfirm && (
-                <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm animate-[fadeIn_0.2s_ease-out]">
-                    <div className="bg-[#1c1c1e] border border-white/10 p-6 rounded-2xl max-w-sm w-full mx-4 shadow-2xl transform scale-100">
-                        <h3 className="text-xl font-bold text-white mb-2">确认删除房间?</h3>
-                        <p className="text-gray-400 text-sm mb-6">
-                            这将永久删除该房间及其所有聊天记录，此操作无法撤销。
-                        </p>
-                        <div className="flex gap-3">
-                            <button
-                                onClick={() => setDeleteConfirm(null)}
-                                className="flex-1 py-2.5 bg-white/5 hover:bg-white/10 text-white rounded-xl transition font-medium"
-                            >
-                                取消
-                            </button>
-                            <button
-                                onClick={(e) => handleDelete(deleteConfirm, e)}
-                                className="flex-1 py-2.5 bg-red-600 hover:bg-red-500 text-white rounded-xl transition font-medium shadow-lg shadow-red-900/20"
-                            >
-                                确认删除
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
-
-            {/* Delete Confirmation Modal */}
-            {deleteConfirm && (
-                <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm animate-[fadeIn_0.2s_ease-out]">
-                    <div className="bg-[#1c1c1e] border border-white/10 p-6 rounded-2xl max-w-sm w-full mx-4 shadow-2xl transform scale-100">
-                        <h3 className="text-xl font-bold text-white mb-2">确认删除房间?</h3>
-                        <p className="text-gray-400 text-sm mb-6">
-                            这将永久删除该房间及其所有聊天记录，此操作无法撤销。
-                        </p>
-                        <div className="flex gap-3">
-                            <button
-                                onClick={() => setDeleteConfirm(null)}
-                                className="flex-1 py-2.5 bg-white/5 hover:bg-white/10 text-white rounded-xl transition font-medium"
-                            >
-                                取消
-                            </button>
-                            <button
-                                onClick={(e) => handleDelete(deleteConfirm, e)}
-                                className="flex-1 py-2.5 bg-red-600 hover:bg-red-500 text-white rounded-xl transition font-medium shadow-lg shadow-red-900/20"
-                            >
-                                确认删除
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
         </div>
       );
     }

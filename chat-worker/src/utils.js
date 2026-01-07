@@ -73,30 +73,10 @@ export async function encryptMessage(key, content, sender) {
 // --- Membership & Limits ---
 
 const TIERS = {
-  NORMAL: {
-    msgStorage: 6000,
-    autoDeleteTime: 14 * 24 * 60 * 60 * 1000, // 2 weeks
-    rateLimit: { count: 2, window: 5000 }, // 2 msg in 5 sec
-    roomLimit: 10
-  },
-  VIP: {
-    msgStorage: 20000,
-    autoDeleteTime: 30 * 24 * 60 * 60 * 1000, // 1 month
-    rateLimit: { count: 1, window: 2000 }, // 1 msg in 2 sec
-    roomLimit: 50
-  },
-  SVIP: {
-    msgStorage: 40000,
-    autoDeleteTime: 90 * 24 * 60 * 60 * 1000, // 3 months
-    rateLimit: { count: 1, window: 1000 }, // 1 msg per sec
-    roomLimit: 100
-  },
-  SVIP_II: {
-    msgStorage: Infinity,
-    autoDeleteTime: 120 * 24 * 60 * 60 * 1000, // 4 months
-    rateLimit: { count: Infinity, window: 0 }, // No limit
-    roomLimit: 1000
-  }
+  NORMAL: { msgLimit: 700, msgStorage: 5000, roomLimit: 10, retention: 6 }, // retention in months
+  VIP: { msgLimit: 4000, msgStorage: 5000, roomLimit: 50, retention: 12 },
+  SVIP: { msgLimit: 8000, msgStorage: 8000, roomLimit: 100, retention: 48 },
+  SVIP_II: { msgLimit: 10000, msgStorage: 8000, roomLimit: 1000, retention: 288 }
 };
 
 export function getTierLimits(role) {
