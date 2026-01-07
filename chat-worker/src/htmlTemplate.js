@@ -109,9 +109,136 @@ export function htmlTemplate() {
 
     // --- Components ---
 
+    const applyTheme = (theme) => {
+       if (!theme) return;
+       try {
+         if (theme.type === 'color') {
+           document.body.style.backgroundImage = 'none';
+           document.body.style.backgroundColor = theme.value;
+         } else if (theme.type === 'gradient') {
+           document.body.style.backgroundImage = theme.value;
+           document.body.style.backgroundAttachment = 'fixed';
+         } else if (theme.type === 'image') {
+           document.body.style.backgroundImage = \`url(\${theme.value})\`;
+           document.body.style.backgroundSize = 'cover';
+           document.body.style.backgroundPosition = 'center';
+           document.body.style.backgroundAttachment = 'fixed';
+         }
+       } catch (e) { console.error("Theme Apply Error", e); }
+    };
+
+    function StyleSwitcher() {
+      const [isOpen, setIsOpen] = useState(false);
+      const fileInputRef = useRef(null);
+
+      const presets = [
+        { type: 'color', value: '#000000', label: '纯黑' },
+        { type: 'color', value: '#1a1a1a', label: '深灰' },
+        { type: 'color', value: '#111827', label: '灰蓝' },
+        { type: 'color', value: '#312e81', label: '深靛' },
+        { type: 'gradient', value: 'linear-gradient(135deg, #1a2980 0%, #26d0ce 100%)', label: '海洋' },
+        { type: 'gradient', value: 'linear-gradient(135deg, #0F2027 0%, #203A43 50%, #2C5364 100%)', label: '深空' },
+        { type: 'gradient', value: 'linear-gradient(to right, #4facfe 0%, #00f2fe 100%)', label: '极光' },
+        { type: 'gradient', value: 'linear-gradient(to top, #30cfd0 0%, #330867 100%)', label: '星云' },
+        { type: 'gradient', value: 'linear-gradient(120deg, #f093fb 0%, #f5576c 100%)', label: '夕阳' },
+        { type: 'gradient', value: 'linear-gradient(to top, #5ee7df 0%, #b490ca 100%)', label: '梦幻' },
+      ];
+
+      const handleSelect = (theme) => {
+        applyTheme(theme);
+        localStorage.setItem('chat_theme', JSON.stringify(theme));
+        setIsOpen(false);
+      };
+
+      const handleFile = (e) => {
+        const file = e.target.files[0];
+        if (file) {
+           const reader = new FileReader();
+           reader.onload = (ev) => {
+              const result = ev.target.result;
+              if (result.length > 4 * 1024 * 1024) {
+                  alert("图片太大，请上传小于3MB的图片");
+                  return;
+              }
+              const theme = { type: 'image', value: result };
+              handleSelect(theme);
+           };
+           reader.readAsDataURL(file);
+        }
+      };
+
+      return (
+        <div className="relative z-50">
+           <button onClick={() => setIsOpen(!isOpen)} className="w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 text-white border border-white/10 flex items-center justify-center shadow-lg transition group" title="更改外观">
+              <i className="fas fa-palette"></i>
+           </button>
+           
+           {isOpen && (
+             <>
+               <div className="fixed inset-0 z-40" onClick={() => setIsOpen(false)}></div>
+               <div className="absolute top-12 left-0 w-72 bg-[#1c1c1e]/90 backdrop-blur-xl border border-white/10 rounded-2xl p-4 shadow-2xl z-50 animate-[fadeIn_0.2s_ease-out]">
+                  <h3 className="text-white text-sm font-bold mb-3 flex items-center gap-2">
+                    <i className="fas fa-paint-brush text-blue-400"></i> 外观设置
+                  </h3>
+                  
+                  <div className="mb-4">
+                    <div className="text-[10px] uppercase tracking-wider text-gray-500 mb-2 font-semibold">纯色 / 渐变</div>
+                    <div className="grid grid-cols-5 gap-2">
+                       {presets.map((p, i) => (
+                          <button key={i} onClick={() => handleSelect(p)}
+                            className="w-full aspect-square rounded-full border border-white/10 hover:border-white/50 hover:scale-110 transition relative overflow-hidden shadow-sm"
+                            style={{ background: p.value }}
+                            title={p.label}
+                          >
+                          </button>
+                       ))}
+                    </div>
+                  </div>
+
+                  <div>
+                    <div className="text-[10px] uppercase tracking-wider text-gray-500 mb-2 font-semibold">自定义</div>
+                    <button onClick={() => fileInputRef.current?.click()} className="w-full py-2.5 bg-white/5 hover:bg-white/10 text-white text-xs rounded-xl transition border border-white/10 flex items-center justify-center gap-2 font-medium">
+                       <i className="fas fa-image"></i> 上传背景图片
+                    </button>
+                    <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleFile} />
+                    <button onClick={() => handleSelect({ type: 'image', value: 'https://images.unsplash.com/photo-1550684848-fac1c5b4e853?ixlib=rb-1.2.1&auto=format&fit=crop&w=1350&q=80' })} className="w-full mt-2 py-2.5 bg-white/5 hover:bg-white/10 text-gray-400 hover:text-white text-xs rounded-xl transition border border-white/10 flex items-center justify-center gap-2">
+                       <i className="fas fa-undo"></i> 恢复默认
+                    </button>
+                  </div>
+               </div>
+             </>
+           )}
+        </div>
+      );
+    }
+
     function Landing({ user, onJoin, onCreate, onEmergency, onEnterRoom }) {
       const [rooms, setRooms] = useState({ owned: [], joined: [] });
       const [loading, setLoading] = useState(true);
+      const [deleteConfirm, setDeleteConfirm] = useState(null);
+
+      const handleDelete = async (roomId, e) => {
+          if (e) e.stopPropagation();
+          try {
+             const res = await fetch('/api/rooms/' + roomId, {
+                 method: 'DELETE',
+                 credentials: 'include'
+             });
+             const data = await res.json();
+             if (data.success) {
+                 setRooms(prev => ({
+                     ...prev,
+                     owned: prev.owned.filter(r => r.id !== parseInt(roomId))
+                 }));
+                 setDeleteConfirm(null);
+             } else {
+                 alert(data.message || "Failed to delete room");
+             }
+          } catch (err) {
+              console.error(err);
+              alert("Error deleting room");
+          }
+      };
 
       useEffect(() => {
         fetch('/api/user/rooms', { credentials: 'include' })
@@ -129,6 +256,15 @@ export function htmlTemplate() {
 
       const RoomCard = ({ room, isOwner }) => (
         <div onClick={() => onEnterRoom(room)} className="group relative bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl p-4 cursor-pointer transition-all hover:-translate-y-1 hover:shadow-lg">
+            {isOwner && (
+                <button
+                    onClick={(e) => { e.stopPropagation(); setDeleteConfirm(room.id); }}
+                    className="absolute top-2 right-2 w-8 h-8 rounded-full bg-black/20 hover:bg-red-500/80 text-gray-400 hover:text-white flex items-center justify-center transition opacity-0 group-hover:opacity-100 z-10"
+                    title="删除房间"
+                >
+                    <i className="fas fa-trash-alt text-xs"></i>
+                </button>
+            )}
             <div className="flex justify-between items-start mb-2">
                 <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-blue-500/20 to-purple-500/20 flex items-center justify-center text-blue-400 group-hover:text-white group-hover:from-blue-500 group-hover:to-purple-500 transition-colors">
                     <i className={\`fas \${isOwner ? 'fa-crown' : 'fa-users'}\`}></i>
@@ -144,8 +280,15 @@ export function htmlTemplate() {
         <div className="w-full max-w-5xl p-4 animate-[fadeIn_0.5s_ease-out]">
             {/* Top Bar */}
             <div className="absolute top-0 left-0 w-full p-6 flex justify-between items-start z-50 pointer-events-none">
-                {/* Left Actions */}
-                <div className="flex gap-3 pointer-events-auto">
+                {/* Left Actions & Login */}
+                <div className="flex items-center gap-4 pointer-events-auto">
+                    {/* Login Component */}
+                    <div id="auth-container-root"></div>
+                    
+                    <div className="h-8 w-px bg-white/10 mx-1"></div>
+
+                    <StyleSwitcher />
+                    
                     {hasRooms && (
                         <>
                             <button onClick={onCreate} className="w-10 h-10 rounded-full bg-blue-600 hover:bg-blue-500 text-white flex items-center justify-center shadow-lg transition tooltip-container group">
@@ -158,11 +301,6 @@ export function htmlTemplate() {
                             </button>
                         </>
                     )}
-                </div>
-
-                {/* Right Login Component */}
-                <div className="pointer-events-auto">
-                    <div id="auth-container-root"></div>
                 </div>
             </div>
 
@@ -254,31 +392,6 @@ export function htmlTemplate() {
                 </div>
             )}
 
-            {/* Delete Confirmation Modal */}
-            {deleteConfirm && (
-                <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm animate-[fadeIn_0.2s_ease-out]">
-                    <div className="bg-[#1c1c1e] border border-white/10 p-6 rounded-2xl max-w-sm w-full mx-4 shadow-2xl transform scale-100">
-                        <h3 className="text-xl font-bold text-white mb-2">确认删除房间?</h3>
-                        <p className="text-gray-400 text-sm mb-6">
-                            这将永久删除该房间及其所有聊天记录，此操作无法撤销。
-                        </p>
-                        <div className="flex gap-3">
-                            <button
-                                onClick={() => setDeleteConfirm(null)}
-                                className="flex-1 py-2.5 bg-white/5 hover:bg-white/10 text-white rounded-xl transition font-medium"
-                            >
-                                取消
-                            </button>
-                            <button
-                                onClick={(e) => handleDelete(deleteConfirm, e)}
-                                className="flex-1 py-2.5 bg-red-600 hover:bg-red-500 text-white rounded-xl transition font-medium shadow-lg shadow-red-900/20"
-                            >
-                                确认删除
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
         </div>
       );
     }
@@ -648,6 +761,14 @@ export function htmlTemplate() {
        const [joinId, setJoinId] = useState(""); // Pre-filled ID for join screen
 
        useEffect(() => {
+          // Load Theme
+          const savedTheme = localStorage.getItem('chat_theme');
+          if (savedTheme) {
+             try {
+                applyTheme(JSON.parse(savedTheme));
+             } catch (e) {}
+          }
+
           // Check Login
           fetch('https://login.smaiclub.top/api/me', { credentials: 'include' })
              .then(res => res.json())

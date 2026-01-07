@@ -1,7 +1,7 @@
 import { htmlTemplate } from './htmlTemplate.js';
 
-// 密码强度校验正则：至少8位，包含字母和数字
-const PASSWORD_REGEX = /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{8,}$/;
+// 密码强度校验正则：至少8位，包含字母和数字，允许特殊字符
+const PASSWORD_REGEX = /^(?=.*[A-Za-z])(?=.*\d).{8,}$/;
 
 // 通用头部，允许跨域访问
 const corsHeaders = {
@@ -115,20 +115,17 @@ export default {
 
                 // VIP 验证逻辑
                 if (['vip', 'svip1', 'svip2'].includes(user.role)) {
-                    // 如果用户已设置许可证，则必须验证
-                    if (user.licenseKey) {
-                        if (!licenseKey) {
-                            return jsonResp({ error: "LICENSE_REQUIRED", message: "请输入会员许可证以继续" }, 403, responseHeaders);
-                        }
-                        const decryptedLicense = await decryptData(user.licenseKey, env.SECRET_KEY, user.salt);
-                        if (licenseKey !== decryptedLicense) {
-                            return jsonResp({ error: "LICENSE_INVALID", message: "许可证错误" }, 403, responseHeaders);
-                        }
-                    } else {
-                        // VIP 但未设置许可证？（理论上不应发生，除非是旧数据）
-                        // 允许登录但降级，或者提示去设置
-                        warning = "LICENSE_NOT_SET";
-                        sessionRole = 'user';
+                    if (!licenseKey) {
+                        return jsonResp({ error: "LICENSE_REQUIRED", message: "请输入会员许可证以继续" }, 403, responseHeaders);
+                    }
+
+                    if (!user.licenseKey) {
+                        return jsonResp({ error: "ACCOUNT_ERROR", message: "账户异常：未设置许可证，请联系管理员" }, 403, responseHeaders);
+                    }
+
+                    const decryptedLicense = await decryptData(user.licenseKey, env.SECRET_KEY, user.salt);
+                    if (licenseKey !== decryptedLicense) {
+                        return jsonResp({ error: "LICENSE_INVALID", message: "许可证错误" }, 403, responseHeaders);
                     }
                 }
 
@@ -147,11 +144,17 @@ export default {
 
             // --- 修改密码 ---
             if (url.pathname === "/api/change-password") {
-                const { username, oldPassword, newPassword } = body;
+                let { username, oldPassword, newPassword } = body;
 
-                // D1 获取用户
-                const user = await env.DB.prepare('SELECT * FROM users WHERE username = ?').bind(username).first();
-                if (!user) return jsonResp({ error: "用户不存在" }, 404, responseHeaders);
+                let user;
+                if (username) {
+                    user = await env.DB.prepare('SELECT * FROM users WHERE username = ?').bind(username).first();
+                } else {
+                    user = await getUserFromCookie(request, env);
+                    if (user) username = user.username;
+                }
+
+                if (!user) return jsonResp({ error: "用户不存在或未登录" }, 404, responseHeaders);
 
                 const decryptedOld = await decryptData(user.password, env.SECRET_KEY, user.salt);
                 if (oldPassword !== decryptedOld) return jsonResp({ error: "旧密码错误" }, 401, responseHeaders);
@@ -199,7 +202,7 @@ export default {
                 return jsonResp({ success: true, message: "购买成功" }, 200, responseHeaders);
             }
 
-            // --- 设置许可证 ---
+            // --- 设置许可证 (首次) ---
             if (url.pathname === "/api/set-license") {
                 const user = await getUserFromCookie(request, env);
                 if (!user) return jsonResp({ error: "请先登录" }, 401, responseHeaders);
@@ -211,8 +214,8 @@ export default {
 
                 // D1 更新用户 (设置许可证)
                 await env.DB.prepare(
-                    'UPDATE users SET licenseKey = ?, licensePending = NULL WHERE username = ?'
-                ).bind(encryptedLicense, user.username).run();
+                    'UPDATE users SET licenseKey = ?, licensePending = NULL, lastLicenseUpdate = ? WHERE username = ?'
+                ).bind(encryptedLicense, Date.now(), user.username).run();
 
                 // 设置完成后，自动清除当前 session 强制用户重登以应用新权限
                 const cookie = `auth_token=; Path=/; Domain=.smaiclub.top; Max-Age=0; Secure; SameSite=None`;
@@ -221,10 +224,100 @@ export default {
                 });
             }
 
+            // --- 修改许可证 (180天限制) ---
+            if (url.pathname === "/api/update-license") {
+                const user = await getUserFromCookie(request, env);
+                if (!user) return jsonResp({ error: "请先登录" }, 401, responseHeaders);
+
+                const { licenseKey } = body;
+                if (!licenseKey || licenseKey.length < 4) return jsonResp({ error: "许可证太短" }, 400, responseHeaders);
+
+                // 检查是否是 VIP
+                if (!['vip', 'svip1', 'svip2'].includes(user.role)) {
+                    return jsonResp({ error: "仅会员可修改许可证" }, 403, responseHeaders);
+                }
+
+                // 检查时间限制 (180天)
+                const ONE_DAY = 24 * 60 * 60 * 1000;
+                const limit = 180 * ONE_DAY;
+                const lastUpdate = user.lastLicenseUpdate || 0;
+                const now = Date.now();
+
+                if (now - lastUpdate < limit) {
+                    const daysLeft = Math.ceil((limit - (now - lastUpdate)) / ONE_DAY);
+                    return jsonResp({ error: `修改过于频繁，请在 ${daysLeft} 天后再试` }, 429, responseHeaders);
+                }
+
+                const encryptedLicense = await encryptData(licenseKey, env.SECRET_KEY, user.salt);
+
+                // D1 更新用户
+                await env.DB.prepare(
+                    'UPDATE users SET licenseKey = ?, lastLicenseUpdate = ? WHERE username = ?'
+                ).bind(encryptedLicense, now, user.username).run();
+
+                // 修改成功后，强制重登
+                const cookie = `auth_token=; Path=/; Domain=.smaiclub.top; Max-Age=0; Secure; SameSite=None`;
+                return new Response(JSON.stringify({ success: true, message: "修改成功，请重新登录" }), {
+                     headers: { "Content-Type": "application/json", "Set-Cookie": cookie, ...responseHeaders }
+                });
+            }
+
+            // --- 修改许可证 (180天限制) ---
+            if (url.pathname === "/api/update-license") {
+                const user = await getUserFromCookie(request, env);
+                if (!user) return jsonResp({ error: "请先登录" }, 401, responseHeaders);
+
+                const { licenseKey } = body;
+                if (!licenseKey || licenseKey.length < 4) return jsonResp({ error: "许可证太短" }, 400, responseHeaders);
+
+                // 检查是否是 VIP
+                if (!['vip', 'svip1', 'svip2'].includes(user.role)) {
+                    return jsonResp({ error: "仅会员可修改许可证" }, 403, responseHeaders);
+                }
+
+                // 检查时间限制 (180天)
+                const ONE_DAY = 24 * 60 * 60 * 1000;
+                const limit = 180 * ONE_DAY;
+                const lastUpdate = user.lastLicenseUpdate || 0;
+                const now = Date.now();
+
+                if (now - lastUpdate < limit) {
+                    const daysLeft = Math.ceil((limit - (now - lastUpdate)) / ONE_DAY);
+                    return jsonResp({ error: `修改过于频繁，请在 ${daysLeft} 天后再试` }, 429, responseHeaders);
+                }
+
+                const encryptedLicense = await encryptData(licenseKey, env.SECRET_KEY, user.salt);
+
+                // D1 更新用户
+                await env.DB.prepare(
+                    'UPDATE users SET licenseKey = ?, lastLicenseUpdate = ? WHERE username = ?'
+                ).bind(encryptedLicense, now, user.username).run();
+
+                // 修改成功后，强制重登
+                const cookie = `auth_token=; Path=/; Domain=.smaiclub.top; Max-Age=0; Secure; SameSite=None`;
+                return new Response(JSON.stringify({ success: true, message: "修改成功，请重新登录" }), {
+                     headers: { "Content-Type": "application/json", "Set-Cookie": cookie, ...responseHeaders }
+                });
+            }
+
             // --- 退出登录 ---
             if (url.pathname === "/api/logout") {
                 const cookie = `auth_token=; Path=/; Domain=.smaiclub.top; Max-Age=0; Secure; SameSite=None`;
                 return new Response(JSON.stringify({ success: true }), {
+                    headers: { "Content-Type": "application/json", "Set-Cookie": cookie, ...responseHeaders }
+                });
+            }
+
+            // --- 注销账号 ---
+            if (url.pathname === "/api/delete-account") {
+                const user = await getUserFromCookie(request, env);
+                if (!user) return jsonResp({ error: "请先登录" }, 401, responseHeaders);
+
+                // D1 删除用户
+                await env.DB.prepare('DELETE FROM users WHERE username = ?').bind(user.username).run();
+
+                const cookie = `auth_token=; Path=/; Domain=.smaiclub.top; Max-Age=0; Secure; SameSite=None`;
+                return new Response(JSON.stringify({ success: true, message: "账号已注销" }), {
                     headers: { "Content-Type": "application/json", "Set-Cookie": cookie, ...responseHeaders }
                 });
             }
@@ -367,6 +460,28 @@ async function generateCommonScript() {
         .smai-drop-danger { color: #ff453a; }
         .smai-drop-danger:hover { background: rgba(255, 69, 58, 0.1); }
 
+        /* License Modal */
+        .smai-modal-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.6); backdrop-filter: blur(5px);
+            z-index: 10000; display: none; align-items: center; justify-content: center;
+        }
+        .smai-modal-overlay.show { display: flex; animation: fadeIn 0.2s ease; }
+        .smai-modal {
+            background: #1d1d1f; border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 16px; padding: 24px; width: 90%; max-width: 400px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.4);
+        }
+        .smai-modal h3 { margin: 0 0 16px 0; color: white; font-size: 18px; }
+        .smai-modal input {
+            width: 100%; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.1);
+            color: white; padding: 10px; border-radius: 8px; margin-bottom: 16px; outline: none;
+        }
+        .smai-modal-btns { display: flex; gap: 10px; justify-content: flex-end; }
+        .smai-btn { padding: 8px 16px; border-radius: 8px; cursor: pointer; font-size: 14px; border: none; }
+        .smai-btn-cancel { background: rgba(255,255,255,0.1); color: white; }
+        .smai-btn-confirm { background: #0071e3; color: white; }
+
         /* Fallback container for pages without navbar */
         #smai-fallback-nav {
             position: fixed; top: 20px; right: 20px; z-index: 9999;
@@ -374,11 +489,56 @@ async function generateCommonScript() {
     \`;
     document.head.appendChild(style);
 
-    async function initAuth() {
+    // License Modal HTML
+    const modalHtml = \`
+        <div id="smai-license-modal" class="smai-modal-overlay">
+            <div class="smai-modal">
+                <h3>修改会员许可证</h3>
+                <p style="font-size:12px; color:#86868b; margin-bottom:12px;">注意：每180天仅允许修改一次。修改后需要重新登录。</p>
+                <input type="password" id="smai-new-license" placeholder="输入新的许可证密钥" />
+                <div class="smai-modal-btns">
+                    <button class="smai-btn smai-btn-cancel" onclick="closeLicenseModal()">取消</button>
+                    <button class="smai-btn smai-btn-confirm" onclick="updateLicense()">确认修改</button>
+                </div>
+            </div>
+        </div>
+    \`;
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
+
+    const changePassModalHtml = \`
+        <div id="smai-changepass-modal" class="smai-modal-overlay">
+            <div class="smai-modal">
+                <h3>修改密码</h3>
+                <input type="password" id="smai-old-pass" placeholder="当前密码" />
+                <input type="password" id="smai-new-pass" placeholder="新密码 (至少8位, 含字母数字)" />
+                <input type="password" id="smai-confirm-pass" placeholder="确认新密码" />
+                <div class="smai-modal-btns">
+                    <button class="smai-btn smai-btn-cancel" onclick="closeChangePassModal()">取消</button>
+                    <button class="smai-btn smai-btn-confirm" onclick="changePasswordSmai()">确认修改</button>
+                </div>
+            </div>
+        </div>
+    \`;
+    document.body.insertAdjacentHTML('beforeend', changePassModalHtml);
+
+    // 暴露全局对象供 SPA 调用
+    window.CommonAuth = {
+        init: initAuth
+    };
+
+    async function initAuth(containerId) {
         // 1. 检查页面是否有导航栏容器
-        // 优先寻找专门的 auth-container，否则回退到 .nav-links
-        let targetContainer = document.querySelector('.auth-container');
+        let targetContainer;
         let isList = false;
+
+        if (containerId) {
+            targetContainer = document.getElementById(containerId);
+        }
+
+        if (!targetContainer) {
+            // 优先寻找专门的 auth-container，否则回退到 .nav-links
+            targetContainer = document.querySelector('.auth-container');
+        }
 
         if (!targetContainer) {
             targetContainer = document.querySelector('.nav-links');
@@ -387,6 +547,9 @@ async function generateCommonScript() {
 
         // 如果没有导航栏，直接退出，不显示任何 UI
         if (!targetContainer) return;
+
+        // 避免重复初始化
+        if (targetContainer.querySelector('.smai-auth-wrapper')) return;
 
         // 2. 获取用户状态
         try {
@@ -419,7 +582,10 @@ async function generateCommonScript() {
                             <span class="smai-drop-role \${isVip ? 'smai-role-vip' : ''}">\${roleName}</span>
                         </div>
                         \${!isVip ? '<a href="https://www.smaiclub.top/shop/" class="smai-drop-item">💎 升级会员</a>' : ''}
-                        <div class="smai-drop-item smai-drop-danger" onclick="logoutSmai()">退出登录</div>
+                        \${isVip ? '<div class="smai-drop-item" onclick="showLicenseModal()">🔑 修改许可证</div>' : ''}
+                        <div class="smai-drop-item" onclick="showChangePassModal()">🔒 修改密码</div>
+                        <div class="smai-drop-item smai-drop-danger" onclick="deleteAccountSmai()">⚠️ 注销账号</div>
+                        <div class="smai-drop-item" onclick="logoutSmai()">退出登录</div>
                     </div>
                 \`;
             } else {
@@ -450,6 +616,98 @@ async function generateCommonScript() {
         window.location.reload();
     };
 
+    window.deleteAccountSmai = async function() {
+        if (!confirm("确定要注销账号吗？此操作将永久删除您的账户且无法撤销！")) return;
+        
+        try {
+            const res = await fetch('https://login.smaiclub.top/api/delete-account', { method: 'POST', credentials: 'include' });
+            if (res.ok) {
+                alert("账号已注销");
+                window.location.reload();
+            } else {
+                alert("操作失败");
+            }
+        } catch(e) {
+            alert("网络错误");
+        }
+    };
+
+    window.showLicenseModal = function() {
+        document.getElementById('smai-license-modal').classList.add('show');
+        const menu = document.getElementById('smai-user-menu');
+        if (menu) menu.classList.remove('show');
+    };
+
+    window.closeLicenseModal = function() {
+        document.getElementById('smai-license-modal').classList.remove('show');
+    };
+
+    window.showChangePassModal = function() {
+        document.getElementById('smai-changepass-modal').classList.add('show');
+        const menu = document.getElementById('smai-user-menu');
+        if (menu) menu.classList.remove('show');
+    };
+
+    window.closeChangePassModal = function() {
+        document.getElementById('smai-changepass-modal').classList.remove('show');
+        document.getElementById('smai-old-pass').value = '';
+        document.getElementById('smai-new-pass').value = '';
+        document.getElementById('smai-confirm-pass').value = '';
+    };
+
+    window.changePasswordSmai = async function() {
+        const oldPass = document.getElementById('smai-old-pass').value;
+        const newPass = document.getElementById('smai-new-pass').value;
+        const confirmPass = document.getElementById('smai-confirm-pass').value;
+
+        if (!oldPass || !newPass || !confirmPass) return alert("请填写所有字段");
+        if (newPass !== confirmPass) return alert("两次输入的密码不一致");
+        if (newPass.length < 8) return alert("新密码太短");
+
+        try {
+            const res = await fetch('https://login.smaiclub.top/api/change-password', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
+                body: JSON.stringify({ oldPassword: oldPass, newPassword: newPass })
+            });
+            const data = await res.json();
+            if (res.ok) {
+                alert("密码修改成功，请重新登录");
+                await fetch('https://login.smaiclub.top/api/logout', { method: 'POST', credentials: 'include' });
+                window.location.reload();
+            } else {
+                alert(data.error || "修改失败");
+            }
+        } catch(e) {
+            alert("网络错误");
+        }
+    };
+
+    window.updateLicense = async function() {
+        const input = document.getElementById('smai-new-license');
+        const key = input.value;
+        if (!key) return alert("请输入密钥");
+        
+        try {
+            const res = await fetch('https://login.smaiclub.top/api/update-license', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
+                body: JSON.stringify({ licenseKey: key })
+            });
+            const data = await res.json();
+            if (res.ok) {
+                alert(data.message || "修改成功");
+                window.location.reload();
+            } else {
+                alert(data.error || "修改失败");
+            }
+        } catch(e) {
+            alert("网络错误");
+        }
+    };
+
     // 点击其他地方关闭菜单
     document.addEventListener('click', () => {
         const menu = document.getElementById('smai-user-menu');
@@ -465,3 +723,4 @@ async function generateCommonScript() {
 })();
     `;
 }
+
