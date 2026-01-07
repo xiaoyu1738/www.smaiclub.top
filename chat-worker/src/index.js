@@ -11,7 +11,7 @@ export default {
         // CORS Headers
         const corsHeaders = {
             "Access-Control-Allow-Origin": request.headers.get("Origin") || "*",
-            "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+            "Access-Control-Allow-Methods": "GET, POST, OPTIONS, DELETE",
             "Access-Control-Allow-Headers": "Content-Type, Authorization, Cookie, Room-Key",
             "Access-Control-Allow-Credentials": "true",
         };
@@ -118,8 +118,8 @@ export default {
                 // 4. Create in D1
                 try {
                     await env.CHAT_DB.prepare(
-                        "INSERT INTO rooms (id, name, is_private, owner, created_at, last_accessed) VALUES (?, ?, ?, ?, ?, ?)"
-                    ).bind(roomId, body.name || `Room ${roomId}`, body.isPrivate ? 1 : 0, user.username, Date.now(), Date.now()).run();
+                        "INSERT INTO rooms (id, name, is_private, owner, owner_role, created_at, last_accessed) VALUES (?, ?, ?, ?, ?, ?, ?)"
+                    ).bind(roomId, body.name || `Room ${roomId}`, body.isPrivate ? 1 : 0, user.username, role, Date.now(), Date.now()).run();
 
                     // Add owner to room_members
                     await env.CHAT_DB.prepare(
@@ -194,12 +194,53 @@ export default {
             }
         }
 
+        // --- 3. Delete Room (DELETE /api/rooms/:id) ---
+        if (request.method === "DELETE" && url.pathname.startsWith("/api/rooms/")) {
+            const match = url.pathname.match(/\/api\/rooms\/(\d+)$/);
+            if (match) {
+                const roomId = match[1];
+                try {
+                    const user = await getUserFromRequest(request, env);
+                    if (!user) return new Response(JSON.stringify({ error: "Unauthorized", message: "请先登录" }), { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+
+                    // Check ownership
+                    const room = await env.CHAT_DB.prepare("SELECT owner FROM rooms WHERE id = ?").bind(roomId).first();
+                    if (!room) {
+                        return new Response(JSON.stringify({ error: "Room not found" }), { status: 404, headers: corsHeaders });
+                    }
+                    if (room.owner !== user.username) {
+                        return new Response(JSON.stringify({ error: "Forbidden", message: "你不是房主" }), { status: 403, headers: corsHeaders });
+                    }
+
+                    // Perform Deletion
+                    // 1. Delete Messages
+                    await env.CHAT_DB.prepare("DELETE FROM messages WHERE room_id = ?").bind(roomId).run();
+                    // 2. Delete Members
+                    await env.CHAT_DB.prepare("DELETE FROM room_members WHERE room_id = ?").bind(roomId).run();
+                    // 3. Delete Sessions
+                    await env.CHAT_DB.prepare("DELETE FROM chat_sessions WHERE room_id = ?").bind(roomId).run();
+                    // 4. Delete Room
+                    await env.CHAT_DB.prepare("DELETE FROM rooms WHERE id = ?").bind(roomId).run();
+
+                    // 5. Notify DO to destroy (close connections)
+                    const id = env.CHAT_ROOM.idFromName(roomId.toString());
+                    const stub = env.CHAT_ROOM.get(id);
+                    ctx.waitUntil(stub.fetch("http://internal/destroy", { method: "POST" }));
+
+                    return new Response(JSON.stringify({ success: true }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+
+                } catch(e) {
+                    return new Response(JSON.stringify({ error: e.message }), { status: 500, headers: corsHeaders });
+                }
+            }
+        }
+
         return new Response(JSON.stringify({ error: "Not Found", message: "页面不存在" }), { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     },
 
-    // --- Scheduled Cleanup (Fail-safe Protocol) ---
+    // --- Scheduled Cleanup ---
     async scheduled(event, env, ctx) {
-        // 1. Check Triggers
+        // 1. Emergency Cleanup (Fail-safe)
         let emergency = false;
         try {
             const count = await env.CHAT_DB.prepare("SELECT COUNT(*) as count FROM rooms").first();
@@ -219,21 +260,16 @@ export default {
 
             for (const row of results) {
                 const roomId = row.id;
-
                 try {
-                    // Delete Messages
                     await env.CHAT_DB.prepare("DELETE FROM messages WHERE room_id = ?").bind(roomId).run();
-                    // Delete Room
                     await env.CHAT_DB.prepare("DELETE FROM rooms WHERE id = ?").bind(roomId).run();
-
-                    // Destroy DO
                     const id = env.CHAT_ROOM.idFromName(roomId.toString());
                     const stub = env.CHAT_ROOM.get(id);
                     ctx.waitUntil(stub.fetch("http://internal/destroy", { method: "POST" }));
-                } catch(e) {
-                    console.error("Cleanup failed for room", roomId, e);
-                }
+                } catch(e) { console.error("Emergency cleanup failed for room", roomId, e); }
             }
         }
+
+        // 2. Routine Message Cleanup (Moved to Durable Object Alarms)
     }
 };
