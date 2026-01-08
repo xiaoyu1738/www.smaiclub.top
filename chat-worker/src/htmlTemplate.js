@@ -285,12 +285,10 @@ export function htmlTemplate() {
                     {/* Login Component */}
                     <div id="auth-container-root"></div>
                     
-                    <div className="h-8 w-px bg-white/10 mx-1"></div>
-
-                    <StyleSwitcher />
-                    
                     {hasRooms && (
                         <>
+                            <div className="h-8 w-px bg-white/10 mx-1"></div>
+                            <StyleSwitcher />
                             <button onClick={onCreate} className="w-10 h-10 rounded-full bg-blue-600 hover:bg-blue-500 text-white flex items-center justify-center shadow-lg transition tooltip-container group">
                                 <i className="fas fa-plus"></i>
                                 <span className="absolute left-12 bg-gray-800 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition whitespace-nowrap pointer-events-none">创建房间</span>
@@ -632,8 +630,29 @@ export function htmlTemplate() {
                        return;
                    }
 
+                   if (data.type === 'history') {
+                       if (!keyObj) return;
+                       const historyMessages = await Promise.all(data.messages.map(async (m) => {
+                           try {
+                               const content = await decryptMessage(keyObj, m.iv, m.content);
+                               const sender = await decryptMessage(keyObj, m.iv, m.sender);
+                               return {
+                                   id: m.timestamp,
+                                   content,
+                                   sender,
+                                   isMine: sender === user.username,
+                                   timestamp: m.timestamp
+                               };
+                           } catch (e) {
+                               return null;
+                           }
+                       }));
+                       setMessages(prev => [...prev, ...historyMessages.filter(Boolean)]);
+                       return;
+                   }
+
                    // Decrypt
-                   if (!keyObj) return; 
+                   if (!keyObj) return;
                    const content = await decryptMessage(keyObj, data.iv, data.content);
                    const sender = await decryptMessage(keyObj, data.iv, data.sender);
                    

@@ -262,43 +262,6 @@ export default {
                 });
             }
 
-            // --- 修改许可证 (180天限制) ---
-            if (url.pathname === "/api/update-license") {
-                const user = await getUserFromCookie(request, env);
-                if (!user) return jsonResp({ error: "请先登录" }, 401, responseHeaders);
-
-                const { licenseKey } = body;
-                if (!licenseKey || licenseKey.length < 4) return jsonResp({ error: "许可证太短" }, 400, responseHeaders);
-
-                // 检查是否是 VIP
-                if (!['vip', 'svip1', 'svip2'].includes(user.role)) {
-                    return jsonResp({ error: "仅会员可修改许可证" }, 403, responseHeaders);
-                }
-
-                // 检查时间限制 (180天)
-                const ONE_DAY = 24 * 60 * 60 * 1000;
-                const limit = 180 * ONE_DAY;
-                const lastUpdate = user.lastLicenseUpdate || 0;
-                const now = Date.now();
-
-                if (now - lastUpdate < limit) {
-                    const daysLeft = Math.ceil((limit - (now - lastUpdate)) / ONE_DAY);
-                    return jsonResp({ error: `修改过于频繁，请在 ${daysLeft} 天后再试` }, 429, responseHeaders);
-                }
-
-                const encryptedLicense = await encryptData(licenseKey, env.SECRET_KEY, user.salt);
-
-                // D1 更新用户
-                await env.DB.prepare(
-                    'UPDATE users SET licenseKey = ?, lastLicenseUpdate = ? WHERE username = ?'
-                ).bind(encryptedLicense, now, user.username).run();
-
-                // 修改成功后，强制重登
-                const cookie = `auth_token=; Path=/; Domain=.smaiclub.top; Max-Age=0; Secure; SameSite=None`;
-                return new Response(JSON.stringify({ success: true, message: "修改成功，请重新登录" }), {
-                     headers: { "Content-Type": "application/json", "Set-Cookie": cookie, ...responseHeaders }
-                });
-            }
 
             // --- 退出登录 ---
             if (url.pathname === "/api/logout") {
@@ -489,37 +452,41 @@ async function generateCommonScript() {
     \`;
     document.head.appendChild(style);
 
-    // License Modal HTML
-    const modalHtml = \`
-        <div id="smai-license-modal" class="smai-modal-overlay">
-            <div class="smai-modal">
-                <h3>修改会员许可证</h3>
-                <p style="font-size:12px; color:#86868b; margin-bottom:12px;">注意：每180天仅允许修改一次。修改后需要重新登录。</p>
-                <input type="password" id="smai-new-license" placeholder="输入新的许可证密钥" />
-                <div class="smai-modal-btns">
-                    <button class="smai-btn smai-btn-cancel" onclick="closeLicenseModal()">取消</button>
-                    <button class="smai-btn smai-btn-confirm" onclick="updateLicense()">确认修改</button>
-                </div>
-            </div>
-        </div>
-    \`;
-    document.body.insertAdjacentHTML('beforeend', modalHtml);
+    function injectModals() {
+        if (document.getElementById('smai-license-modal')) return;
 
-    const changePassModalHtml = \`
-        <div id="smai-changepass-modal" class="smai-modal-overlay">
-            <div class="smai-modal">
-                <h3>修改密码</h3>
-                <input type="password" id="smai-old-pass" placeholder="当前密码" />
-                <input type="password" id="smai-new-pass" placeholder="新密码 (至少8位, 含字母数字)" />
-                <input type="password" id="smai-confirm-pass" placeholder="确认新密码" />
-                <div class="smai-modal-btns">
-                    <button class="smai-btn smai-btn-cancel" onclick="closeChangePassModal()">取消</button>
-                    <button class="smai-btn smai-btn-confirm" onclick="changePasswordSmai()">确认修改</button>
+        // License Modal HTML
+        const modalHtml = \`
+            <div id="smai-license-modal" class="smai-modal-overlay">
+                <div class="smai-modal">
+                    <h3>修改会员许可证</h3>
+                    <p style="font-size:12px; color:#86868b; margin-bottom:12px;">注意：每180天仅允许修改一次。修改后需要重新登录。</p>
+                    <input type="password" id="smai-new-license" placeholder="输入新的许可证密钥" />
+                    <div class="smai-modal-btns">
+                        <button class="smai-btn smai-btn-cancel" onclick="closeLicenseModal()">取消</button>
+                        <button class="smai-btn smai-btn-confirm" onclick="updateLicense()">确认修改</button>
+                    </div>
                 </div>
             </div>
-        </div>
-    \`;
-    document.body.insertAdjacentHTML('beforeend', changePassModalHtml);
+        \`;
+        document.body.insertAdjacentHTML('beforeend', modalHtml);
+
+        const changePassModalHtml = \`
+            <div id="smai-changepass-modal" class="smai-modal-overlay">
+                <div class="smai-modal">
+                    <h3>修改密码</h3>
+                    <input type="password" id="smai-old-pass" placeholder="当前密码" />
+                    <input type="password" id="smai-new-pass" placeholder="新密码 (至少8位, 含字母数字)" />
+                    <input type="password" id="smai-confirm-pass" placeholder="确认新密码" />
+                    <div class="smai-modal-btns">
+                        <button class="smai-btn smai-btn-cancel" onclick="closeChangePassModal()">取消</button>
+                        <button class="smai-btn smai-btn-confirm" onclick="changePasswordSmai()">确认修改</button>
+                    </div>
+                </div>
+            </div>
+        \`;
+        document.body.insertAdjacentHTML('beforeend', changePassModalHtml);
+    }
 
     // 暴露全局对象供 SPA 调用
     window.CommonAuth = {
@@ -527,6 +494,7 @@ async function generateCommonScript() {
     };
 
     async function initAuth(containerId) {
+        injectModals();
         // 1. 检查页面是否有导航栏容器
         let targetContainer;
         let isList = false;
