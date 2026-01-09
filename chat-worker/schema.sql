@@ -49,6 +49,8 @@ CREATE TABLE messages (
     created_at INTEGER NOT NULL
 );
 
+CREATE INDEX idx_messages_room_created ON messages(room_id, created_at);
+
 -- Seed "Issues" Room (Emergency Mode)
 INSERT INTO rooms (id, name, is_private, owner, owner_role, created_at, last_accessed)
 VALUES (1, 'Issues', 0, 'system', 'admin', 1735689600000, 1735689600000);
