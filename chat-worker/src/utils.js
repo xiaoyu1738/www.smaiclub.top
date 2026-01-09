@@ -15,7 +15,7 @@ export async function generateRoomKey() {
 
 export function validateCustomKey(key) {
   if (!key) return false;
-  if (key.length <= 8 || key.length >= 20) return false;
+  if (key.length < 8 || key.length > 20) return false;
   // Allow numbers and letters (upper and lower), no symbols
   return /^[a-zA-Z0-9]+$/.test(key);
 }

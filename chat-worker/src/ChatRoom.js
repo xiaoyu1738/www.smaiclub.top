@@ -117,27 +117,54 @@ export class ChatRoom {
     }
 
     // --- Load History ---
-    // Load messages since last session end (or default window if no last session)
+    // Check if client requested incremental sync (since timestamp)
+    const sinceParam = new URL(request.url).searchParams.get("since");
+    const sinceTimestamp = sinceParam ? parseInt(sinceParam, 10) : 0;
+    
     try {
-        const lastSession = await this.env.CHAT_DB.prepare(
-            "SELECT end_time FROM chat_sessions WHERE room_id = ? AND user_id = ? AND id != ? ORDER BY end_time DESC LIMIT 1"
-        ).bind(roomId, username, sessionId || -1).first();
+        let messages;
+        if (sinceTimestamp > 0) {
+            // Incremental sync: only fetch messages after the given timestamp
+            messages = await this.env.CHAT_DB.prepare(
+                `SELECT iv, content, sender, created_at as timestamp
+                 FROM messages
+                 WHERE room_id = ? AND created_at > ?
+                 ORDER BY created_at ASC
+                 LIMIT 500`
+            ).bind(roomId, sinceTimestamp).all();
+            
+            if (messages.results && messages.results.length > 0) {
+                webSocket.send(JSON.stringify({
+                    type: 'history_incremental',
+                    messages: messages.results,
+                    since: sinceTimestamp
+                }));
+            } else {
+                // No new messages, send empty incremental response
+                webSocket.send(JSON.stringify({
+                    type: 'history_incremental',
+                    messages: [],
+                    since: sinceTimestamp
+                }));
+            }
+        } else {
+            // Full sync: fetch recent messages (last 100)
+            messages = await this.env.CHAT_DB.prepare(
+                `SELECT iv, content, sender, created_at as timestamp
+                 FROM messages
+                 WHERE room_id = ?
+                 ORDER BY created_at DESC
+                 LIMIT 100`
+            ).bind(roomId).all();
 
-        let startTime = 0;
-        if (lastSession && lastSession.end_time) {
-            startTime = lastSession.end_time;
-        }
-
-        // Fetch "Unsaved" (Unseen) messages from DB
-        const messages = await this.env.CHAT_DB.prepare(
-            "SELECT iv, content, sender, created_at as timestamp FROM messages WHERE room_id = ? AND created_at > ? ORDER BY created_at ASC LIMIT 100"
-        ).bind(roomId, startTime).all();
-
-        if (messages.results && messages.results.length > 0) {
-            webSocket.send(JSON.stringify({
-                type: 'history',
-                messages: messages.results
-            }));
+            if (messages.results && messages.results.length > 0) {
+                // Reverse to get chronological order (oldest first)
+                const chronologicalMessages = messages.results.reverse();
+                webSocket.send(JSON.stringify({
+                    type: 'history',
+                    messages: chronologicalMessages
+                }));
+            }
         }
     } catch (e) {
         console.error("History load failed", e);
@@ -152,7 +179,7 @@ export class ChatRoom {
          if (['fish', 'smaiclubadmin'].includes(username)) {
              // Unlimited
          } else {
-             limits.rateLimit = { count: 2, window: 5000 }; // Default strict
+             limits.rateLimit = { count: 1, window: 3600 * 1000 }; // 1 message per hour
          }
     }
 

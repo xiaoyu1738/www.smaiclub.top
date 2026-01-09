@@ -63,7 +63,121 @@ export function htmlTemplate() {
   <div id="root" class="relative h-full flex flex-col items-center justify-center p-4"></div>
 
   <script type="text/babel">
-    const { useState, useEffect, useRef, useLayoutEffect } = React;
+    const { useState, useEffect, useRef, useLayoutEffect, useCallback } = React;
+
+    // --- Local Storage Utils for Chat History ---
+    const CHAT_STORAGE_PREFIX = 'chat_history_';
+    const CHAT_STORAGE_VERSION = 1;
+    const MAX_LOCAL_MESSAGES = 500; // Maximum messages to store locally per room
+
+    function getChatStorageKey(roomId) {
+        return CHAT_STORAGE_PREFIX + roomId;
+    }
+
+    function loadLocalChatHistory(roomId) {
+        try {
+            const key = getChatStorageKey(roomId);
+            const data = localStorage.getItem(key);
+            if (!data) return null;
+            
+            const parsed = JSON.parse(data);
+            // Version check
+            if (parsed.version !== CHAT_STORAGE_VERSION) {
+                console.log('Chat history version mismatch, clearing...');
+                localStorage.removeItem(key);
+                return null;
+            }
+            
+            return {
+                messages: parsed.messages || [],
+                lastTimestamp: parsed.lastTimestamp || 0,
+                savedAt: parsed.savedAt || 0
+            };
+        } catch (e) {
+            console.error('Failed to load local chat history:', e);
+            return null;
+        }
+    }
+
+    function saveLocalChatHistory(roomId, messages, lastTimestamp) {
+        try {
+            const key = getChatStorageKey(roomId);
+            // Only keep the last MAX_LOCAL_MESSAGES messages
+            const trimmedMessages = messages.slice(-MAX_LOCAL_MESSAGES);
+            
+            const data = {
+                version: CHAT_STORAGE_VERSION,
+                messages: trimmedMessages,
+                lastTimestamp: lastTimestamp || (trimmedMessages.length > 0 ? trimmedMessages[trimmedMessages.length - 1].timestamp : 0),
+                savedAt: Date.now()
+            };
+            
+            localStorage.setItem(key, JSON.stringify(data));
+            return true;
+        } catch (e) {
+            console.error('Failed to save local chat history:', e);
+            // If storage is full, try to clear old data
+            if (e.name === 'QuotaExceededError') {
+                clearOldChatHistories();
+            }
+            return false;
+        }
+    }
+
+    function clearOldChatHistories() {
+        try {
+            const keys = [];
+            for (let i = 0; i < localStorage.length; i++) {
+                const key = localStorage.key(i);
+                if (key && key.startsWith(CHAT_STORAGE_PREFIX)) {
+                    const data = localStorage.getItem(key);
+                    if (data) {
+                        try {
+                            const parsed = JSON.parse(data);
+                            keys.push({ key, savedAt: parsed.savedAt || 0 });
+                        } catch (e) {
+                            keys.push({ key, savedAt: 0 });
+                        }
+                    }
+                }
+            }
+            // Sort by savedAt (oldest first) and remove the oldest half
+            keys.sort((a, b) => a.savedAt - b.savedAt);
+            const toRemove = Math.ceil(keys.length / 2);
+            for (let i = 0; i < toRemove; i++) {
+                localStorage.removeItem(keys[i].key);
+            }
+            console.log('Cleared ' + toRemove + ' old chat histories');
+        } catch (e) {
+            console.error('Failed to clear old chat histories:', e);
+        }
+    }
+
+    function mergeMessages(localMessages, serverMessages, username) {
+        // Create a map of existing messages by timestamp to avoid duplicates
+        const messageMap = new Map();
+        
+        // Add local messages first
+        localMessages.forEach(msg => {
+            if (msg.timestamp) {
+                messageMap.set(msg.timestamp, msg);
+            }
+        });
+        
+        // Add/update with server messages
+        serverMessages.forEach(msg => {
+            if (msg.timestamp) {
+                // Server message takes precedence if there's a conflict
+                messageMap.set(msg.timestamp, msg);
+            }
+        });
+        
+        // Convert back to array and sort by timestamp
+        const merged = Array.from(messageMap.values());
+        merged.sort((a, b) => a.timestamp - b.timestamp);
+        
+        return merged;
+    }
 
     // --- Crypto Utils ---
     async function importRoomKey(password) {
@@ -169,7 +283,7 @@ export function htmlTemplate() {
 
       return (
         <div className="relative z-50">
-           <button onClick={() => setIsOpen(!isOpen)} className="w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 text-white border border-white/10 flex items-center justify-center shadow-lg transition group" title="更改外观">
+           <button onClick={() => setIsOpen(!isOpen)} className="w-10 h-10 rounded-full bg-blue-600 hover:bg-blue-500 text-white flex items-center justify-center shadow-lg transition group" title="更改外观">
               <i className="fas fa-palette"></i>
            </button>
            
@@ -280,25 +394,43 @@ export function htmlTemplate() {
         <div className="w-full max-w-5xl p-4 animate-[fadeIn_0.5s_ease-out]">
             {/* Top Bar */}
             <div className="absolute top-0 left-0 w-full p-6 flex justify-between items-start z-50 pointer-events-none">
-                {/* Left Actions & Login */}
+                {/* Left Actions */}
                 <div className="flex items-center gap-4 pointer-events-auto">
-                    {/* Login Component */}
-                    <div id="auth-container-root"></div>
-                    
-                    {hasRooms && (
+                     {hasRooms && (
                         <>
-                            <div className="h-8 w-px bg-white/10 mx-1"></div>
-                            <StyleSwitcher />
-                            <button onClick={onCreate} className="w-10 h-10 rounded-full bg-blue-600 hover:bg-blue-500 text-white flex items-center justify-center shadow-lg transition tooltip-container group">
-                                <i className="fas fa-plus"></i>
-                                <span className="absolute left-12 bg-gray-800 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition whitespace-nowrap pointer-events-none">创建房间</span>
-                            </button>
-                            <button onClick={onJoin} className="w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 text-white border border-white/10 flex items-center justify-center shadow-lg transition group">
-                                <i className="fas fa-sign-in-alt"></i>
-                                <span className="absolute left-12 bg-gray-800 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition whitespace-nowrap pointer-events-none">加入房间</span>
+                            <button onClick={onEmergency} className="w-10 h-10 rounded-full bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20 flex items-center justify-center shadow-lg transition group relative">
+                                <i className="fas fa-exclamation-triangle"></i>
+                                <span className="absolute left-12 bg-gray-800 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition whitespace-nowrap pointer-events-none">紧急/工单</span>
                             </button>
                         </>
                     )}
+                </div>
+
+                {/* Right Actions & Login */}
+                <div className="flex items-center gap-4 pointer-events-auto">
+                    {hasRooms && (
+                        <>
+                            <div className="relative group">
+                                <button onClick={onJoin} className="w-10 h-10 rounded-full bg-blue-600 hover:bg-blue-500 text-white flex items-center justify-center shadow-lg transition">
+                                    <i className="fas fa-sign-in-alt"></i>
+                                </button>
+                                <span className="absolute right-12 top-2 bg-gray-800 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition whitespace-nowrap pointer-events-none">加入房间</span>
+                            </div>
+                            <div className="relative group">
+                                <button onClick={onCreate} className="w-10 h-10 rounded-full bg-blue-600 hover:bg-blue-500 text-white flex items-center justify-center shadow-lg transition">
+                                    <i className="fas fa-plus"></i>
+                                </button>
+                                <span className="absolute right-12 top-2 bg-gray-800 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition whitespace-nowrap pointer-events-none">创建房间</span>
+                            </div>
+                            <div className="relative group">
+                                <StyleSwitcher />
+                                <span className="absolute right-12 top-2 bg-gray-800 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition whitespace-nowrap pointer-events-none">外观设置</span>
+                            </div>
+                            <div className="h-8 w-px bg-white/10 mx-1"></div>
+                        </>
+                    )}
+                    {/* Login Component */}
+                    <div id="auth-container-root"></div>
                 </div>
             </div>
 
@@ -327,40 +459,52 @@ export function htmlTemplate() {
                     </div>
                 </div>
             ) : (
-                <div className="mt-20 space-y-10">
-                     {/* Owned Rooms */}
-                     {rooms.owned.length > 0 && (
-                        <div>
-                            <h2 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
-                                <i className="fas fa-crown text-yellow-500"></i> 我拥有的房间
-                            </h2>
-                            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                                {rooms.owned.map(room => (
-                                    <RoomCard key={room.id} room={room} isOwner={true} />
-                                ))}
-                            </div>
-                        </div>
-                     )}
+                <div className="mt-20 space-y-10 w-full overflow-y-auto custom-scroll pb-20" style={{maxHeight: 'calc(100vh - 100px)'}}>
+                     {(() => {
+                        const anyFullRow = rooms.owned.length >= 4 || rooms.joined.length >= 4;
+                        const centerOwned = !anyFullRow && rooms.owned.length > 0;
+                        const centerJoined = !anyFullRow && rooms.joined.length > 0;
 
-                     {/* Joined Rooms */}
-                     {rooms.joined.length > 0 && (
-                        <div>
-                            <h2 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
-                                <i className="fas fa-history text-blue-400"></i> 我加入过的房间
-                            </h2>
-                            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                                {rooms.joined.map(room => (
-                                    <RoomCard key={room.id} room={room} isOwner={false} />
-                                ))}
-                            </div>
-                        </div>
-                     )}
-                     
-                     <div className="text-center mt-12">
-                        <button onClick={onEmergency} className="text-xs text-red-400 hover:text-red-300 transition inline-flex items-center gap-1 opacity-60 hover:opacity-100 border border-red-500/20 px-3 py-1.5 rounded-full hover:bg-red-500/10">
-                            <i className="fas fa-exclamation-triangle"></i> 紧急/工单模式入口
-                        </button>
-                     </div>
+                        return (
+                            <React.Fragment>
+                                {/* Owned Rooms */}
+                                {rooms.owned.length > 0 && (
+                                    <div className={\`w-full \${centerOwned ? 'flex justify-center' : ''}\`}>
+                                        <div className={\`w-full \${centerOwned ? 'max-w-4xl' : ''}\`}>
+                                            <h2 className="text-xl font-bold text-white mb-4 flex items-center gap-2 px-4">
+                                                <i className="fas fa-crown text-yellow-500"></i> 我拥有的房间
+                                            </h2>
+                                            <div className={\`grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 px-4 \${centerOwned ? 'flex justify-center flex-wrap' : ''}\`}>
+                                                {rooms.owned.map(room => (
+                                                    <div key={room.id} className={\`\${centerOwned ? 'w-64' : 'w-full'}\`}>
+                                                        <RoomCard room={room} isOwner={true} />
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* Joined Rooms */}
+                                {rooms.joined.length > 0 && (
+                                    <div className={\`w-full \${centerJoined ? 'flex justify-center' : ''}\`}>
+                                        <div className={\`w-full \${centerJoined ? 'max-w-4xl' : ''}\`}>
+                                            <h2 className="text-xl font-bold text-white mb-4 flex items-center gap-2 px-4">
+                                                <i className="fas fa-history text-blue-400"></i> 我加入过的房间
+                                            </h2>
+                                            <div className={\`grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 px-4 \${centerJoined ? 'flex justify-center flex-wrap' : ''}\`}>
+                                                {rooms.joined.map(room => (
+                                                    <div key={room.id} className={\`\${centerJoined ? 'w-64' : 'w-full'}\`}>
+                                                        <RoomCard key={room.id} room={room} isOwner={false} />
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+                            </React.Fragment>
+                        );
+                     })()}
                 </div>
             )}
 
@@ -406,7 +550,7 @@ export function htmlTemplate() {
         setLoading(true);
         setError(null);
         try {
-           const payload = { name, isPrivate };
+           const payload = { name, isPrivate: false };
            if (customKey.trim()) payload.customKey = customKey.trim();
 
            const res = await fetch('/api/rooms', {
@@ -461,17 +605,6 @@ export function htmlTemplate() {
               <p className="text-[10px] text-gray-500 mt-1 ml-1">支持8-20位数字和字母 (大小写)，不支持符号</p>
             </div>
 
-            <div className="flex items-center justify-between bg-white/5 p-4 rounded-xl border border-white/10">
-               <div>
-                  <div className="font-medium text-sm">私密房间</div>
-                  <div className="text-xs text-gray-400 mt-0.5">仅拥有密钥的人可访问</div>
-               </div>
-               <label className="relative inline-flex items-center cursor-pointer">
-                  <input type="checkbox" checked={isPrivate} onChange={e => setIsPrivate(e.target.checked)} className="sr-only peer" />
-                  <div className="w-11 h-6 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
-               </label>
-            </div>
-
             <button disabled={loading} type="submit" className="w-full py-3.5 btn-gradient rounded-xl font-medium text-white flex items-center justify-center gap-2 mt-4 disabled:opacity-50">
                {loading ? <i className="fas fa-circle-notch fa-spin"></i> : "立即创建"}
             </button>
@@ -480,7 +613,7 @@ export function htmlTemplate() {
       );
     }
 
-    function JoinRoom({ onBack, onJoined, initialRoomId }) {
+    function JoinRoom({ onBack, onJoined, initialRoomId, initialRoomName }) {
       const [roomId, setRoomId] = useState(initialRoomId || "");
       const [roomKey, setRoomKey] = useState("");
       const [loading, setLoading] = useState(false);
@@ -500,7 +633,7 @@ export function htmlTemplate() {
         // Save key for convenience
         localStorage.setItem(\`room_key_\${roomId}\`, roomKey);
         
-        onJoined({ id: roomId, key: roomKey, name: 'Room ' + roomId });
+        onJoined({ id: roomId, key: roomKey, name: initialRoomName || ('Room ' + roomId) });
       };
 
       return (
@@ -539,10 +672,13 @@ export function htmlTemplate() {
        const [status, setStatus] = useState("connecting"); // connecting, connected, error, uncreated
        const [cryptoKey, setCryptoKey] = useState(null);
        const [showKey, setShowKey] = useState(false);
+       const [syncStatus, setSyncStatus] = useState(""); // "", "syncing", "synced"
        
        const socketRef = useRef(null);
        const messagesEndRef = useRef(null);
        const isConnectedRef = useRef(false);
+       const messagesRef = useRef([]); // Keep track of messages for saving
+       const localHistoryRef = useRef(null); // Store local history info
 
        const scrollToBottom = () => {
           messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -552,8 +688,55 @@ export function htmlTemplate() {
           scrollToBottom();
        }, [messages]);
 
+       // Keep messagesRef in sync with messages state
        useEffect(() => {
-          // 1. Prepare Key
+          messagesRef.current = messages;
+       }, [messages]);
+
+       // Save messages to local storage periodically and on unmount
+       const saveMessagesToLocal = useCallback(() => {
+          if (room.id && messagesRef.current.length > 0) {
+              // Filter out system messages for storage
+              const messagesToSave = messagesRef.current.filter(m => !m.system);
+              if (messagesToSave.length > 0) {
+                  const lastTimestamp = messagesToSave[messagesToSave.length - 1].timestamp;
+                  saveLocalChatHistory(room.id, messagesToSave, lastTimestamp);
+                  console.log('Saved ' + messagesToSave.length + ' messages to local storage');
+              }
+          }
+       }, [room.id]);
+
+       // Auto-save every 30 seconds
+       useEffect(() => {
+          const interval = setInterval(saveMessagesToLocal, 30000);
+          return () => clearInterval(interval);
+       }, [saveMessagesToLocal]);
+
+       // Save on page unload
+       useEffect(() => {
+          const handleBeforeUnload = () => {
+              saveMessagesToLocal();
+          };
+          window.addEventListener('beforeunload', handleBeforeUnload);
+          return () => {
+              window.removeEventListener('beforeunload', handleBeforeUnload);
+              // Also save when component unmounts
+              saveMessagesToLocal();
+          };
+       }, [saveMessagesToLocal]);
+
+       useEffect(() => {
+          // 1. Load local history first
+          const localHistory = loadLocalChatHistory(room.id);
+          localHistoryRef.current = localHistory;
+          
+          if (localHistory && localHistory.messages.length > 0) {
+              console.log('Loaded ' + localHistory.messages.length + ' messages from local storage');
+              setMessages(localHistory.messages);
+              setSyncStatus("syncing");
+          }
+
+          // 2. Prepare Key
           let keyObj = null;
           const init = async () => {
              try {
@@ -569,17 +752,24 @@ export function htmlTemplate() {
                     keyObj = await importRoomKey(room.key);
                 }
                 setCryptoKey(keyObj);
-                connectWebSocket();
+                connectWebSocket(localHistory);
              } catch (e) {
                 console.error(e);
                 setStatus("error");
              }
           };
 
-          const connectWebSocket = () => {
+          const connectWebSocket = (localHistory) => {
              const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-             // 关键修复：使用字符串拼接代替模板字符串，防止Worker尝试在服务器端解析它
-             const wsUrl = protocol + "//" + window.location.host + "/api/rooms/" + room.id + "/websocket?key=" + encodeURIComponent(room.key);
+             // Build WebSocket URL with optional since parameter for incremental sync
+             let wsUrl = protocol + "//" + window.location.host + "/api/rooms/" + room.id + "/websocket?key=" + encodeURIComponent(room.key);
+             
+             // If we have local history, request only messages since last timestamp
+             if (localHistory && localHistory.lastTimestamp > 0) {
+                 wsUrl += "&since=" + localHistory.lastTimestamp;
+                 console.log('Requesting incremental sync since: ' + new Date(localHistory.lastTimestamp).toLocaleString());
+             }
+             
              const ws = new WebSocket(wsUrl);
 
              ws.onopen = () => {
@@ -591,6 +781,8 @@ export function htmlTemplate() {
                  if (isConnectedRef.current) {
                      setStatus("disconnected");
                      isConnectedRef.current = false;
+                     // Save messages when disconnected
+                     saveMessagesToLocal();
                  } else {
                      // Handshake failed? Check if room exists
                      try {
@@ -630,8 +822,10 @@ export function htmlTemplate() {
                        return;
                    }
 
+                   // Handle full history (no local cache or cache invalid)
                    if (data.type === 'history') {
                        if (!keyObj) return;
+                       console.log('Received full history: ' + data.messages.length + ' messages');
                        const historyMessages = await Promise.all(data.messages.map(async (m) => {
                            try {
                                const content = await decryptMessage(keyObj, m.iv, m.content);
@@ -647,22 +841,76 @@ export function htmlTemplate() {
                                return null;
                            }
                        }));
-                       setMessages(prev => [...prev, ...historyMessages.filter(Boolean)]);
+                       const validMessages = historyMessages.filter(Boolean);
+                       // Replace all messages with server history (full sync)
+                       setMessages(validMessages);
+                       setSyncStatus("synced");
+                       // Save to local storage
+                       if (validMessages.length > 0) {
+                           saveLocalChatHistory(room.id, validMessages, validMessages[validMessages.length - 1].timestamp);
+                       }
                        return;
                    }
 
-                   // Decrypt
+                   // Handle incremental history (merge with local cache)
+                   if (data.type === 'history_incremental') {
+                       if (!keyObj) return;
+                       console.log('Received incremental history: ' + data.messages.length + ' new messages since ' + new Date(data.since).toLocaleString());
+                       
+                       if (data.messages.length === 0) {
+                           // No new messages, local cache is up to date
+                           setSyncStatus("synced");
+                           return;
+                       }
+                       
+                       const newMessages = await Promise.all(data.messages.map(async (m) => {
+                           try {
+                               const content = await decryptMessage(keyObj, m.iv, m.content);
+                               const sender = await decryptMessage(keyObj, m.iv, m.sender);
+                               return {
+                                   id: m.timestamp,
+                                   content,
+                                   sender,
+                                   isMine: sender === user.username,
+                                   timestamp: m.timestamp
+                               };
+                           } catch (e) {
+                               return null;
+                           }
+                       }));
+                       const validNewMessages = newMessages.filter(Boolean);
+                       
+                       // Merge with existing messages
+                       setMessages(prev => {
+                           const merged = mergeMessages(prev.filter(m => !m.system), validNewMessages, user.username);
+                           // Re-add system messages at the end
+                           const systemMessages = prev.filter(m => m.system);
+                           return [...merged, ...systemMessages];
+                       });
+                       setSyncStatus("synced");
+                       return;
+                   }
+
+                   // Decrypt real-time message
                    if (!keyObj) return;
                    const content = await decryptMessage(keyObj, data.iv, data.content);
                    const sender = await decryptMessage(keyObj, data.iv, data.sender);
                    
-                   setMessages(prev => [...prev, {
+                   const newMsg = {
                       id: data.timestamp || Date.now(),
                       content,
                       sender,
                       isMine: sender === user.username,
                       timestamp: data.timestamp
-                   }]);
+                   };
+                   
+                   setMessages(prev => {
+                      // Check for duplicate (same timestamp)
+                      if (prev.some(m => m.timestamp === newMsg.timestamp)) {
+                          return prev;
+                      }
+                      return [...prev, newMsg];
+                   });
 
                 } catch (e) {
                    console.error("Msg Error", e);
@@ -677,6 +925,12 @@ export function htmlTemplate() {
              if (socketRef.current) socketRef.current.close();
           };
        }, [room, user]);
+
+       // Custom leave handler that saves messages first
+       const handleLeave = useCallback(() => {
+          saveMessagesToLocal();
+          onLeave();
+       }, [saveMessagesToLocal, onLeave]);
 
        const sendMessage = (e) => {
           e.preventDefault();
@@ -697,10 +951,21 @@ export function htmlTemplate() {
                    </div>
                    <div>
                       <h2 className="font-bold text-lg leading-tight">{room.name} <span className="text-xs font-normal text-gray-500 ml-2">ID: {room.id}</span></h2>
-                      <div className="text-xs text-gray-400 flex items-center gap-1">
-                         {status === 'connected' ? 'Secure Connection' :
-                          status === 'uncreated' ? 'Uncreated' : 'Disconnected'}
-                         {status === 'connected' && <i className="fas fa-lock text-[10px]"></i>}
+                      <div className="text-xs text-gray-400 flex items-center gap-2">
+                         <span className="flex items-center gap-1">
+                            {status === 'connected' ? 'Secure Connection' :
+                             status === 'uncreated' ? 'Uncreated' : 'Disconnected'}
+                            {status === 'connected' && <i className="fas fa-lock text-[10px]"></i>}
+                         </span>
+                         {syncStatus && (
+                            <span className={"flex items-center gap-1 " + (syncStatus === 'synced' ? 'text-green-400' : 'text-yellow-400')}>
+                               {syncStatus === 'syncing' ? (
+                                  <><i className="fas fa-sync fa-spin text-[10px]"></i> 同步中</>
+                               ) : (
+                                  <><i className="fas fa-check text-[10px]"></i> 已同步</>
+                               )}
+                            </span>
+                         )}
                       </div>
                    </div>
                 </div>
@@ -708,7 +973,7 @@ export function htmlTemplate() {
                    <button onClick={() => setShowKey(!showKey)} className="w-9 h-9 rounded-full bg-white/5 hover:bg-white/10 flex items-center justify-center transition text-gray-400 hover:text-white" title="Show Room Key">
                       <i className="fas fa-key"></i>
                    </button>
-                   <button onClick={onLeave} className="px-4 py-2 bg-red-500/10 hover:bg-red-500/20 text-red-400 text-sm rounded-lg transition border border-red-500/20">
+                   <button onClick={handleLeave} className="px-4 py-2 bg-red-500/10 hover:bg-red-500/20 text-red-400 text-sm rounded-lg transition border border-red-500/20">
                       离开
                    </button>
                 </div>
@@ -778,6 +1043,7 @@ export function htmlTemplate() {
        const [user, setUser] = useState(null);
        const [room, setRoom] = useState(null);
        const [joinId, setJoinId] = useState(""); // Pre-filled ID for join screen
+       const [joinName, setJoinName] = useState("");
 
        useEffect(() => {
           // Load Theme
@@ -832,8 +1098,8 @@ export function htmlTemplate() {
                 <Landing
                    user={user}
                    onCreate={() => setView('create')}
-                   onJoin={() => { setJoinId(""); setView('join'); }}
-                   onEnterRoom={(r) => { setJoinId(r.id.toString()); setView('join'); }}
+                   onJoin={() => { setJoinId(""); setJoinName(""); setView('join'); }}
+                   onEnterRoom={(r) => { setJoinId(r.id.toString()); setJoinName(r.name); setView('join'); }}
                    onEmergency={() => {
                        setRoom({ id: '000001', key: 'smaiclub_issues', name: 'Emergency Channel' });
                        setView('chat');
@@ -854,6 +1120,7 @@ export function htmlTemplate() {
              {view === 'join' && (
                 <JoinRoom
                    initialRoomId={joinId}
+                   initialRoomName={joinName}
                    onBack={() => setView('landing')}
                    onJoined={(r) => { setRoom(r); setView('chat'); }}
                 />
