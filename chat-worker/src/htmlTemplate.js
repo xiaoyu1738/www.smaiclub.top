@@ -474,7 +474,7 @@ export function htmlTemplate() {
                                             <h2 className="text-xl font-bold text-white mb-4 flex items-center gap-2 px-4">
                                                 <i className="fas fa-crown text-yellow-500"></i> 我拥有的房间
                                             </h2>
-                                            <div className={\`grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 px-4 \${centerOwned ? 'flex justify-center flex-wrap' : ''}\`}>
+                                            <div className={\`\${centerOwned ? 'flex justify-center flex-wrap gap-4 px-4' : 'grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 px-4'}\`}>
                                                 {rooms.owned.map(room => (
                                                     <div key={room.id} className={\`\${centerOwned ? 'w-64' : 'w-full'}\`}>
                                                         <RoomCard room={room} isOwner={true} />
@@ -492,7 +492,7 @@ export function htmlTemplate() {
                                             <h2 className="text-xl font-bold text-white mb-4 flex items-center gap-2 px-4">
                                                 <i className="fas fa-history text-blue-400"></i> 我加入过的房间
                                             </h2>
-                                            <div className={\`grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 px-4 \${centerJoined ? 'flex justify-center flex-wrap' : ''}\`}>
+                                            <div className={\`\${centerJoined ? 'flex justify-center flex-wrap gap-4 px-4' : 'grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 px-4'}\`}>
                                                 {rooms.joined.map(room => (
                                                     <div key={room.id} className={\`\${centerJoined ? 'w-64' : 'w-full'}\`}>
                                                         <RoomCard key={room.id} room={room} isOwner={false} />
