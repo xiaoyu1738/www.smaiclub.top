@@ -16,6 +16,8 @@ export class ChatRoom {
       const roomKey = url.searchParams.get("key");
       const username = url.searchParams.get("username");
       const role = url.searchParams.get("role");
+      const sinceParam = url.searchParams.get("since");
+      const sinceTimestamp = sinceParam ? parseInt(sinceParam, 10) : 0;
 
       if (!roomKey) return new Response("Missing Room Key", { status: 400 });
       if (!username) return new Response("Unauthorized", { status: 401 });
@@ -24,7 +26,7 @@ export class ChatRoom {
       const [client, server] = Object.values(pair);
 
       // Handle Session (awaiting not strictly necessary for handshake but good for flow)
-      await this.handleSession(server, username, role, roomKey);
+      await this.handleSession(server, username, role, roomKey, sinceTimestamp);
 
       return new Response(null, { status: 101, webSocket: client });
     }
@@ -68,7 +70,7 @@ export class ChatRoom {
     return new Response("Not found", { status: 404 });
   }
 
-  async handleSession(webSocket, username, role, clientKey) {
+  async handleSession(webSocket, username, role, clientKey, sinceTimestamp = 0) {
     webSocket.accept();
     this.sessions.add(webSocket);
 
@@ -117,10 +119,6 @@ export class ChatRoom {
     }
 
     // --- Load History ---
-    // Check if client requested incremental sync (since timestamp)
-    const sinceParam = new URL(request.url).searchParams.get("since");
-    const sinceTimestamp = sinceParam ? parseInt(sinceParam, 10) : 0;
-    
     try {
         let messages;
         if (sinceTimestamp > 0) {
