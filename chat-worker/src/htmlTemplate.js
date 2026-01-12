@@ -470,11 +470,11 @@ export function htmlTemplate() {
                                 {/* Owned Rooms */}
                                 {rooms.owned.length > 0 && (
                                     <div className={\`w-full \${centerOwned ? 'flex justify-center' : ''}\`}>
-                                        <div className={\`w-full \${centerOwned ? 'max-w-4xl' : ''}\`}>
-                                            <h2 className="text-xl font-bold text-white mb-4 flex items-center gap-2 px-4">
+                                        <div className={\`\${centerOwned ? 'inline-flex flex-col' : 'w-full'}\`}>
+                                            <h2 className={\`text-xl font-bold text-white mb-4 flex items-center gap-2 px-4 \${centerOwned ? 'justify-start' : ''}\`}>
                                                 <i className="fas fa-crown text-yellow-500"></i> 我拥有的房间
                                             </h2>
-                                            <div className={\`\${centerOwned ? 'flex justify-center flex-wrap gap-4 px-4' : 'grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 px-4'}\`}>
+                                            <div className={\`\${centerOwned ? 'flex flex-wrap gap-4 px-4' : 'grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 px-4'}\`}>
                                                 {rooms.owned.map(room => (
                                                     <div key={room.id} className={\`\${centerOwned ? 'w-64' : 'w-full'}\`}>
                                                         <RoomCard room={room} isOwner={true} />
@@ -488,11 +488,11 @@ export function htmlTemplate() {
                                 {/* Joined Rooms */}
                                 {rooms.joined.length > 0 && (
                                     <div className={\`w-full \${centerJoined ? 'flex justify-center' : ''}\`}>
-                                        <div className={\`w-full \${centerJoined ? 'max-w-4xl' : ''}\`}>
-                                            <h2 className="text-xl font-bold text-white mb-4 flex items-center gap-2 px-4">
+                                        <div className={\`\${centerJoined ? 'inline-flex flex-col' : 'w-full'}\`}>
+                                            <h2 className={\`text-xl font-bold text-white mb-4 flex items-center gap-2 px-4 \${centerJoined ? 'justify-start' : ''}\`}>
                                                 <i className="fas fa-history text-blue-400"></i> 我加入过的房间
                                             </h2>
-                                            <div className={\`\${centerJoined ? 'flex justify-center flex-wrap gap-4 px-4' : 'grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 px-4'}\`}>
+                                            <div className={\`\${centerJoined ? 'flex flex-wrap gap-4 px-4' : 'grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 px-4'}\`}>
                                                 {rooms.joined.map(room => (
                                                     <div key={room.id} className={\`\${centerJoined ? 'w-64' : 'w-full'}\`}>
                                                         <RoomCard key={room.id} room={room} isOwner={false} />
@@ -673,6 +673,7 @@ export function htmlTemplate() {
        const [cryptoKey, setCryptoKey] = useState(null);
        const [showKey, setShowKey] = useState(false);
        const [syncStatus, setSyncStatus] = useState(""); // "", "syncing", "synced"
+       const [retryCount, setRetryCount] = useState(0);
        
        const socketRef = useRef(null);
        const messagesEndRef = useRef(null);
@@ -726,6 +727,7 @@ export function htmlTemplate() {
        }, [saveMessagesToLocal]);
 
        useEffect(() => {
+          setStatus("connecting");
           // 1. Load local history first
           const localHistory = loadLocalChatHistory(room.id);
           localHistoryRef.current = localHistory;
@@ -924,7 +926,7 @@ export function htmlTemplate() {
           return () => {
              if (socketRef.current) socketRef.current.close();
           };
-       }, [room, user]);
+       }, [room, user, retryCount]);
 
        // Custom leave handler that saves messages first
        const handleLeave = useCallback(() => {
@@ -954,8 +956,14 @@ export function htmlTemplate() {
                       <div className="text-xs text-gray-400 flex items-center gap-2">
                          <span className="flex items-center gap-1">
                             {status === 'connected' ? 'Secure Connection' :
+                             status === 'connecting' ? 'Connecting...' :
                              status === 'uncreated' ? 'Uncreated' : 'Disconnected'}
                             {status === 'connected' && <i className="fas fa-lock text-[10px]"></i>}
+                            {(status === 'disconnected' || status === 'error') && (
+                                <button onClick={() => setRetryCount(c => c + 1)} className="ml-2 hover:text-white transition" title="Reconnect">
+                                    <i className="fas fa-sync-alt"></i>
+                                </button>
+                            )}
                          </span>
                          {syncStatus && (
                             <span className={"flex items-center gap-1 " + (syncStatus === 'synced' ? 'text-green-400' : 'text-yellow-400')}>
