@@ -1,4 +1,4 @@
-import { encryptMessage, importRoomKey, getTierLimits, getEffectiveRole } from './utils.js';
+import { encryptMessage, importRoomKey, getTierLimits, getEffectiveRole, encryptLogData } from './utils.js';
 
 export class ChatRoom {
   constructor(state, env) {
@@ -67,6 +67,54 @@ export class ChatRoom {
         }
     }
 
+    // Internal API to broadcast system message (called by Worker on ownership transfer)
+    if (url.pathname === "/broadcast-system") {
+        if (request.method === "POST") {
+            const { content } = await request.json();
+            const msg = JSON.stringify({
+                type: "system",
+                content: content,
+                timestamp: Date.now()
+            });
+
+            this.sessions.forEach(ws => {
+                if (ws.readyState === WebSocket.OPEN) {
+                    ws.send(msg);
+                }
+            });
+            
+            // Also save to DB so new joiners see it
+            // We store it as a special message with 'SYSTEM' sender and empty IV/Content that frontend handles?
+            // No, the current frontend expects encrypted content unless type is 'system' (which comes from websocket).
+            // But history API returns rows from 'messages' table.
+            // If we want history to include system messages, we need to insert them into 'messages' table.
+            // But 'messages' table has 'iv' and 'content' columns which are usually encrypted strings.
+            // We can repurpose them: iv="SYSTEM", content=plaintext.
+            // And update frontend to handle this.
+            // Or, just don't save to history for now to keep it simple, as the modal/alert requirement
+            // implies a one-time notification or we rely on the live broadcast.
+            // The prompt says: "Implement a notification trigger so that when the new owner next enters... a modal/alert is displayed"
+            // This implies persistent state.
+            // We can't easily query "next enter" without a DB flag.
+            // Let's rely on the system message in chat for now, which is simpler and effective.
+            // If we want persistence, we'd need a 'notifications' table.
+            // Given the constraints, a live broadcast covers active users.
+            // For offline users, they won't see it unless we persist.
+            // Let's persist as a special message: sender='SYSTEM', iv='SYSTEM', content=plain_text
+            
+            try {
+                const roomId = await this.state.storage.get("roomId");
+                if (roomId) {
+                    await this.env.CHAT_DB.prepare(
+                        "INSERT INTO messages (room_id, iv, content, sender, created_at) VALUES (?, 'SYSTEM', ?, 'SYSTEM', ?)"
+                    ).bind(roomId, content, Date.now()).run();
+                }
+            } catch (e) { console.error("Failed to persist system message", e); }
+
+            return new Response("OK");
+        }
+    }
+
     return new Response("Not found", { status: 404 });
   }
 
@@ -118,13 +166,25 @@ export class ChatRoom {
         console.error("Session start failed", e);
     }
 
+    // --- Log Login Event ---
+    try {
+        const logDetails = await encryptLogData({
+            action: 'login',
+            roomId: roomId,
+            sessionId: sessionId
+        });
+        await this.env.CHAT_DB.prepare(
+            "INSERT INTO activity_logs (event_type, user_id, details, ip_address, created_at) VALUES (?, ?, ?, ?, ?)"
+        ).bind('login', username, logDetails, 'websocket', Date.now()).run();
+    } catch (e) { console.error("Logging failed", e); }
+    
     // --- Load History ---
     try {
         let messages;
         if (sinceTimestamp > 0) {
             // Incremental sync: only fetch messages after the given timestamp
             messages = await this.env.CHAT_DB.prepare(
-                `SELECT iv, content, sender, created_at as timestamp
+                `SELECT iv, content, sender, sender_role as senderRole, created_at as timestamp
                  FROM messages
                  WHERE room_id = ? AND created_at > ?
                  ORDER BY created_at ASC
@@ -148,7 +208,7 @@ export class ChatRoom {
         } else {
             // Full sync: fetch recent messages (last 100)
             messages = await this.env.CHAT_DB.prepare(
-                `SELECT iv, content, sender, created_at as timestamp
+                `SELECT iv, content, sender, sender_role as senderRole, created_at as timestamp
                  FROM messages
                  WHERE room_id = ?
                  ORDER BY created_at DESC
@@ -245,10 +305,11 @@ export class ChatRoom {
                     }
                 }
     
-                // Insert New Message
+                // Insert New Message with sender role
+            const timestamp = Date.now();
             const result = await this.env.CHAT_DB.prepare(
-                `INSERT INTO messages (room_id, iv, content, sender, created_at) VALUES (?, ?, ?, ?, ?)`
-            ).bind(intId, encrypted.iv, encrypted.content, encrypted.sender, Date.now()).run();
+                `INSERT INTO messages (room_id, iv, content, sender, sender_role, created_at) VALUES (?, ?, ?, ?, ?, ?)`
+            ).bind(intId, encrypted.iv, encrypted.content, encrypted.sender, role, timestamp).run();
 
             if (!result.success) throw new Error("DB Write Failed");
 
@@ -261,11 +322,25 @@ export class ChatRoom {
             return;
         }
 
-        // Broadcast
+        // Log Message Event (Async)
+        try {
+            const logDetails = await encryptLogData({
+                action: 'message',
+                roomId: intId,
+                contentLength: msg.content.length,
+                encryptedContent: encrypted.content // Store encrypted content for audit
+            });
+            await this.env.CHAT_DB.prepare(
+                "INSERT INTO activity_logs (event_type, user_id, details, ip_address, created_at) VALUES (?, ?, ?, ?, ?)"
+            ).bind('message', username, logDetails, 'websocket', Date.now()).run();
+        } catch (e) { console.error("Logging failed", e); }
+
+        // Broadcast with role information
         const broadcastPayload = JSON.stringify({
             iv: encrypted.iv,
             content: encrypted.content,
             sender: encrypted.sender,
+            senderRole: role, // Include sender's role for badge display
             timestamp: Date.now()
         });
 

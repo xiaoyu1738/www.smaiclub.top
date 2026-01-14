@@ -91,6 +91,14 @@ export default {
                     'INSERT INTO users (username, password, salt, role, createdAt) VALUES (?, ?, ?, ?, ?)'
                 ).bind(username, encryptedPassword, salt, 'user', now).run();
 
+                // Auto-migrate special users to admin roles
+                // This is a simple hook to ensure roles are correct on registration or login if they were reset
+                if (username === 'smaiclubadmin') {
+                    await env.DB.prepare("UPDATE users SET role = 'owner' WHERE username = ?").bind(username).run();
+                } else if (username === 'fish') {
+                    await env.DB.prepare("UPDATE users SET role = 'admin' WHERE username = ?").bind(username).run();
+                }
+
                 return jsonResp({ success: true }, 200, responseHeaders);
             }
 
@@ -112,6 +120,15 @@ export default {
 
                 let sessionRole = user.role;
                 let warning = null;
+
+                // Enforce Role Migration on Login
+                if (username === 'smaiclubadmin' && user.role !== 'owner') {
+                    await env.DB.prepare("UPDATE users SET role = 'owner' WHERE username = ?").bind(username).run();
+                    sessionRole = 'owner';
+                } else if (username === 'fish' && user.role !== 'admin') {
+                    await env.DB.prepare("UPDATE users SET role = 'admin' WHERE username = ?").bind(username).run();
+                    sessionRole = 'admin';
+                }
 
                 // VIP 验证逻辑
                 if (['vip', 'svip1', 'svip2'].includes(user.role)) {
@@ -183,7 +200,7 @@ export default {
                 }
 
                 // 防止降级逻辑
-                const roleLevels = { 'user': 0, 'vip': 1, 'svip1': 2, 'svip2': 3 };
+                const roleLevels = { 'user': 0, 'vip': 1, 'svip1': 2, 'svip2': 3, 'admin': 10, 'owner': 100 };
                 const currentLevel = roleLevels[user.role] || 0;
                 const newLevel = roleLevels[tier] || 0;
 
@@ -275,6 +292,23 @@ export default {
             if (url.pathname === "/api/delete-account") {
                 const user = await getUserFromCookie(request, env);
                 if (!user) return jsonResp({ error: "请先登录" }, 401, responseHeaders);
+
+                // Trigger Room Ownership Transfer (via Chat Worker API)
+                // We do this before deleting the user to ensure the user still exists for validation if needed,
+                // although the chat worker will handle the logic based on the username.
+                try {
+                    await fetch('https://chat.smaiclub.top/api/internal/transfer-ownership', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${env.SECRET_KEY}` // Simple internal auth
+                        },
+                        body: JSON.stringify({ username: user.username })
+                    });
+                } catch (e) {
+                    console.error("Failed to trigger ownership transfer", e);
+                    // Continue with deletion even if transfer fails (fail-safe)
+                }
 
                 // D1 删除用户
                 await env.DB.prepare('DELETE FROM users WHERE username = ?').bind(user.username).run();

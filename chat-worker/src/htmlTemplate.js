@@ -568,7 +568,13 @@ export function htmlTemplate() {
            } catch (e) {
              throw new Error(text || 'Request failed');
            }
-           if (!res.ok) throw new Error(data.message || data.error || "Failed to create");
+           if (!res.ok) {
+             let errorMsg = data.message || data.error || "Failed to create";
+             if (errorMsg === 'Invalid Room Key') {
+                errorMsg = '无效的房间密钥 (必须是8-20位字母或数字)';
+             }
+             throw new Error(errorMsg);
+           }
            
            onCreated({ id: data.roomId, key: data.roomKey, name: name || ('Room ' + data.roomId) });
         } catch (err) {
@@ -836,6 +842,7 @@ export function htmlTemplate() {
                                    id: m.timestamp,
                                    content,
                                    sender,
+                                   senderRole: m.senderRole || 'user', // Include role from history
                                    isMine: sender === user.username,
                                    timestamp: m.timestamp
                                };
@@ -873,6 +880,7 @@ export function htmlTemplate() {
                                    id: m.timestamp,
                                    content,
                                    sender,
+                                   senderRole: m.senderRole || 'user', // Include role from history
                                    isMine: sender === user.username,
                                    timestamp: m.timestamp
                                };
@@ -902,6 +910,7 @@ export function htmlTemplate() {
                       id: data.timestamp || Date.now(),
                       content,
                       sender,
+                      senderRole: data.senderRole || 'user', // Include role from real-time message
                       isMine: sender === user.username,
                       timestamp: data.timestamp
                    };
@@ -1002,27 +1011,59 @@ export function htmlTemplate() {
                       <p>暂无消息，开始聊天吧</p>
                    </div>
                 )}
-                {messages.map((msg, idx) => (
-                   msg.system ? (
+                {messages.map((msg, idx) => {
+                   // Role badge helper
+                   const getRoleBadge = (role) => {
+                      if (!role || role === 'user') return null;
+                      const badges = {
+                         'owner': { text: 'OWNER', bg: 'bg-black', border: 'border-white/30', textColor: 'text-white' },
+                         'admin': { text: 'ADMIN', bg: 'bg-red-600', border: 'border-red-400', textColor: 'text-white' },
+                         'svip2': { text: 'SVIP II', bg: 'bg-gradient-to-r from-amber-500 to-yellow-400', border: 'border-amber-300', textColor: 'text-black' },
+                         'svip1': { text: 'SVIP', bg: 'bg-gradient-to-r from-amber-600 to-amber-400', border: 'border-amber-400', textColor: 'text-black' },
+                         'svip': { text: 'SVIP', bg: 'bg-gradient-to-r from-amber-600 to-amber-400', border: 'border-amber-400', textColor: 'text-black' },
+                         'vip': { text: 'VIP', bg: 'bg-gradient-to-r from-blue-500 to-cyan-400', border: 'border-blue-300', textColor: 'text-white' }
+                      };
+                      return badges[role] || null;
+                   };
+                   
+                   const badge = getRoleBadge(msg.senderRole);
+                   
+                   return msg.system ? (
                       <div key={idx} className="flex justify-center my-4">
                          <span className="bg-white/10 text-gray-400 text-xs px-3 py-1 rounded-full">{msg.content}</span>
                       </div>
                    ) : (
                       <div key={idx} className={"flex " + (msg.isMine ? 'justify-end' : 'justify-start') + " msg-bubble"}>
                          <div className={"max-w-[70%] " + (msg.isMine ? 'items-end' : 'items-start') + " flex flex-col"}>
-                            {!msg.isMine && <span className="text-[10px] text-gray-500 mb-1 ml-1">{msg.sender}</span>}
-                            <div className={"px-4 py-2.5 rounded-2xl text-sm leading-relaxed break-words shadow-sm " + 
-                               (msg.isMine 
-                               ? 'bg-blue-600 text-white rounded-br-none' 
+                            {!msg.isMine && (
+                               <div className="flex items-center gap-1.5 mb-1 ml-1">
+                                  <span className="text-[10px] text-gray-500">{msg.sender}</span>
+                                  {badge && (
+                                     <span className={\`text-[8px] px-1.5 py-0.5 rounded font-bold border \${badge.bg} \${badge.border} \${badge.textColor} shadow-sm\`}>
+                                        {badge.text}
+                                     </span>
+                                  )}
+                               </div>
+                            )}
+                            <div className={"px-4 py-2.5 rounded-2xl text-sm leading-relaxed break-words shadow-sm " +
+                               (msg.isMine
+                               ? 'bg-blue-600 text-white rounded-br-none'
                                : 'bg-[#2a2a2c] text-gray-100 rounded-bl-none border border-white/5')
                             }>
                                {msg.content}
                             </div>
-                            <span className="text-[9px] text-gray-600 mt-1 mx-1">{new Date(msg.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
+                            <div className="flex items-center gap-1.5 mt-1 mx-1">
+                               <span className="text-[9px] text-gray-600">{new Date(msg.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
+                               {msg.isMine && badge && (
+                                  <span className={\`text-[7px] px-1 py-0.5 rounded font-bold border \${badge.bg} \${badge.border} \${badge.textColor} opacity-70\`}>
+                                     {badge.text}
+                                  </span>
+                               )}
+                            </div>
                          </div>
                       </div>
-                   )
-                ))}
+                   );
+                })}
                 <div ref={messagesEndRef} />
              </div>
 

@@ -46,10 +46,24 @@ CREATE TABLE messages (
     iv TEXT NOT NULL,
     content TEXT NOT NULL,
     sender TEXT NOT NULL,
+    sender_role TEXT DEFAULT 'user',
     created_at INTEGER NOT NULL
 );
 
 CREATE INDEX idx_messages_room_created ON messages(room_id, created_at);
+
+-- Activity Logs Table (New)
+CREATE TABLE activity_logs (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    event_type TEXT NOT NULL, -- 'login', 'register', 'create_room', 'delete_room', 'message', 'ownership_transfer'
+    user_id TEXT,
+    details TEXT, -- Encrypted JSON content
+    ip_address TEXT,
+    created_at INTEGER NOT NULL
+);
+
+CREATE INDEX idx_activity_logs_created ON activity_logs(created_at);
+CREATE INDEX idx_activity_logs_type ON activity_logs(event_type);
 
 -- Seed "Issues" Room (Emergency Mode)
 INSERT INTO rooms (id, name, is_private, owner, owner_role, created_at, last_accessed)
