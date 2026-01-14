@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smai Club 控制中心</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://login.smaiclub.top/common-auth.js"></script>
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=SF+Pro+Display:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'SF Pro Display', sans-serif; background-color: #f5f5f7; color: #1d1d1f; }
+        .glass-card {
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
+        }
+        .sidebar-item {
+            transition: all 0.2s ease;
+        }
+        .sidebar-item:hover, .sidebar-item.active {
+            background: #e8e8ed;
+            color: #0071e3;
+        }
+        .sidebar-item.active {
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body class="h-screen flex flex-col">
+    <div id="root" class="flex-1 flex flex-col h-full"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect } = React;
+
+        function App() {
+            const [user, setUser] = useState(null);
+            const [view, setView] = useState("profile"); // profile, billing, admin_logs
+            const [loading, setLoading] = useState(true);
+
+            useEffect(() => {
+                // Initialize Common Auth
+                if (window.CommonAuth) {
+                    window.CommonAuth.init('auth-container');
+                }
+
+                // Fetch User Data
+                fetch('https://login.smaiclub.top/api/me', { credentials: 'include' })
+                    .then(res => res.json())
+                    .then(data => {
+                        if (data.loggedIn) {
+                            setUser(data);
+                        } else {
+                            window.location.href = "https://login.smaiclub.top?redirect=" + encodeURIComponent(window.location.href);
+                        }
+                    })
+                    .catch(err => console.error(err))
+                    .finally(() => setLoading(false));
+            }, []);
+
+            if (loading) return (
+                <div className="h-full flex items-center justify-center">
+                    <i className="fas fa-spinner fa-spin text-3xl text-gray-400"></i>
+                </div>
+            );
+
+            if (!user) return null;
+
+            const isAdmin = ['admin', 'owner'].includes(user.effectiveRole);
+
+            return (
+                <div className="flex h-full max-w-7xl mx-auto w-full p-4 gap-6">
+                    {/* Sidebar */}
+                    <div className="w-64 flex-shrink-0 flex flex-col gap-2">
+                        <div className="p-4 mb-4">
+                            <h1 className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-500 to-purple-600">
+                                Smai Dash
+                            </h1>
+                            <p className="text-xs text-gray-500 mt-1">控制中心</p>
+                        </div>
+                        
+                        <button 
+                            onClick={() => setView('profile')}
+                            className={`sidebar-item flex items-center gap-3 px-4 py-3 rounded-xl text-sm ${view === 'profile' ? 'active' : 'text-gray-600'}`}
+                        >
+                            <i className="fas fa-user-circle w-5"></i> 个人资料
+                        </button>
+                        
+                        <button 
+                            onClick={() => setView('billing')}
+                            className={`sidebar-item flex items-center gap-3 px-4 py-3 rounded-xl text-sm ${view === 'billing' ? 'active' : 'text-gray-600'}`}
+                        >
+                            <i className="fas fa-credit-card w-5"></i> 订阅与账单
+                        </button>
+
+                        {isAdmin && (
+                            <>
+                                <div className="h-px bg-gray-200 my-2 mx-4"></div>
+                                <div className="px-4 text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">管理工具</div>
+                                <button 
+                                    onClick={() => setView('admin_logs')}
+                                    className={`sidebar-item flex items-center gap-3 px-4 py-3 rounded-xl text-sm ${view === 'admin_logs' ? 'active' : 'text-gray-600'}`}
+                                >
+                                    <i className="fas fa-shield-alt w-5"></i> 系统日志
+                                </button>
+                            </>
+                        )}
+
+                        <div className="mt-auto p-4">
+                            <div id="auth-container"></div>
+                        </div>
+                    </div>
+
+                    {/* Main Content */}
+                    <div className="flex-1 glass-card p-8 overflow-y-auto">
+                        {view === 'profile' && <ProfileView user={user} />}
+                        {view === 'billing' && <BillingView user={user} />}
+                        {view === 'admin_logs' && isAdmin && <AdminLogsView user={user} />}
+                    </div>
+                </div>
+            );
+        }
+
+        function ProfileView({ user }) {
+            return (
+                <div className="space-y-8 animate-[fadeIn_0.3s_ease-out]">
+                    <div>
+                        <h2 className="text-2xl font-bold mb-6">个人资料</h2>
+                        <div className="flex items-center gap-6 mb-8">
+                            <div className="w-20 h-20 rounded-full bg-gradient-to-tr from-blue-400 to-purple-500 flex items-center justify-center text-3xl text-white font-bold shadow-lg">
+                                {user.username.charAt(0).toUpperCase()}
+                            </div>
+                            <div>
+                                <h3 className="text-xl font-semibold">{user.username}</h3>
+                                <div className="flex items-center gap-2 mt-1">
+                                    <span className={`px-2 py-0.5 rounded text-xs font-medium border ${
+                                        user.effectiveRole === 'owner' ? 'bg-black text-white border-black' :
+                                        user.effectiveRole === 'admin' ? 'bg-red-100 text-red-600 border-red-200' :
+                                        user.effectiveRole.startsWith('svip') ? 'bg-amber-100 text-amber-700 border-amber-200' :
+                                        user.effectiveRole === 'vip' ? 'bg-blue-100 text-blue-600 border-blue-200' :
+                                        'bg-gray-100 text-gray-600 border-gray-200'
+                                    }`}>
+                                        {user.effectiveRole.toUpperCase()}
+                                    </span>
+                                    {user.hasLicense && <span className="text-xs text-green-600 flex items-center gap-1"><i className="fas fa-check-circle"></i> 已认证</span>}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div className="p-4 bg-white/50 rounded-xl border border-white/60">
+                                <div className="text-xs text-gray-500 mb-1">账户状态</div>
+                                <div className="font-medium text-green-600">正常</div>
+                            </div>
+                            <div className="p-4 bg-white/50 rounded-xl border border-white/60">
+                                <div className="text-xs text-gray-500 mb-1">许可证状态</div>
+                                <div className="font-medium">
+                                    {user.hasLicense ? '已激活' : '未激活 / 待设置'}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+
+        function BillingView({ user }) {
+            return (
+                <div className="space-y-8 animate-[fadeIn_0.3s_ease-out]">
+                    <div>
+                        <h2 className="text-2xl font-bold mb-6">订阅与账单</h2>
+                        <div className="p-6 bg-gradient-to-br from-gray-900 to-gray-800 rounded-2xl text-white shadow-xl mb-8 relative overflow-hidden">
+                            <div className="absolute top-0 right-0 p-32 bg-white/5 rounded-full blur-3xl -mr-16 -mt-16"></div>
+                            <div className="relative z-10">
+                                <div className="text-sm text-gray-400 mb-1">当前计划</div>
+                                <h3 className="text-3xl font-bold mb-4">{user.role.toUpperCase()} 计划</h3>
+                                <div className="flex gap-4">
+                                    <a href="https://www.smaiclub.top/shop/" className="px-4 py-2 bg-white text-black rounded-lg text-sm font-medium hover:bg-gray-100 transition">
+                                        升级 / 续费
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+
+                        <h3 className="text-lg font-bold mb-4">账单历史</h3>
+                        <div className="bg-white/50 rounded-xl border border-white/60 overflow-hidden">
+                            <table className="w-full text-sm text-left">
+                                <thead className="bg-gray-50/50 text-gray-500">
+                                    <tr>
+                                        <th className="px-6 py-3 font-medium">日期</th>
+                                        <th className="px-6 py-3 font-medium">项目</th>
+                                        <th className="px-6 py-3 font-medium">金额</th>
+                                        <th className="px-6 py-3 font-medium">状态</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-gray-100">
+                                    <tr>
+                                        <td className="px-6 py-4 text-gray-500" colSpan="4">暂无账单记录</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+
+        function AdminLogsView({ user }) {
+            const [logs, setLogs] = useState([]);
+            const [loading, setLoading] = useState(true);
+            const [error, setError] = useState(null);
+            const [filter, setFilter] = useState('');
+            const [total, setTotal] = useState(0);
+            const [page, setPage] = useState(0);
+            const limit = 50;
+
+            const fetchLogs = async () => {
+                setLoading(true);
+                setError(null);
+                try {
+                    let url = `https://chat.smaiclub.top/api/admin/logs?limit=${limit}&offset=${page * limit}`;
+                    if (filter) url += `&type=${filter}`;
+                    
+                    const res = await fetch(url, { credentials: 'include' });
+                    const data = await res.json();
+                    
+                    if (!res.ok) {
+                        throw new Error(data.message || data.error || 'Failed to fetch logs');
+                    }
+                    
+                    setLogs(data.logs || []);
+                    setTotal(data.total || 0);
+                } catch (e) {
+                    setError(e.message);
+                    setLogs([]);
+                } finally {
+                    setLoading(false);
+                }
+            };
+
+            useEffect(() => {
+                fetchLogs();
+            }, [filter, page]);
+
+            const eventTypes = ['', 'login', 'register', 'create_room', 'delete_room', 'message', 'ownership_transfer'];
+            const eventTypeLabels = {
+                '': '全部',
+                'login': '登录',
+                'register': '注册',
+                'create_room': '创建房间',
+                'delete_room': '删除房间',
+                'message': '消息',
+                'ownership_transfer': '所有权转移'
+            };
+
+            const formatDetails = (details) => {
+                if (!details) return '-';
+                if (details.error) return details.error;
+                try {
+                    return JSON.stringify(details, null, 2);
+                } catch {
+                    return String(details);
+                }
+            };
+
+            return (
+                <div className="space-y-6 animate-[fadeIn_0.3s_ease-out] h-full flex flex-col">
+                    <div className="flex justify-between items-center flex-wrap gap-4">
+                        <h2 className="text-2xl font-bold">系统活动日志</h2>
+                        <div className="flex items-center gap-3">
+                            <select
+                                value={filter}
+                                onChange={(e) => { setFilter(e.target.value); setPage(0); }}
+                                className="px-3 py-1.5 text-sm bg-white border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            >
+                                {eventTypes.map(type => (
+                                    <option key={type} value={type}>{eventTypeLabels[type]}</option>
+                                ))}
+                            </select>
+                            <button
+                                onClick={fetchLogs}
+                                className="px-3 py-1.5 text-sm bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition"
+                            >
+                                <i className="fas fa-sync-alt mr-1"></i> 刷新
+                            </button>
+                        </div>
+                    </div>
+
+                    {error && (
+                        <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-lg text-sm">
+                            <i className="fas fa-exclamation-circle mr-2"></i>{error}
+                        </div>
+                    )}
+
+                    <div className="flex-1 bg-gray-900 rounded-xl overflow-hidden border border-gray-700 flex flex-col shadow-inner">
+                        <div className="bg-gray-800 px-4 py-2 border-b border-gray-700 flex text-xs text-gray-400 font-mono">
+                            <div className="w-40">时间</div>
+                            <div className="w-28">类型</div>
+                            <div className="w-32">用户</div>
+                            <div className="w-28">IP</div>
+                            <div className="flex-1">详情</div>
+                        </div>
+                        <div className="flex-1 overflow-y-auto font-mono text-xs text-gray-300">
+                            {loading ? (
+                                <div className="text-center py-10 text-gray-500">
+                                    <i className="fas fa-spinner fa-spin text-xl mb-2"></i>
+                                    <p>加载日志中...</p>
+                                </div>
+                            ) : logs.length === 0 ? (
+                                <div className="text-center py-10 text-gray-600 opacity-50">
+                                    <i className="fas fa-terminal text-2xl mb-2"></i>
+                                    <p>暂无日志记录</p>
+                                </div>
+                            ) : (
+                                logs.map((log, i) => (
+                                    <div key={log.id || i} className="flex hover:bg-white/5 px-4 py-2 border-b border-gray-800/50">
+                                        <div className="w-40 opacity-60">{new Date(log.created_at).toLocaleString()}</div>
+                                        <div className={`w-28 font-bold ${
+                                            log.event_type === 'login' ? 'text-green-400' :
+                                            log.event_type === 'message' ? 'text-blue-400' :
+                                            log.event_type === 'create_room' ? 'text-purple-400' :
+                                            log.event_type === 'delete_room' ? 'text-red-400' :
+                                            log.event_type === 'ownership_transfer' ? 'text-yellow-400' :
+                                            'text-gray-400'
+                                        }`}>{log.event_type}</div>
+                                        <div className="w-32 text-yellow-200/80 truncate" title={log.user_id}>{log.user_id || '-'}</div>
+                                        <div className="w-28 text-gray-500 truncate" title={log.ip_address}>{log.ip_address || '-'}</div>
+                                        <div className="flex-1 break-all text-gray-400 whitespace-pre-wrap">{formatDetails(log.details)}</div>
+                                    </div>
+                                ))
+                            )}
+                        </div>
+                    </div>
+
+                    {/* Pagination */}
+                    {total > limit && (
+                        <div className="flex justify-between items-center text-sm text-gray-500">
+                            <span>共 {total} 条记录</span>
+                            <div className="flex gap-2">
+                                <button
+                                    onClick={() => setPage(p => Math.max(0, p - 1))}
+                                    disabled={page === 0}
+                                    className="px-3 py-1 bg-white border border-gray-200 rounded hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                                >
+                                    上一页
+                                </button>
+                                <span className="px-3 py-1">第 {page + 1} / {Math.ceil(total / limit)} 页</span>
+                                <button
+                                    onClick={() => setPage(p => p + 1)}
+                                    disabled={(page + 1) * limit >= total}
+                                    className="px-3 py-1 bg-white border border-gray-200 rounded hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                                >
+                                    下一页
+                                </button>
+                            </div>
+                        </div>
+                    )}
+                </div>
+            );
+        }
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>

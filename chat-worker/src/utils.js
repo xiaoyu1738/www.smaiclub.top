@@ -70,6 +70,79 @@ export async function encryptMessage(key, content, sender) {
   };
 }
 
+// --- Log Encryption ---
+
+// Use a fixed key for logs (in production, this should be an env var)
+// For now, we derive it from a hardcoded secret to ensure consistency
+const LOG_SECRET = "SMAICLUB_ACTIVITY_LOG_SECRET_KEY_2025";
+
+async function getLogKey() {
+  const enc = new TextEncoder();
+  const keyMaterial = await crypto.subtle.importKey(
+    "raw",
+    enc.encode(LOG_SECRET),
+    "PBKDF2",
+    false,
+    ["deriveKey"]
+  );
+  return await crypto.subtle.deriveKey(
+    {
+      name: "PBKDF2",
+      salt: enc.encode("LOG_SALT"),
+      iterations: 1000,
+      hash: "SHA-256"
+    },
+    keyMaterial,
+    { name: "AES-GCM", length: 256 },
+    false,
+    ["encrypt", "decrypt"]
+  );
+}
+
+export async function encryptLogData(data) {
+  try {
+    const key = await getLogKey();
+    const iv = crypto.getRandomValues(new Uint8Array(12));
+    const enc = new TextEncoder();
+    const jsonStr = JSON.stringify(data);
+    
+    const encrypted = await crypto.subtle.encrypt(
+      { name: "AES-GCM", iv },
+      key,
+      enc.encode(jsonStr)
+    );
+
+    return JSON.stringify({
+      iv: btoa(String.fromCharCode(...iv)),
+      content: btoa(String.fromCharCode(...new Uint8Array(encrypted)))
+    });
+  } catch (e) {
+    console.error("Log Encryption Failed", e);
+    return JSON.stringify({ error: "Encryption Failed" });
+  }
+}
+
+export async function decryptLogData(encryptedJson) {
+  try {
+    const { iv: ivB64, content: contentB64 } = JSON.parse(encryptedJson);
+    const key = await getLogKey();
+    
+    const iv = Uint8Array.from(atob(ivB64), c => c.charCodeAt(0));
+    const data = Uint8Array.from(atob(contentB64), c => c.charCodeAt(0));
+    
+    const decrypted = await crypto.subtle.decrypt(
+      { name: "AES-GCM", iv },
+      key,
+      data
+    );
+    
+    return JSON.parse(new TextDecoder().decode(decrypted));
+  } catch (e) {
+    console.error("Log Decryption Failed", e);
+    return null;
+  }
+}
+
 // --- Membership & Limits ---
 
 const TIERS = {
