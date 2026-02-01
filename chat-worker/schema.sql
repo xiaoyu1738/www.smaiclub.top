@@ -10,6 +10,8 @@ CREATE TABLE rooms (
     is_private INTEGER DEFAULT 0,
     owner TEXT NOT NULL,
     owner_role TEXT DEFAULT 'user',
+    salt TEXT,
+    iterations INTEGER DEFAULT 100000,
     created_at INTEGER NOT NULL,
     last_accessed INTEGER NOT NULL
 );

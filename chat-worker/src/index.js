@@ -1,6 +1,6 @@
 import { ChatRoom } from './ChatRoom.js';
 import { htmlTemplate } from './htmlTemplate.js';
-import { generateRoomKey, validateCustomKey, getUserFromRequest, getEffectiveRole, getTierLimits, encryptLogData, decryptLogData } from './utils.js';
+import { generateRoomKey, generateSalt, validateCustomKey, getUserFromRequest, getEffectiveRole, getTierLimits, encryptLogData, decryptLogData, isUserBanned } from './utils.js';
 
 export { ChatRoom };
 
@@ -60,6 +60,10 @@ export default {
                 const user = await getUserFromRequest(request, env);
                 if (!user) return new Response(JSON.stringify({ error: "Unauthorized", message: "请先登录" }), { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
 
+                if (isUserBanned(user)) {
+                    return new Response(JSON.stringify({ error: "BANNED", message: "您的账号已被封禁" }), { status: 403, headers: corsHeaders });
+                }
+
                 const role = getEffectiveRole(user);
                 const limits = getTierLimits(role);
                 const body = await request.json();
@@ -89,14 +93,18 @@ export default {
                 let roomKey;
                 if (body.customKey) {
                     if (!validateCustomKey(body.customKey)) {
-                        return new Response(JSON.stringify({ error: "Invalid custom key. Must be >8 and <20 chars, alphanumeric." }), { status: 400, headers: corsHeaders });
+                        return new Response(JSON.stringify({ error: "自定义密钥无效。必须为8-20位的字母或数字。" }), { status: 400, headers: corsHeaders });
                     }
                     roomKey = body.customKey;
                 } else {
                     roomKey = await generateRoomKey();
                 }
 
+                const salt = generateSalt();
+                const iterations = 100000;
+
                 // Calculate Hash of Key for storage/verification
+                // Note: We hash the key itself for simple verification, but actual encryption uses PBKDF2 with salt/iterations
                 const enc = new TextEncoder();
                 const keyData = enc.encode(roomKey);
                 const hashBuffer = await crypto.subtle.digest("SHA-256", keyData);
@@ -118,8 +126,8 @@ export default {
                 // 4. Create in D1
                 try {
                     await env.CHAT_DB.prepare(
-                        "INSERT INTO rooms (id, name, is_private, owner, owner_role, created_at, last_accessed) VALUES (?, ?, ?, ?, ?, ?, ?)"
-                    ).bind(roomId, body.name || `Room ${roomId}`, body.isPrivate ? 1 : 0, user.username, role, Date.now(), Date.now()).run();
+                        "INSERT INTO rooms (id, name, is_private, owner, owner_role, salt, iterations, created_at, last_accessed) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)"
+                    ).bind(roomId, body.name || `Room ${roomId}`, body.isPrivate ? 1 : 0, user.username, role, salt, iterations, Date.now(), Date.now()).run();
 
                     // Add owner to room_members
                     await env.CHAT_DB.prepare(
@@ -152,13 +160,15 @@ export default {
 
                 await stub.fetch(new Request("http://internal/init", {
                     method: "POST",
-                    body: JSON.stringify({ keyHash, roomId })
+                    body: JSON.stringify({ keyHash, roomId, salt, iterations })
                 }));
 
                 return new Response(JSON.stringify({
                     success: true,
                     roomId,
-                    roomKey
+                    roomKey,
+                    salt,
+                    iterations
                 }), { status: 201, headers: corsHeaders });
 
             } catch (e) {
@@ -178,6 +188,16 @@ export default {
                 const user = await getUserFromRequest(request, env);
                 if (!user) return new Response(JSON.stringify({ error: "Unauthorized", message: "请先登录" }), { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
 
+                // Check Ban
+                if (isUserBanned(user) && roomId !== '1' && roomId !== '000001') {
+                     // Banned users can only join Emergency Room (ID 1 / 000001)
+                     return new Response(JSON.stringify({
+                         error: "BANNED",
+                         message: "您的账号已被封禁",
+                         bannedUntil: user.bannedUntil
+                     }), { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+                }
+
                 // Check if Room exists in D1 (or if it's Room 1)
                 const room = await env.CHAT_DB.prepare("SELECT * FROM rooms WHERE id = ?").bind(roomId).first();
 
@@ -191,10 +211,22 @@ export default {
                 const id = env.CHAT_ROOM.idFromName(parseInt(roomId).toString());
                 const stub = env.CHAT_ROOM.get(id);
 
-                // Update URL with user info for DO to use
+                // Initialize DO with salt/iterations if needed (for existing rooms or if DO memory was cleared)
+                // We pass salt/iterations in headers or query params for the websocket handshake?
+                // Better to ensure DO has them. We can pass them in the URL params for the DO fetch.
+                
                 const doUrl = new URL(request.url);
                 doUrl.searchParams.set("username", user.username);
                 doUrl.searchParams.set("role", getEffectiveRole(user));
+                doUrl.searchParams.set("avatarUrl", user.avatarUrl || '');
+                
+                if (room) {
+                    doUrl.searchParams.set("salt", room.salt || 'SMAICLUB_CHAT_SALT');
+                    doUrl.searchParams.set("iterations", (room.iterations || 10000).toString());
+                } else if (roomId === '1' || roomId === '000001') {
+                    doUrl.searchParams.set("salt", 'SALT_FOR_ISSUES');
+                    doUrl.searchParams.set("iterations", '1000');
+                }
 
                 // Record membership asynchronously (fire and forget)
                 ctx.waitUntil(
@@ -374,7 +406,97 @@ export default {
             }
         }
 
-        // --- 5. Admin Logs API (GET /api/admin/logs) ---
+        // --- 4.5 Internal Handle Ban (POST /api/internal/handle-ban) ---
+        if (request.method === "POST" && url.pathname === "/api/internal/handle-ban") {
+             try {
+                 const { username, banUntil } = await request.json();
+                 
+                 // If banning (banUntil > now), transfer rooms
+                 if (banUntil > Date.now()) {
+                     // 1. Find all rooms owned by this user
+                     const { results: rooms } = await env.CHAT_DB.prepare(
+                         "SELECT id FROM rooms WHERE owner = ?"
+                     ).bind(username).all();
+
+                     if (rooms && rooms.length > 0) {
+                         for (const room of rooms) {
+                             // Find next owner
+                             const nextOwner = await env.CHAT_DB.prepare(
+                                 `SELECT user_id FROM room_members
+                                  WHERE room_id = ? AND user_id != ?
+                                  ORDER BY joined_at ASC LIMIT 1`
+                             ).bind(room.id, username).first();
+
+                             if (nextOwner) {
+                                 // Transfer
+                                 await env.CHAT_DB.prepare(
+                                     "UPDATE rooms SET owner = ?, owner_role = 'user' WHERE id = ?"
+                                 ).bind(nextOwner.user_id, room.id).run();
+                             } else {
+                                 // Delete
+                                 await env.CHAT_DB.prepare("DELETE FROM messages WHERE room_id = ?").bind(room.id).run();
+                                 await env.CHAT_DB.prepare("DELETE FROM room_members WHERE room_id = ?").bind(room.id).run();
+                                 await env.CHAT_DB.prepare("DELETE FROM rooms WHERE id = ?").bind(room.id).run();
+                                 const id = env.CHAT_ROOM.idFromName(room.id.toString());
+                                 const stub = env.CHAT_ROOM.get(id);
+                                 ctx.waitUntil(stub.fetch("http://internal/destroy", { method: "POST" }));
+                             }
+                         }
+                     }
+                     
+                     // Update messages rank to BANNED
+                     // We don't have a 'sender_rank' column in messages, we have 'sender_role'.
+                     // We can update sender_role to 'banned'.
+                     await env.CHAT_DB.prepare(
+                         "UPDATE messages SET sender_role = 'banned' WHERE sender = ?"
+                     ).bind(username).run();
+                 } else {
+                     // Unbanning - maybe restore role?
+                     // It's hard to know what the role was. 'user' is safe default.
+                     // Or we just leave it as 'banned' in old messages?
+                     // Requirement says: "封禁用户曾经发过的信息的rank也显示BANNED"
+                     // So unbanning might not need to revert old messages, but new messages will be fine.
+                     // Let's revert to 'user' just in case to be nice.
+                     await env.CHAT_DB.prepare(
+                         "UPDATE messages SET sender_role = 'user' WHERE sender = ? AND sender_role = 'banned'"
+                     ).bind(username).run();
+                 }
+
+                 return new Response(JSON.stringify({ success: true }), { headers: { "Content-Type": "application/json" } });
+             } catch (e) {
+                 return new Response(JSON.stringify({ error: e.message }), { status: 500, headers: { "Content-Type": "application/json" } });
+             }
+        }
+
+        // --- 5. Internal Log API (POST /api/internal/log) ---
+        if (request.method === "POST" && url.pathname === "/api/internal/log") {
+             try {
+                const body = await request.json();
+                const { event_type, user_id, details, ip_address, created_at } = body;
+
+                // Encrypt details if provided
+                let encryptedDetails = null;
+                if (details) {
+                    try {
+                        encryptedDetails = await encryptLogData(details);
+                    } catch (e) {
+                         console.error("Log encryption failed", e);
+                         encryptedDetails = JSON.stringify({ error: "Encryption failed" });
+                    }
+                }
+
+                await env.CHAT_DB.prepare(
+                    "INSERT INTO activity_logs (event_type, user_id, details, ip_address, created_at) VALUES (?, ?, ?, ?, ?)"
+                ).bind(event_type, user_id, encryptedDetails, ip_address || 'unknown', created_at || Date.now()).run();
+
+                return new Response(JSON.stringify({ success: true }), { headers: { "Content-Type": "application/json" } });
+
+             } catch (e) {
+                 return new Response(JSON.stringify({ error: e.message }), { status: 500, headers: { "Content-Type": "application/json" } });
+             }
+        }
+
+        // --- 6. Admin Logs API (GET /api/admin/logs) ---
         if (request.method === "GET" && url.pathname === "/api/admin/logs") {
             try {
                 const user = await getUserFromRequest(request, env);
@@ -476,6 +598,18 @@ export default {
                     ctx.waitUntil(stub.fetch("http://internal/destroy", { method: "POST" }));
                 } catch(e) { console.error("Emergency cleanup failed for room", roomId, e); }
             }
+
+            // Log Emergency Cleanup
+            try {
+                const logDetails = await encryptLogData({
+                    action: 'emergency_cleanup',
+                    cutoff: cutoff,
+                    cleaned_rooms_count: results.length
+                });
+                await env.CHAT_DB.prepare(
+                    "INSERT INTO activity_logs (event_type, user_id, details, ip_address, created_at) VALUES (?, ?, ?, ?, ?)"
+                ).bind('system_cleanup', 'system', logDetails, 'internal', Date.now()).run();
+            } catch (e) { console.error("Logging failed", e); }
         }
 
         // 2. Routine Message Cleanup (Moved to Durable Object Alarms)

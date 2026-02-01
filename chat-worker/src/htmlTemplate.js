@@ -326,10 +326,126 @@ export function htmlTemplate() {
       );
     }
 
-    function Landing({ user, onJoin, onCreate, onEmergency, onEnterRoom }) {
-      const [rooms, setRooms] = useState({ owned: [], joined: [] });
-      const [loading, setLoading] = useState(true);
+    function SettingsModal({ isOpen, onClose, userSettings, onUpdateSettings }) {
+      if (!isOpen) return null;
+
+      const toggleNotification = async () => {
+        const newState = !userSettings.notificationsEnabled;
+        if (newState) {
+          // Request permission
+          if (!("Notification" in window)) {
+            alert("This browser does not support desktop notification");
+            return;
+          }
+          if (Notification.permission !== "granted") {
+            const permission = await Notification.requestPermission();
+            if (permission !== "granted") {
+               alert("Permission denied");
+               return;
+            }
+          }
+        }
+        // Local only setting
+        onUpdateSettings({ ...userSettings, notificationsEnabled: newState }, false);
+      };
+
+      return (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm animate-[fadeIn_0.2s_ease-out]">
+            <div className="bg-[#1c1c1e] border border-white/10 p-6 rounded-2xl max-w-sm w-full mx-4 shadow-2xl">
+                <div className="flex justify-between items-center mb-6">
+                    <h3 className="text-xl font-bold text-white">设置</h3>
+                    <button onClick={onClose} className="w-8 h-8 rounded-full bg-white/5 hover:bg-white/10 flex items-center justify-center transition">
+                        <i className="fas fa-times text-gray-400"></i>
+                    </button>
+                </div>
+                
+                <div className="space-y-6">
+                    {/* Notification Settings */}
+                    <div>
+                        <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">通知</h4>
+                        <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-3">
+                                <div className={\`w-8 h-8 rounded-lg flex items-center justify-center \${userSettings.notificationsEnabled ? 'bg-blue-500/20 text-blue-400' : 'bg-gray-700/50 text-gray-500'}\`}>
+                                    <i className="fas fa-bell"></i>
+                                </div>
+                                <div>
+                                    <div className="text-sm font-medium text-white">桌面通知</div>
+                                    <div className="text-xs text-gray-500">接收新消息提醒</div>
+                                </div>
+                            </div>
+                            <button
+                                onClick={toggleNotification}
+                                className={\`w-12 h-6 rounded-full transition-colors relative \${userSettings.notificationsEnabled ? 'bg-blue-600' : 'bg-gray-700'}\`}
+                            >
+                                <div className={\`absolute top-1 w-4 h-4 rounded-full bg-white transition-transform \${userSettings.notificationsEnabled ? 'left-7' : 'left-1'}\`}></div>
+                            </button>
+                        </div>
+                        
+                        {userSettings.notificationsEnabled && (
+                            <div className="mt-4 pl-11">
+                                <div className="text-xs text-gray-400 mb-2">免打扰房间 ID (用逗号分隔)</div>
+                                <input
+                                    type="text"
+                                    value={userSettings.mutedRooms || ''}
+                                    onChange={(e) => onUpdateSettings({ ...userSettings, mutedRooms: e.target.value }, false)}
+                                    placeholder="例如: 1001, 1002"
+                                    className="w-full bg-black/20 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500/50"
+                                />
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Privacy Settings */}
+                    <div>
+                        <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">隐私 & 显示</h4>
+                        
+                        <div className="flex items-center justify-between mb-4">
+                            <div className="flex items-center gap-3">
+                                <div className="w-8 h-8 rounded-lg bg-purple-500/20 text-purple-400 flex items-center justify-center">
+                                    <i className="fas fa-crown"></i>
+                                </div>
+                                <div>
+                                    <div className="text-sm font-medium text-white">显示会员头衔</div>
+                                    <div className="text-xs text-gray-500">在聊天中显示你的等级</div>
+                                </div>
+                            </div>
+                            <button
+                                onClick={() => onUpdateSettings({ ...userSettings, showTitle: !userSettings.showTitle }, true)}
+                                className={\`w-12 h-6 rounded-full transition-colors relative \${userSettings.showTitle ? 'bg-blue-600' : 'bg-gray-700'}\`}
+                            >
+                                <div className={\`absolute top-1 w-4 h-4 rounded-full bg-white transition-transform \${userSettings.showTitle ? 'left-7' : 'left-1'}\`}></div>
+                            </button>
+                        </div>
+
+                        <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-3">
+                                <div className="w-8 h-8 rounded-lg bg-green-500/20 text-green-400 flex items-center justify-center">
+                                    <i className="fas fa-user-tag"></i>
+                                </div>
+                                <div>
+                                    <div className="text-sm font-medium text-white">显示用户名</div>
+                                    <div className="text-xs text-gray-500">在消息气泡上方显示名字</div>
+                                </div>
+                            </div>
+                            <button
+                                onClick={() => onUpdateSettings({ ...userSettings, showUsername: !userSettings.showUsername }, true)}
+                                className={\`w-12 h-6 rounded-full transition-colors relative \${userSettings.showUsername ? 'bg-blue-600' : 'bg-gray-700'}\`}
+                            >
+                                <div className={\`absolute top-1 w-4 h-4 rounded-full bg-white transition-transform \${userSettings.showUsername ? 'left-7' : 'left-1'}\`}></div>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+      );
+    }
+
+    function Landing({ user, onJoin, onCreate, onEmergency, onEnterRoom, onOpenSettings }) {
+        const [rooms, setRooms] = useState({ owned: [], joined: [] });
+        const [loading, setLoading] = useState(true);
       const [deleteConfirm, setDeleteConfirm] = useState(null);
+      const [banInfo, setBanInfo] = useState(null);
 
       const handleDelete = async (roomId, e) => {
           if (e) e.stopPropagation();
@@ -369,7 +485,13 @@ export function htmlTemplate() {
       const hasRooms = rooms.owned.length > 0 || rooms.joined.length > 0;
 
       const RoomCard = ({ room, isOwner }) => (
-        <div onClick={() => onEnterRoom(room)} className="group relative bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl p-4 cursor-pointer transition-all hover:-translate-y-1 hover:shadow-lg">
+        <div onClick={() => {
+            if (user.isBanned && room.id !== 1 && room.id !== '000001') { // 1 is emergency
+               setBanInfo({ until: user.bannedUntil });
+               return;
+            }
+            onEnterRoom(room);
+        }} className="group relative bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl p-4 cursor-pointer transition-all hover:-translate-y-1 hover:shadow-lg">
             {isOwner && (
                 <button
                     onClick={(e) => { e.stopPropagation(); setDeleteConfirm(room.id); }}
@@ -401,6 +523,10 @@ export function htmlTemplate() {
                             <button onClick={onEmergency} className="w-10 h-10 rounded-full bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20 flex items-center justify-center shadow-lg transition group relative">
                                 <i className="fas fa-exclamation-triangle"></i>
                                 <span className="absolute left-12 bg-gray-800 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition whitespace-nowrap pointer-events-none">紧急/工单</span>
+                            </button>
+                            <button onClick={onOpenSettings} className="w-10 h-10 rounded-full bg-gray-700/50 hover:bg-gray-700 text-gray-300 border border-white/10 flex items-center justify-center shadow-lg transition group relative">
+                                <i className="fas fa-cog"></i>
+                                <span className="absolute left-12 bg-gray-800 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition whitespace-nowrap pointer-events-none">设置</span>
                             </button>
                         </>
                     )}
@@ -534,11 +660,46 @@ export function htmlTemplate() {
                 </div>
             )}
 
+            {/* Ban Modal */}
+            {banInfo && (
+                <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm animate-[fadeIn_0.2s_ease-out]">
+                    <div className="bg-[#1c1c1e] border border-red-500/30 p-6 rounded-2xl max-w-sm w-full mx-4 shadow-2xl shadow-red-900/20">
+                        <div className="flex justify-center mb-4">
+                            <i className="fas fa-ban text-4xl text-red-500"></i>
+                        </div>
+                        <h3 className="text-xl font-bold text-white mb-2 text-center">账号已被封禁</h3>
+                        <p className="text-gray-300 text-sm mb-2 text-center">
+                            你已被封禁，<br/>
+                            {banInfo.until > 4000000000000 ? '永久封禁' : \`解封时间: \${new Date(banInfo.until).toLocaleString()}\`}
+                        </p>
+                        <p className="text-gray-400 text-xs mb-6 text-center">
+                            您可以进入 Emergency Room 进行申诉。
+                        </p>
+                        <div className="flex gap-3">
+                            <button
+                                onClick={() => setBanInfo(null)}
+                                className="flex-1 py-2.5 bg-white/5 hover:bg-white/10 text-white rounded-xl transition font-medium"
+                            >
+                                关闭
+                            </button>
+                            <button
+                                onClick={() => { setBanInfo(null); onEmergency(); }}
+                                className="flex-1 py-2.5 bg-red-600 hover:bg-red-500 text-white rounded-xl transition font-medium shadow-lg shadow-red-900/20"
+                            >
+                                去申诉
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
         </div>
       );
     }
 
     function CreateRoom({ onBack, onCreated }) {
+      // Check ban (though server also checks)
+      // We rely on server error for now or pass user prop
       const [name, setName] = useState("");
       const [customKey, setCustomKey] = useState("");
       const [isPrivate, setIsPrivate] = useState(true);
@@ -672,7 +833,7 @@ export function htmlTemplate() {
       )
     }
 
-    function ChatRoom({ room, user, onLeave }) {
+    function ChatRoom({ room, user, onLeave, userSettings }) {
        const [messages, setMessages] = useState([]);
        const [input, setInput] = useState("");
        const [status, setStatus] = useState("connecting"); // connecting, connected, error, uncreated
@@ -680,6 +841,7 @@ export function htmlTemplate() {
        const [showKey, setShowKey] = useState(false);
        const [syncStatus, setSyncStatus] = useState(""); // "", "syncing", "synced"
        const [retryCount, setRetryCount] = useState(0);
+       const [alertMsg, setAlertMsg] = useState(null); // For rate limit modal
        
        const socketRef = useRef(null);
        const messagesEndRef = useRef(null);
@@ -770,7 +932,7 @@ export function htmlTemplate() {
           const connectWebSocket = (localHistory) => {
              const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
              // Build WebSocket URL with optional since parameter for incremental sync
-             let wsUrl = protocol + "//" + window.location.host + "/api/rooms/" + room.id + "/websocket?key=" + encodeURIComponent(room.key);
+             let wsUrl = protocol + "//" + window.location.host + "/api/rooms/" + room.id + "/websocket?key=" + encodeURIComponent(room.key) + "&username=" + encodeURIComponent(user.username) + "&role=" + encodeURIComponent(user.role) + "&avatarUrl=" + encodeURIComponent(user.avatarUrl || '');
              
              // If we have local history, request only messages since last timestamp
              if (localHistory && localHistory.lastTimestamp > 0) {
@@ -818,7 +980,9 @@ export function htmlTemplate() {
                 try {
                    const data = JSON.parse(event.data);
                    if (data.error) {
-                      if (data.error === 'EMERGENCY_MODE') {
+                      if (data.error === 'RATE_LIMIT_EXCEEDED') {
+                          setAlertMsg(data.message || "发言频率过快");
+                      } else if (data.error === 'EMERGENCY_MODE') {
                           setMessages(prev => [...prev, { id: Date.now(), system: true, content: "⚠️ SYSTEM EMERGENCY. Please switch to Issues Channel." }]);
                       } else {
                           setMessages(prev => [...prev, { id: Date.now(), system: true, content: "Error: " + data.error }]);
@@ -843,6 +1007,7 @@ export function htmlTemplate() {
                                    content,
                                    sender,
                                    senderRole: m.senderRole || 'user', // Include role from history
+                                   senderAvatar: m.senderAvatar || null, // Include avatar from history
                                    isMine: sender === user.username,
                                    timestamp: m.timestamp
                                };
@@ -881,6 +1046,7 @@ export function htmlTemplate() {
                                    content,
                                    sender,
                                    senderRole: m.senderRole || 'user', // Include role from history
+                                   senderAvatar: m.senderAvatar || null, // Include avatar from history
                                    isMine: sender === user.username,
                                    timestamp: m.timestamp
                                };
@@ -911,6 +1077,7 @@ export function htmlTemplate() {
                       content,
                       sender,
                       senderRole: data.senderRole || 'user', // Include role from real-time message
+                      senderAvatar: data.senderAvatar || null, // Include avatar from real-time message
                       isMine: sender === user.username,
                       timestamp: data.timestamp
                    };
@@ -928,6 +1095,19 @@ export function htmlTemplate() {
                 }
              };
              socketRef.current = ws;
+          };
+          
+          // Notification Helper
+          const sendNotification = (title, body) => {
+              if (userSettings.notificationsEnabled) {
+                  // Check muted rooms
+                  const muted = (userSettings.mutedRooms || '').split(',').map(s => s.trim());
+                  if (muted.includes(room.id.toString())) return;
+
+                  if (Notification.permission === "granted") {
+                      new Notification(title, { body });
+                  }
+              }
           };
 
           init();
@@ -1003,6 +1183,27 @@ export function htmlTemplate() {
                 </div>
              )}
 
+             {/* Alert Modal */}
+             {alertMsg && (
+                <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm animate-[fadeIn_0.2s_ease-out]">
+                    <div className="bg-[#1c1c1e] border border-white/10 p-6 rounded-2xl max-w-sm w-full mx-4 shadow-2xl">
+                        <div className="flex justify-center mb-4">
+                            <i className="fas fa-exclamation-circle text-4xl text-yellow-500"></i>
+                        </div>
+                        <h3 className="text-xl font-bold text-white mb-2 text-center">提示</h3>
+                        <p className="text-gray-300 text-sm mb-6 text-center">
+                            {alertMsg}
+                        </p>
+                        <button
+                            onClick={() => setAlertMsg(null)}
+                            className="w-full py-2.5 bg-blue-600 hover:bg-blue-500 text-white rounded-xl transition font-medium"
+                        >
+                            确定
+                        </button>
+                    </div>
+                </div>
+             )}
+
              {/* Messages */}
              <div className="flex-1 overflow-y-auto p-6 space-y-4 custom-scroll bg-black/20">
                 {messages.length === 0 && (
@@ -1018,6 +1219,7 @@ export function htmlTemplate() {
                       const badges = {
                          'owner': { text: 'OWNER', bg: 'bg-black', border: 'border-white/30', textColor: 'text-white' },
                          'admin': { text: 'ADMIN', bg: 'bg-red-600', border: 'border-red-400', textColor: 'text-white' },
+                         'banned': { text: 'BANNED', bg: 'bg-red-900', border: 'border-red-700', textColor: 'text-white' },
                          'svip2': { text: 'SVIP II', bg: 'bg-gradient-to-r from-amber-500 to-yellow-400', border: 'border-amber-300', textColor: 'text-black' },
                          'svip1': { text: 'SVIP', bg: 'bg-gradient-to-r from-amber-600 to-amber-400', border: 'border-amber-400', textColor: 'text-black' },
                          'svip': { text: 'SVIP', bg: 'bg-gradient-to-r from-amber-600 to-amber-400', border: 'border-amber-400', textColor: 'text-black' },
@@ -1027,18 +1229,42 @@ export function htmlTemplate() {
                    };
                    
                    const badge = getRoleBadge(msg.senderRole);
+                   const shouldShowTitle = userSettings.showTitle;
+                   const shouldShowUsername = userSettings.showUsername;
                    
                    return msg.system ? (
                       <div key={idx} className="flex justify-center my-4">
                          <span className="bg-white/10 text-gray-400 text-xs px-3 py-1 rounded-full">{msg.content}</span>
                       </div>
                    ) : (
-                      <div key={idx} className={"flex " + (msg.isMine ? 'justify-end' : 'justify-start') + " msg-bubble"}>
+                      <div key={idx} className={"flex " + (msg.isMine ? 'justify-end' : 'justify-start') + " msg-bubble gap-2"}>
+                         {/* Avatar for other users */}
+                         {!msg.isMine && (
+                            <div className="flex-shrink-0 mt-5">
+                               {msg.senderAvatar ? (
+                                  <img
+                                     src={msg.senderAvatar}
+                                     alt=""
+                                     className="w-8 h-8 rounded-full object-cover"
+                                     onError={(e) => {
+                                        e.target.style.display = 'none';
+                                        e.target.nextSibling.style.display = 'flex';
+                                     }}
+                                  />
+                               ) : null}
+                               <div
+                                  className="w-8 h-8 rounded-full bg-gradient-to-tr from-blue-400 to-purple-500 flex items-center justify-center text-white text-xs font-bold"
+                                  style={{ display: msg.senderAvatar ? 'none' : 'flex' }}
+                               >
+                                  {msg.sender.charAt(0).toUpperCase()}
+                               </div>
+                            </div>
+                         )}
                          <div className={"max-w-[70%] " + (msg.isMine ? 'items-end' : 'items-start') + " flex flex-col"}>
                             {!msg.isMine && (
                                <div className="flex items-center gap-1.5 mb-1 ml-1">
-                                  <span className="text-[10px] text-gray-500">{msg.sender}</span>
-                                  {badge && (
+                                  {shouldShowUsername && <span className="text-[10px] text-gray-500">{msg.sender}</span>}
+                                  {badge && shouldShowTitle && (
                                      <span className={\`text-[8px] px-1.5 py-0.5 rounded font-bold border \${badge.bg} \${badge.border} \${badge.textColor} shadow-sm\`}>
                                         {badge.text}
                                      </span>
@@ -1054,13 +1280,35 @@ export function htmlTemplate() {
                             </div>
                             <div className="flex items-center gap-1.5 mt-1 mx-1">
                                <span className="text-[9px] text-gray-600">{new Date(msg.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
-                               {msg.isMine && badge && (
+                               {msg.isMine && badge && shouldShowTitle && (
                                   <span className={\`text-[7px] px-1 py-0.5 rounded font-bold border \${badge.bg} \${badge.border} \${badge.textColor} opacity-70\`}>
                                      {badge.text}
                                   </span>
                                )}
                             </div>
                          </div>
+                         {/* Avatar for current user */}
+                         {msg.isMine && (
+                            <div className="flex-shrink-0 mt-5">
+                               {user.avatarUrl ? (
+                                  <img
+                                     src={user.avatarUrl}
+                                     alt=""
+                                     className="w-8 h-8 rounded-full object-cover"
+                                     onError={(e) => {
+                                        e.target.style.display = 'none';
+                                        e.target.nextSibling.style.display = 'flex';
+                                     }}
+                                  />
+                               ) : null}
+                               <div
+                                  className="w-8 h-8 rounded-full bg-gradient-to-tr from-blue-400 to-purple-500 flex items-center justify-center text-white text-xs font-bold"
+                                  style={{ display: user.avatarUrl ? 'none' : 'flex' }}
+                               >
+                                  {user.username.charAt(0).toUpperCase()}
+                               </div>
+                            </div>
+                         )}
                       </div>
                    );
                 })}
@@ -1093,8 +1341,25 @@ export function htmlTemplate() {
        const [room, setRoom] = useState(null);
        const [joinId, setJoinId] = useState(""); // Pre-filled ID for join screen
        const [joinName, setJoinName] = useState("");
+       const [showSettings, setShowSettings] = useState(false);
+       
+       // Default Settings
+       const [userSettings, setUserSettings] = useState({
+           notificationsEnabled: false,
+           mutedRooms: '',
+           showTitle: true,
+           showUsername: true
+       });
 
        useEffect(() => {
+          // Load Settings (Local)
+          const savedSettings = localStorage.getItem('chat_settings');
+          if (savedSettings) {
+              try {
+                  setUserSettings(prev => ({ ...prev, ...JSON.parse(savedSettings) }));
+              } catch(e) {}
+          }
+
           // Load Theme
           const savedTheme = localStorage.getItem('chat_theme');
           if (savedTheme) {
@@ -1108,7 +1373,23 @@ export function htmlTemplate() {
              .then(res => res.json())
              .then(data => {
                 if (data.loggedIn) {
-                   setUser({ username: data.username, role: data.effectiveRole });
+                   setUser({
+                       username: data.username,
+                       role: data.role,
+                       isBanned: data.isBanned,
+                       bannedUntil: data.bannedUntil,
+                       avatarUrl: data.avatarUrl || null
+                   });
+                   
+                   // Load Privacy Settings from Server
+                   if (data.privacySettings) {
+                       setUserSettings(prev => ({
+                           ...prev,
+                           showTitle: data.privacySettings.showTitle !== undefined ? data.privacySettings.showTitle : true,
+                           showUsername: data.privacySettings.showUsername !== undefined ? data.privacySettings.showUsername : true
+                       }));
+                   }
+
                    setView("landing");
                    
                    // Initialize Common Auth UI
@@ -1116,13 +1397,17 @@ export function htmlTemplate() {
                        window.CommonAuth.init('auth-container-root');
                    }
                 } else {
-                   window.location.href = "https://login.smaiclub.top?redirect=" + encodeURIComponent(window.location.href);
+                   // Check if we are already on the login page to avoid loop (though this is chat worker)
+                   // Redirect to login with return URL
+                   const returnUrl = window.location.href;
+                   window.location.href = "https://login.smaiclub.top?redirect=" + encodeURIComponent(returnUrl);
                 }
              })
              .catch(() => {
                  // Error handling
-                 alert("Failed to verify identity. Please login.");
-                 window.location.href = "https://login.smaiclub.top";
+                 // alert("Failed to verify identity. Please login."); // Silent redirect is better UX
+                 const returnUrl = window.location.href;
+                 window.location.href = "https://login.smaiclub.top?redirect=" + encodeURIComponent(returnUrl);
              });
        }, []);
 
@@ -1134,6 +1419,31 @@ export function htmlTemplate() {
            }
        }, [view]);
 
+       const handleUpdateSettings = (newSettings, syncToServer = false) => {
+           setUserSettings(newSettings);
+           
+           // Local Settings (Notifications)
+           const localSettings = {
+               notificationsEnabled: newSettings.notificationsEnabled,
+               mutedRooms: newSettings.mutedRooms
+           };
+           localStorage.setItem('chat_settings', JSON.stringify(localSettings));
+
+           // Server Settings (Privacy)
+           if (syncToServer) {
+               const privacySettings = {
+                   showTitle: newSettings.showTitle,
+                   showUsername: newSettings.showUsername
+               };
+               fetch('https://login.smaiclub.top/api/set-privacy', {
+                   method: 'POST',
+                   headers: { 'Content-Type': 'application/json' },
+                   credentials: 'include',
+                   body: JSON.stringify({ privacySettings })
+               }).catch(e => console.error("Failed to sync privacy settings", e));
+           }
+       };
+
        if (view === 'loading') return (
           <div className="flex flex-col items-center gap-4">
              <i className="fas fa-spinner fa-spin text-3xl text-blue-500"></i>
@@ -1143,6 +1453,13 @@ export function htmlTemplate() {
 
        return (
           <React.Fragment>
+             <SettingsModal
+                isOpen={showSettings}
+                onClose={() => setShowSettings(false)}
+                userSettings={userSettings}
+                onUpdateSettings={handleUpdateSettings}
+             />
+             
              {view === 'landing' && (
                 <Landing
                    user={user}
@@ -1153,6 +1470,7 @@ export function htmlTemplate() {
                        setRoom({ id: '000001', key: 'smaiclub_issues', name: 'Emergency Channel' });
                        setView('chat');
                    }}
+                   onOpenSettings={() => setShowSettings(true)}
                 />
              )}
              {view === 'create' && (
@@ -1179,6 +1497,7 @@ export function htmlTemplate() {
                    room={room}
                    user={user}
                    onLeave={() => { setRoom(null); setView('landing'); }}
+                   userSettings={userSettings}
                 />
              )}
           </React.Fragment>

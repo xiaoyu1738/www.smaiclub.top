@@ -16,8 +16,13 @@ export class ChatRoom {
       const roomKey = url.searchParams.get("key");
       const username = url.searchParams.get("username");
       const role = url.searchParams.get("role");
+      const avatarUrl = url.searchParams.get("avatarUrl") || '';
       const sinceParam = url.searchParams.get("since");
       const sinceTimestamp = sinceParam ? parseInt(sinceParam, 10) : 0;
+      
+      // Get salt and iterations from query params (passed by Worker)
+      const salt = url.searchParams.get("salt") || 'SMAICLUB_CHAT_SALT';
+      const iterations = parseInt(url.searchParams.get("iterations") || '10000', 10);
 
       if (!roomKey) return new Response("Missing Room Key", { status: 400 });
       if (!username) return new Response("Unauthorized", { status: 401 });
@@ -26,7 +31,7 @@ export class ChatRoom {
       const [client, server] = Object.values(pair);
 
       // Handle Session (awaiting not strictly necessary for handshake but good for flow)
-      await this.handleSession(server, username, role, roomKey, sinceTimestamp);
+      await this.handleSession(server, username, role, roomKey, sinceTimestamp, avatarUrl, salt, iterations);
 
       return new Response(null, { status: 101, webSocket: client });
     }
@@ -34,10 +39,12 @@ export class ChatRoom {
     // Internal API to initialize room (called by Worker on creation)
     if (url.pathname === "/init") {
         if (request.method === "POST") {
-            const { keyHash, roomId } = await request.json();
-            // Store roomId and keyHash
+            const { keyHash, roomId, salt, iterations } = await request.json();
+            // Store roomId, keyHash, salt, iterations
             await this.state.storage.put("keyHash", keyHash);
             await this.state.storage.put("roomId", roomId);
+            if (salt) await this.state.storage.put("salt", salt);
+            if (iterations) await this.state.storage.put("iterations", iterations);
             return new Response("OK");
         }
     }
@@ -118,7 +125,7 @@ export class ChatRoom {
     return new Response("Not found", { status: 404 });
   }
 
-  async handleSession(webSocket, username, role, clientKey, sinceTimestamp = 0) {
+  async handleSession(webSocket, username, role, clientKey, sinceTimestamp = 0, avatarUrl = '', salt = 'SMAICLUB_CHAT_SALT', iterations = 10000) {
     webSocket.accept();
     this.sessions.add(webSocket);
 
@@ -152,6 +159,20 @@ export class ChatRoom {
          return;
     }
 
+    // Try to get salt/iterations from storage if not passed correctly (redundancy)
+    const storedSalt = await this.state.storage.get("salt");
+    const storedIterations = await this.state.storage.get("iterations");
+    
+    const finalSalt = storedSalt || salt;
+    const finalIterations = storedIterations || iterations;
+
+    // Send Handshake Info (Salt & Iterations)
+    webSocket.send(JSON.stringify({
+        type: 'handshake',
+        salt: finalSalt,
+        iterations: finalIterations
+    }));
+
     const storedRoomId = await this.state.storage.get("roomId");
     const roomId = storedRoomId || 0;
 
@@ -184,7 +205,7 @@ export class ChatRoom {
         if (sinceTimestamp > 0) {
             // Incremental sync: only fetch messages after the given timestamp
             messages = await this.env.CHAT_DB.prepare(
-                `SELECT iv, content, sender, sender_role as senderRole, created_at as timestamp
+                `SELECT iv, content, sender, sender_role as senderRole, sender_avatar as senderAvatar, created_at as timestamp
                  FROM messages
                  WHERE room_id = ? AND created_at > ?
                  ORDER BY created_at ASC
@@ -208,7 +229,7 @@ export class ChatRoom {
         } else {
             // Full sync: fetch recent messages (last 100)
             messages = await this.env.CHAT_DB.prepare(
-                `SELECT iv, content, sender, sender_role as senderRole, created_at as timestamp
+                `SELECT iv, content, sender, sender_role as senderRole, sender_avatar as senderAvatar, created_at as timestamp
                  FROM messages
                  WHERE room_id = ?
                  ORDER BY created_at DESC
@@ -234,10 +255,10 @@ export class ChatRoom {
 
     // Emergency Room Override
     if (storedRoomId == 1) {
-         if (['fish', 'smaiclubadmin'].includes(username)) {
-             // Unlimited
+         if (['admin', 'owner'].includes(role)) {
+             // Unlimited for specific users and admin/owner roles
          } else {
-             limits.rateLimit = { count: 1, window: 3600 * 1000 }; // 1 message per hour
+             limits.rateLimit = { count: 1, window: 3600 * 1000 }; // 1 message per hour for others
          }
     }
 
@@ -247,7 +268,7 @@ export class ChatRoom {
 
         // Rate Limit Check
         if (!this.checkRateLimit(username, limits.rateLimit)) {
-             webSocket.send(JSON.stringify({ error: "发言频率过快" }));
+             webSocket.send(JSON.stringify({ error: "RATE_LIMIT_EXCEEDED", message: "发言频率过快，请稍后再试" }));
              return;
         }
 
@@ -262,8 +283,8 @@ export class ChatRoom {
                     keyMaterial, { name: "AES-GCM", length: 256 }, false, ["encrypt", "decrypt"]
                  );
             } else {
-                // Now uses PBKDF2 derivation internally in utils.js
-                cryptoKey = await importRoomKey(clientKey);
+                // Use the correct salt/iterations for this room
+                cryptoKey = await importRoomKey(clientKey, finalSalt, finalIterations);
             }
         } catch (e) {
             webSocket.send(JSON.stringify({ error: "Invalid Key Format" }));
@@ -308,10 +329,20 @@ export class ChatRoom {
                 // Insert New Message with sender role
             const timestamp = Date.now();
             const result = await this.env.CHAT_DB.prepare(
-                `INSERT INTO messages (room_id, iv, content, sender, sender_role, created_at) VALUES (?, ?, ?, ?, ?, ?)`
-            ).bind(intId, encrypted.iv, encrypted.content, encrypted.sender, role, timestamp).run();
+                `INSERT INTO messages (room_id, iv, content, sender, sender_role, sender_avatar, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)`
+            ).bind(intId, encrypted.iv, encrypted.content, encrypted.sender, role, avatarUrl || null, timestamp).run();
 
             if (!result.success) throw new Error("DB Write Failed");
+            
+            // Send ACK back to sender
+            if (msg.tempId) {
+                webSocket.send(JSON.stringify({
+                    type: 'ack',
+                    tempId: msg.tempId,
+                    serverTimestamp: timestamp,
+                    success: true
+                }));
+            }
 
         } catch (e) {
             // TRIGGER EMERGENCY MODE
@@ -335,12 +366,13 @@ export class ChatRoom {
             ).bind('message', username, logDetails, 'websocket', Date.now()).run();
         } catch (e) { console.error("Logging failed", e); }
 
-        // Broadcast with role information
+        // Broadcast with role information and avatar
         const broadcastPayload = JSON.stringify({
             iv: encrypted.iv,
             content: encrypted.content,
             sender: encrypted.sender,
             senderRole: role, // Include sender's role for badge display
+            senderAvatar: avatarUrl || null, // Include sender's avatar URL
             timestamp: Date.now()
         });
 
@@ -419,7 +451,7 @@ export class ChatRoom {
           // 4. Perform Deletion (Gradual Decay of Expired Messages)
           const deleteCutoff = now - limits.autoDeleteTime;
 
-          await this.env.CHAT_DB.prepare(
+          const result = await this.env.CHAT_DB.prepare(
               `DELETE FROM messages
                WHERE id IN (
                    SELECT id FROM messages
@@ -428,6 +460,22 @@ export class ChatRoom {
                    LIMIT ?
                )`
           ).bind(roomId, deleteCutoff, deleteBatch).run();
+          
+          if (result.meta.changes > 0) {
+              try {
+                  const logDetails = await encryptLogData({
+                      action: 'cleanup_messages',
+                      roomId: roomId,
+                      deletedCount: result.meta.changes,
+                      reason: 'auto_decay'
+                  });
+                  await this.env.CHAT_DB.prepare(
+                      "INSERT INTO activity_logs (event_type, user_id, details, ip_address, created_at) VALUES (?, ?, ?, ?, ?)"
+                  ).bind('cleanup', 'system', logDetails, 'internal', Date.now()).run();
+              } catch (logErr) {
+                  console.error("Cleanup logging failed", logErr);
+              }
+          }
 
       } catch (e) {
           console.error("Alarm cleanup failed", e);
