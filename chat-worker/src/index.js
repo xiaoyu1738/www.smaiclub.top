@@ -1,5 +1,5 @@
 import { ChatRoom } from './ChatRoom.js';
-import { htmlTemplate } from './htmlTemplate.js';
+import { htmlTemplate, cryptoWorkerScript } from './htmlTemplate.js';
 import { generateRoomKey, generateSalt, validateCustomKey, getUserFromRequest, getEffectiveRole, getTierLimits, encryptLogData, decryptLogData, isUserBanned } from './utils.js';
 
 export { ChatRoom };
@@ -23,6 +23,10 @@ export default {
         // --- Serve Frontend ---
         if (url.pathname === "/" && request.method === "GET") {
              return new Response(htmlTemplate(), { headers: { "Content-Type": "text/html" } });
+        }
+
+        if (url.pathname === "/assets/crypto.worker.js" && request.method === "GET") {
+             return new Response(cryptoWorkerScript, { headers: { "Content-Type": "application/javascript" } });
         }
 
         // --- 0. Get User Rooms (GET /api/user/rooms) ---
