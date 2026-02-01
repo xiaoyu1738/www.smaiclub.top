@@ -13,6 +13,12 @@ export async function generateRoomKey() {
   return result;
 }
 
+export function generateSalt() {
+    const array = new Uint8Array(16);
+    crypto.getRandomValues(array);
+    return Array.from(array).map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
 export function validateCustomKey(key) {
   if (!key) return false;
   if (key.length < 8 || key.length > 20) return false;
@@ -20,7 +26,7 @@ export function validateCustomKey(key) {
   return /^[a-zA-Z0-9]+$/.test(key);
 }
 
-export async function importRoomKey(password) {
+export async function importRoomKey(password, salt = "SMAICLUB_CHAT_SALT", iterations = 10000) {
   try {
     const enc = new TextEncoder();
     const keyMaterial = await crypto.subtle.importKey(
@@ -30,11 +36,26 @@ export async function importRoomKey(password) {
       false,
       ["deriveKey"]
     );
+    
+    // Support both string salt (legacy) and hex string salt (new)
+    let saltBuffer;
+    if (salt === "SMAICLUB_CHAT_SALT" || salt === "SALT_FOR_ISSUES") {
+        saltBuffer = enc.encode(salt);
+    } else {
+        // Hex string to Uint8Array
+        const match = salt.match(/.{1,2}/g);
+        if (match) {
+             saltBuffer = new Uint8Array(match.map(byte => parseInt(byte, 16)));
+        } else {
+             saltBuffer = enc.encode(salt); // Fallback
+        }
+    }
+
     return await crypto.subtle.deriveKey(
       {
         name: "PBKDF2",
-        salt: enc.encode("SMAICLUB_CHAT_SALT"),
-        iterations: 10000,
+        salt: saltBuffer,
+        iterations: iterations,
         hash: "SHA-256"
       },
       keyMaterial,
@@ -43,6 +64,7 @@ export async function importRoomKey(password) {
       ["encrypt", "decrypt"]
     );
   } catch (e) {
+    console.error("Key Import Error:", e);
     throw new Error("Invalid Room Key");
   }
 }
@@ -178,6 +200,8 @@ export function getTierLimits(role) {
     case 'svip': // Fallback for old svip
     case 'svip1': return TIERS.SVIP;
     case 'svip2': return TIERS.SVIP_II;
+    case 'admin':
+    case 'owner': return TIERS.SVIP_II; // Admin/Owner have unlimited limits (same as SVIP II)
     default: return TIERS.NORMAL;
   }
 }
@@ -225,10 +249,24 @@ export async function getUserFromRequest(request, env) {
     return {
       username: data.username,
       role: data.effectiveRole || data.role || 'user',
-      lastPurchase: Date.now() // 由于 /api/me 不返回 lastPurchase，我们假设有效
+      lastPurchase: Date.now(), // 由于 /api/me 不返回 lastPurchase，我们假设有效
+      avatarUrl: data.avatarUrl || null,
+      bannedUntil: data.bannedUntil
     };
   } catch (e) {
     console.error("getUserFromRequest error:", e.message);
     return null;
   }
+}
+
+export function isUserBanned(user) {
+  if (!user) return false;
+  // Check bannedUntil timestamp from login worker's /api/me response
+  if (user.bannedUntil && user.bannedUntil > Date.now()) {
+    return true;
+  }
+  // Also check if role is explicitly 'banned' (though mostly handled by timestamp)
+  if (user.role === 'banned') return true;
+  
+  return false;
 }

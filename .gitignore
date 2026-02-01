@@ -1,4 +1,5 @@
 chat-worker/src/preview_local.html
 chat-worker/.wrangler/*
+chat-worker/dist/*
 chat-worker/migrations/*
 login-worker/migrations/*

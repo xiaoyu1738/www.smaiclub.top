@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SMAI Dev Blog | 开发日志</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #0f0f11;
+            color: #e4e4e7;
+        }
+        .font-mono {
+            font-family: 'JetBrains Mono', monospace;
+        }
+        .glass {
+            background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        .hover-card:hover {
+            background: rgba(255, 255, 255, 0.05);
+            border-color: rgba(255, 255, 255, 0.1);
+            transform: translateY(-2px);
+        }
+        .gradient-text {
+            background: linear-gradient(135deg, #60a5fa, #c084fc);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .tag {
+            font-size: 0.75rem;
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+            font-weight: 500;
+        }
+        .tag-feature { background: rgba(59, 130, 246, 0.15); color: #60a5fa; border: 1px solid rgba(59, 130, 246, 0.2); }
+        .tag-fix { background: rgba(34, 197, 94, 0.15); color: #4ade80; border: 1px solid rgba(34, 197, 94, 0.2); }
+        .tag-infra { background: rgba(168, 85, 247, 0.15); color: #c084fc; border: 1px solid rgba(168, 85, 247, 0.2); }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col">
+
+    <!-- Navbar -->
+    <nav class="fixed top-0 w-full z-50 glass border-b-0">
+        <div class="max-w-5xl mx-auto px-6 h-16 flex items-center justify-between">
+            <a href="/" class="text-xl font-bold tracking-tight flex items-center gap-2">
+                <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-600 to-purple-600 flex items-center justify-center text-white text-sm">
+                    <i class="fas fa-code"></i>
+                </div>
+                <span>SMAI <span class="text-gray-500 font-normal">Dev Blog</span></span>
+            </a>
+            <div class="flex items-center gap-6 text-sm font-medium text-gray-400">
+                <a href="https://www.smaiclub.top" class="hover:text-white transition">主页</a>
+                <a href="https://chat.smaiclub.top" class="hover:text-white transition">聊天室</a>
+                <a href="https://github.com/xiaoyu1738" target="_blank" class="hover:text-white transition"><i class="fab fa-github text-lg"></i></a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Header -->
+    <header class="pt-32 pb-16 px-6">
+        <div class="max-w-3xl mx-auto text-center">
+            <h1 class="text-5xl font-bold mb-6 tracking-tight">
+                斯麦俱乐部 <span class="gradient-text">开发日志</span>
+            </h1>
+            <p class="text-xl text-gray-400 leading-relaxed">
+                SMAICLUB Dev blog<br>
+            </p>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="flex-1 w-full max-w-4xl mx-auto px-6 pb-20">
+        
+        <!-- Timeline / Posts -->
+        <div class="space-y-8">
+
+            <article class="glass rounded-2xl p-8 transition-all duration-300 hover-card group cursor-pointer">
+                <h2 class="text-2xl font-bold mb-3 group-hover:text-blue-400 transition-colors">聊天室代码优化与 Bug 修复</h2>
+                <p class="text-gray-400 leading-relaxed">
+                    我们优化了聊天室代码的结构，提升了代码稳定和可维护性。同时，修复了多个影响用户体验的 Bug，包括消息发送失败、通知异常等问题，确保用户在各种网络环境下都能获得流畅的使用体验。
+                </p>
+            </article>
+
+            <article class="glass rounded-2xl p-8 transition-all duration-300 hover-card group cursor-pointer">
+                <h2 class="text-2xl font-bold mb-3 group-hover:text-blue-400 transition-colors">隐私升级与数据库同步机制</h2>
+                <p class="text-gray-400 leading-relaxed">
+                    为了提供更一致的用户体验，我们重构了隐私设置的存储逻辑。用户的偏好设置（如是否显示头衔、用户名）现在会实时同步到云端数据库，而设备特定的设置（如桌面通知）则继续保留在本地。这一混合存储策略兼顾了跨设备体验与本地化需求。
+                </p>
+            </article>
+
+            <article class="glass rounded-2xl p-8 transition-all duration-300 hover-card group cursor-pointer">
+                <h2 class="text-2xl font-bold mb-3 group-hover:text-blue-400 transition-colors">聊天室 2.0：现代化 UI 与交互重构</h2>
+                <p class="text-gray-400 leading-relaxed">
+                    全新的聊天室界面正式上线。我们引入了基于 React 的组件化架构，实现了更流畅的消息滚动、实时的状态反馈以及全新的“设置”面板。新增的工单系统与紧急模式切换，让社区管理更加高效。
+                </p>
+            </article>
+
+            <article class="glass rounded-2xl p-8 transition-all duration-300 hover-card group cursor-pointer">
+                <h2 class="text-2xl font-bold mb-3 group-hover:text-blue-400 transition-colors">迁移至 Cloudflare Workers 与 D1 数据库</h2>
+                <p class="text-gray-400 leading-relaxed">
+                    为了应对日益增长的访问量，我们将核心服务完全迁移至边缘计算架构。利用 Cloudflare Workers 的低延迟特性与 D1 数据库的强一致性，我们在全球范围内实现了毫秒级的响应速度。
+                </p>
+            </article>
+
+        </div>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="border-t border-white/5 py-12">
+        <div class="max-w-5xl mx-auto px-6 flex flex-col md:flex-row justify-between items-center gap-6">
+            <div class="text-gray-500 text-sm">
+                &copy; 2026 SMAI CLUB. All rights reserved.
+            </div>
+            <div class="flex gap-6 text-gray-500">
+                <a href="#" class="hover:text-white transition"><i class="fab fa-twitter"></i></a>
+                <a href="#" class="hover:text-white transition"><i class="fab fa-github"></i></a>
+                <a href="#" class="hover:text-white transition"><i class="fab fa-discord"></i></a>
+            </div>
+        </div>
+    </footer>
+
+</body>
+</html>
