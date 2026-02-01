@@ -1,5 +1,6 @@
 chat-worker/src/preview_local.html
 chat-worker/.wrangler/*
 chat-worker/dist/*
+chat-worker/frontend/node_modules/*
 chat-worker/migrations/*
 login-worker/migrations/*
