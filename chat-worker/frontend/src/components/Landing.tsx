@@ -38,7 +38,7 @@ export function Landing({ onJoin, onCreate, onEmergency, onEnterRoom }: LandingP
                         </button>
                     )}
                  </div>
-                 <div className="flex items-center gap-4 pointer-events-auto">
+                 <div className="flex items-center gap-4 pointer-events-auto mr-32">
                     {hasRooms && (
                         <>
                             <button onClick={onJoin} className="w-10 h-10 rounded-full bg-blue-600 hover:bg-blue-500 text-white flex items-center justify-center shadow-lg transition">
