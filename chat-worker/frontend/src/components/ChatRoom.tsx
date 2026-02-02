@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useRef } from 'react';
 import { Virtuoso, type VirtuosoHandle } from 'react-virtuoso';
 import { useChat } from '../hooks/useChat';
 import type { ChatMessage } from '../db/chatDB';
@@ -28,12 +28,6 @@ export const ChatRoom: React.FC<ChatRoomProps> = ({ roomId, roomKey, roomName, u
     const [atBottom, setAtBottom] = useState(true);
     const [loadingMore, setLoadingMore] = useState(false);
 
-    // Auto-scroll to bottom on new messages if already at bottom
-    useEffect(() => {
-        if (atBottom) {
-            virtuosoRef.current?.scrollToIndex({ index: messages.length - 1, align: 'end', behavior: 'smooth' });
-        }
-    }, [messages, atBottom]);
 
     const handleStartReached = async () => {
         if (loadingMore || messages.length === 0) return;
@@ -167,7 +161,7 @@ export const ChatRoom: React.FC<ChatRoomProps> = ({ roomId, roomKey, roomName, u
                     itemContent={(_, message) => <MessageItem message={message} />}
                     atBottomStateChange={setAtBottom}
                     initialTopMostItemIndex={messages.length - 1}
-                    followOutput={atBottom ? 'smooth' : false}
+                    followOutput={atBottom ? 'auto' : false}
                     startReached={handleStartReached}
                     className="custom-scroll"
                     components={{
