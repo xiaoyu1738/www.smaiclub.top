@@ -34,8 +34,17 @@ try {
     
     const escapedWorker = cryptoWorkerContent.replace(/\\/g, '\\\\').replace(/`/g, '\\`').replace(/\${/g, '\\${');
 
+    // Read favicon.ico
+    let faviconBase64 = '';
+    const faviconPath = path.join('dist', 'favicon.ico');
+    if (fs.existsSync(faviconPath)) {
+        const faviconBuffer = fs.readFileSync(faviconPath);
+        faviconBase64 = faviconBuffer.toString('base64');
+    }
+
     const jsContent = `
 export const cryptoWorkerScript = \`${escapedWorker}\`;
+export const faviconIco = "${faviconBase64}";
 
 export function htmlTemplate() {
   return \`${escapedHtml}\`;
