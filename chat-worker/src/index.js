@@ -31,6 +31,27 @@ export default {
         }
 
 
+        // --- Proxy to Login Worker (GET /api/me) ---
+        // Avoids CORS issues by proxying the request server-side
+        if (request.method === "GET" && url.pathname === "/api/me") {
+            const cookieHeader = request.headers.get("Cookie");
+            try {
+                const response = await fetch('https://login.smaiclub.top/api/me', {
+                    headers: {
+                        'Cookie': cookieHeader || ''
+                    }
+                });
+                const data = await response.json();
+                return new Response(JSON.stringify(data), {
+                    headers: { ...corsHeaders, "Content-Type": "application/json" }
+                });
+            } catch (e) {
+                return new Response(JSON.stringify({ loggedIn: false, error: e.message }), {
+                    headers: { ...corsHeaders, "Content-Type": "application/json" }
+                });
+            }
+        }
+
         // --- Health Check (GET /api/health) ---
         if (request.method === "GET" && url.pathname === "/api/health") {
             try {

@@ -40,7 +40,7 @@ function App() {
   const authInitialized = useRef(false);
 
   useEffect(() => {
-      fetch('https://login.smaiclub.top/api/me', { credentials: 'include' })
+      fetch('/api/me', { credentials: 'include' })
           .then(res => res.json())
           .then(data => {
               if (data.loggedIn) {
