@@ -1,6 +1,7 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Virtuoso, type VirtuosoHandle } from 'react-virtuoso';
 import { useChat } from '../hooks/useChat';
+import { useFaviconBadge } from '../hooks/useFaviconBadge';
 import type { ChatMessage } from '../db/chatDB';
 
 interface ChatRoomProps {
@@ -27,7 +28,27 @@ export const ChatRoom: React.FC<ChatRoomProps> = ({ roomId, roomKey, roomName, u
     const virtuosoRef = useRef<VirtuosoHandle>(null);
     const [atBottom, setAtBottom] = useState(true);
     const [loadingMore, setLoadingMore] = useState(false);
+    const [unreadCount, setUnreadCount] = useState(0);
 
+    useFaviconBadge(unreadCount);
+
+    // Reset unread count when window is focused
+    useEffect(() => {
+        const handleFocus = () => setUnreadCount(0);
+        window.addEventListener('focus', handleFocus);
+        return () => window.removeEventListener('focus', handleFocus);
+    }, []);
+
+    // Increment unread count when new messages arrive and window is hidden
+    const prevMessagesLength = useRef(messages.length);
+    useEffect(() => {
+        if (messages.length > prevMessagesLength.current) {
+            if (document.hidden) {
+                setTimeout(() => setUnreadCount(prev => prev + 1), 0);
+            }
+        }
+        prevMessagesLength.current = messages.length;
+    }, [messages]);
 
     const handleStartReached = async () => {
         if (loadingMore || messages.length === 0) return;
