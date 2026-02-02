@@ -38,7 +38,8 @@ export default {
             try {
                 const response = await fetch('https://login.smaiclub.top/api/me', {
                     headers: {
-                        'Cookie': cookieHeader || ''
+                        'Cookie': cookieHeader || '',
+                        'User-Agent': request.headers.get('User-Agent') || 'SMAI-Chat-Worker'
                     }
                 });
                 const data = await response.json();
