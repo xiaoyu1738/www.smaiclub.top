@@ -1,12 +1,4 @@
-importScripts(
-  "https://cdn.jsdelivr.net/npm/crypto-js@3.1.9-1/core.min.js",
-  "https://cdn.jsdelivr.net/npm/crypto-js@3.1.9-1/cipher-core.min.js",
-  "https://cdn.jsdelivr.net/npm/crypto-js@3.1.9-1/aes.min.js",
-  "https://cdn.jsdelivr.net/npm/crypto-js@3.1.9-1/mode-ecb.min.js",
-  "https://cdn.jsdelivr.net/npm/crypto-js@3.1.9-1/enc-base64.min.js",
-  "https://cdn.jsdelivr.net/npm/crypto-js@3.1.9-1/enc-utf8.min.js",
-  "https://cdn.jsdelivr.net/npm/crypto-js@3.1.9-1/lib-typedarrays.min.js"
-);
+import CryptoJS from 'crypto-js';
 
 const CORE_KEY = CryptoJS.enc.Hex.parse("687a4852416d736f356b496e62617857");
 const META_KEY = CryptoJS.enc.Hex.parse("2331346C6A6B5F215C5D2630553C2728");

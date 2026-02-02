@@ -3,10 +3,10 @@ import {
   html,
   svg,
   css
-} from "https://unpkg.com/lit-element@2.0.1/lit-element.js?module";
-import { produce } from "https://cdn.jsdelivr.net/npm/immer@2.0.0/dist/immer.module.min.js";
-import { ifDefined } from "https://unpkg.com/lit-html@^1.0.0/directives/if-defined.js?module";
-import { repeat } from "https://unpkg.com/lit-html@^1.0.0/directives/repeat.js?module";
+} from "lit";
+import { produce } from "immer";
+import { ifDefined } from "lit/directives/if-defined.js";
+import { repeat } from "lit/directives/repeat.js";
 
 document.body.addEventListener(
   "dragover",
@@ -122,7 +122,8 @@ customElements.define(
       super();
 
       this.tracks = [];
-      this.worker = new Worker("./worker.js");
+      // Use Vite's worker import syntax
+      this.worker = new Worker(new URL('./worker.js', import.meta.url), { type: 'module' });
 
       this.worker.addEventListener("message", e => {
         /**
