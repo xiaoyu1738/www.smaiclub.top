@@ -29,6 +29,16 @@ export default {
              return new Response(cryptoWorkerScript, { headers: { "Content-Type": "application/javascript" } });
         }
 
+        // --- Health Check (GET /api/health) ---
+        if (request.method === "GET" && url.pathname === "/api/health") {
+            try {
+                const result = await env.CHAT_DB.prepare("SELECT 1").first();
+                return new Response(JSON.stringify({ status: "ok", db: result ? "connected" : "error" }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+            } catch (e) {
+                return new Response(JSON.stringify({ status: "error", message: e.message }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+            }
+        }
+
         // --- 0. Get User Rooms (GET /api/user/rooms) ---
         if (request.method === "GET" && url.pathname === "/api/user/rooms") {
             try {
@@ -141,7 +151,7 @@ export default {
                 } catch (e) {
                      return new Response(JSON.stringify({
                          error: "EMERGENCY_MODE",
-                         message: "Database Error. Contact Admin."
+                         message: "Database Error: " + e.message
                      }), { status: 503, headers: corsHeaders });
                 }
 

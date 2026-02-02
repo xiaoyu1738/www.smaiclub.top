@@ -3,4 +3,5 @@ chat-worker/.wrangler/*
 chat-worker/dist/*
 chat-worker/frontend/node_modules/*
 chat-worker/migrations/*
+chat-worker/node_modules/*
 login-worker/migrations/*

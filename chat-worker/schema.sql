@@ -49,6 +49,7 @@ CREATE TABLE messages (
     content TEXT NOT NULL,
     sender TEXT NOT NULL,
     sender_role TEXT DEFAULT 'user',
+    sender_avatar TEXT,
     created_at INTEGER NOT NULL
 );
 

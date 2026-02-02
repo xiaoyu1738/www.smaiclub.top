@@ -15,17 +15,9 @@ export function useChat({ roomId, roomKey, username, role, avatarUrl }: UseChatP
     const [status, setStatus] = useState<'connecting' | 'connected' | 'disconnected' | 'error'>('connecting');
     const [derivedKey, setDerivedKey] = useState<CryptoKey | null>(null);
     const keyRef = useRef<CryptoKey | null>(null);
-    const workerRef = useRef<Worker | null>(null);
     const socketRef = useRef<WebSocket | null>(null);
+    const workerRef = useRef<Worker | null>(null);
     
-    // Initialize Web Worker
-    useEffect(() => {
-        workerRef.current = new CryptoWorker();
-        return () => {
-            workerRef.current?.terminate();
-        };
-    }, []);
-
     // Load initial messages from DB
     useEffect(() => {
         getMessages(roomId).then(msgs => {
@@ -48,7 +40,11 @@ export function useChat({ roomId, roomKey, username, role, avatarUrl }: UseChatP
 
     // Connect and Handshake
     useEffect(() => {
-        if (!roomId || !roomKey || !workerRef.current) return;
+        if (!roomId || !roomKey) return;
+
+        // Initialize Worker
+        const worker = new CryptoWorker();
+        workerRef.current = worker;
 
         let reconnectTimer: ReturnType<typeof setTimeout>;
         let isUnmounting = false;
@@ -81,7 +77,7 @@ export function useChat({ roomId, roomKey, username, role, avatarUrl }: UseChatP
 
                     if (data.type === 'handshake') {
                         const { salt, iterations } = data;
-                        workerRef.current?.postMessage({
+                        worker.postMessage({
                             id: 'deriveKey',
                             type: 'deriveKey',
                             payload: { password: roomKey, salt, iterations }
@@ -93,10 +89,10 @@ export function useChat({ roomId, roomKey, username, role, avatarUrl }: UseChatP
                                 setDerivedKey(key);
                                 keyRef.current = key;
                                 setStatus('connected');
-                                workerRef.current?.removeEventListener('message', handleKey);
+                                worker.removeEventListener('message', handleKey);
                             }
                         };
-                        workerRef.current?.addEventListener('message', handleKey);
+                        worker.addEventListener('message', handleKey);
                         return;
                     }
 
@@ -110,7 +106,7 @@ export function useChat({ roomId, roomKey, username, role, avatarUrl }: UseChatP
                             }
 
                             const decryptionId = `decrypt_${Date.now()}_${Math.random()}`;
-                            workerRef.current?.postMessage({
+                            worker.postMessage({
                                 id: decryptionId,
                                 type: 'decrypt',
                                 payload: { key, iv: msgData.iv, content: msgData.content }
@@ -122,7 +118,7 @@ export function useChat({ roomId, roomKey, username, role, avatarUrl }: UseChatP
                                         const decryptedContent = e.data.result;
                                         
                                         const senderDecryptionId = `decrypt_sender_${Date.now()}_${Math.random()}`;
-                                        workerRef.current?.postMessage({
+                                        worker.postMessage({
                                             id: senderDecryptionId,
                                             type: 'decrypt',
                                             payload: { key, iv: msgData.iv, content: msgData.sender }
@@ -148,15 +144,15 @@ export function useChat({ roomId, roomKey, username, role, avatarUrl }: UseChatP
                                                     return [...prev, newMessage].sort((a, b) => a.timestamp - b.timestamp);
                                                 });
                                                 saveMessage(newMessage);
-                                                workerRef.current?.removeEventListener('message', handleSender);
+                                                worker.removeEventListener('message', handleSender);
                                             }
                                         };
-                                        workerRef.current?.addEventListener('message', handleSender);
+                                        worker.addEventListener('message', handleSender);
                                     }
-                                    workerRef.current?.removeEventListener('message', handleDecryption);
+                                    worker.removeEventListener('message', handleDecryption);
                                 }
                             };
-                            workerRef.current?.addEventListener('message', handleDecryption);
+                            worker.addEventListener('message', handleDecryption);
                         };
                         tryProcess();
                     };
@@ -209,6 +205,8 @@ export function useChat({ roomId, roomKey, username, role, avatarUrl }: UseChatP
             isUnmounting = true;
             clearTimeout(reconnectTimer);
             socketRef.current?.close();
+            worker.terminate();
+            workerRef.current = null;
         };
     }, [roomId, roomKey, username, role, avatarUrl]);
 
