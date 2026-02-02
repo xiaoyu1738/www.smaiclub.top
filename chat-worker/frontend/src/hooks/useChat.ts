@@ -136,10 +136,22 @@ export function useChat({ roomId, roomKey, username, role, avatarUrl }: UseChatP
                                                     senderRole: msgData.senderRole,
                                                     senderAvatar: msgData.senderAvatar,
                                                     isMine: decryptedSender === username,
-                                                    timestamp: msgData.timestamp || Date.now()
+                                                    timestamp: msgData.timestamp || Date.now(),
+                                                    tempId: msgData.tempId // Pass tempId if available
                                                 };
 
                                                 setMessages(prev => {
+                                                    // Deduplication logic using tempId
+                                                    if (msgData.tempId) {
+                                                        const existingIndex = prev.findIndex(m => m.tempId === msgData.tempId);
+                                                        if (existingIndex !== -1) {
+                                                            // Replace the temporary message with the confirmed one
+                                                            const newMessages = [...prev];
+                                                            newMessages[existingIndex] = { ...newMessage, pending: false };
+                                                            return newMessages.sort((a, b) => a.timestamp - b.timestamp);
+                                                        }
+                                                    }
+                                                    
                                                     if (prev.some(m => m.id === newMessage.id)) return prev;
                                                     return [...prev, newMessage].sort((a, b) => a.timestamp - b.timestamp);
                                                 });

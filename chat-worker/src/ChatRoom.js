@@ -373,7 +373,8 @@ export class ChatRoom {
             sender: encrypted.sender,
             senderRole: role, // Include sender's role for badge display
             senderAvatar: avatarUrl || null, // Include sender's avatar URL
-            timestamp: Date.now()
+            timestamp: Date.now(),
+            tempId: msg.tempId // Include tempId for deduplication on sender side
         });
 
         this.sessions.forEach(ws => {
