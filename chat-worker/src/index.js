@@ -1,5 +1,5 @@
 import { ChatRoom } from './ChatRoom.js';
-import { htmlTemplate, cryptoWorkerScript, faviconIco } from './htmlTemplate.js';
+import { htmlTemplate, cryptoWorkerScript } from './htmlTemplate.js';
 import { generateRoomKey, generateSalt, validateCustomKey, getUserFromRequest, getEffectiveRole, getTierLimits, encryptLogData, decryptLogData, isUserBanned } from './utils.js';
 
 export { ChatRoom };
@@ -30,16 +30,6 @@ export default {
              return new Response(cryptoWorkerScript, { headers: { "Content-Type": "application/javascript" } });
         }
 
-        if (url.pathname === "/favicon.ico" && request.method === "GET") {
-             if (!faviconIco) return new Response(null, { status: 404 });
-             // Convert Base64 to Uint8Array
-             const binaryString = atob(faviconIco);
-             const bytes = new Uint8Array(binaryString.length);
-             for (let i = 0; i < binaryString.length; i++) {
-                 bytes[i] = binaryString.charCodeAt(i);
-             }
-             return new Response(bytes, { headers: { "Content-Type": "image/x-icon" } });
-        }
 
         // --- Health Check (GET /api/health) ---
         if (request.method === "GET" && url.pathname === "/api/health") {
