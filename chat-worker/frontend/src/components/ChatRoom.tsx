@@ -161,7 +161,7 @@ export const ChatRoom: React.FC<ChatRoomProps> = ({ roomId, roomKey, roomName, u
                     itemContent={(_, message) => <MessageItem message={message} />}
                     atBottomStateChange={setAtBottom}
                     initialTopMostItemIndex={messages.length - 1}
-                    followOutput={atBottom ? 'auto' : false}
+                    followOutput={atBottom}
                     startReached={handleStartReached}
                     className="custom-scroll"
                     components={{

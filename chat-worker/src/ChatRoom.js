@@ -269,23 +269,27 @@ export class ChatRoom {
         // Rate Limit Check
         if (!this.checkRateLimit(username, limits.rateLimit)) {
              webSocket.send(JSON.stringify({ error: "RATE_LIMIT_EXCEEDED", message: "发言频率过快，请稍后再试" }));
+             
+             // Log Rate Limit (without content)
+             try {
+                 const intId = await this.state.storage.get("roomId") || 0;
+                 const logDetails = await encryptLogData({
+                     action: 'rate_limit_exceeded',
+                     roomId: intId
+                 });
+                 await this.env.CHAT_DB.prepare(
+                     "INSERT INTO activity_logs (event_type, user_id, details, ip_address, created_at) VALUES (?, ?, ?, ?, ?)"
+                 ).bind('rate_limit', username, logDetails, 'websocket', Date.now()).run();
+             } catch (e) { console.error("Logging failed", e); }
+
              return;
         }
 
         // Validate Key (Encryption Test)
         let cryptoKey;
         try {
-            if (clientKey === 'smaiclub_issues') {
-                 const enc = new TextEncoder();
-                 const keyMaterial = await crypto.subtle.importKey("raw", enc.encode(clientKey), "PBKDF2", false, ["deriveKey"]);
-                 cryptoKey = await crypto.subtle.deriveKey(
-                    { name: "PBKDF2", salt: enc.encode("SALT_FOR_ISSUES"), iterations: 1000, hash: "SHA-256" },
-                    keyMaterial, { name: "AES-GCM", length: 256 }, false, ["encrypt", "decrypt"]
-                 );
-            } else {
-                // Use the correct salt/iterations for this room
-                cryptoKey = await importRoomKey(clientKey, finalSalt, finalIterations);
-            }
+            // Use the correct salt/iterations for this room (handles special cases internally in importRoomKey)
+            cryptoKey = await importRoomKey(clientKey, finalSalt, finalIterations);
         } catch (e) {
             webSocket.send(JSON.stringify({ error: "Invalid Key Format" }));
             return;
