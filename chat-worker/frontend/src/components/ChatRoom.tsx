@@ -32,6 +32,19 @@ export const ChatRoom: React.FC<ChatRoomProps> = ({ roomId, roomKey, roomName, u
 
     useFaviconBadge(unreadCount);
 
+    // Load settings
+    const [settings] = useState(() => {
+        const saved = localStorage.getItem('chat_settings');
+        if (saved) {
+            try {
+                return JSON.parse(saved);
+            } catch (e) {
+                console.error("Failed to parse settings", e);
+            }
+        }
+        return { enableNotifications: false, mutedRooms: [] as (string|number)[] };
+    });
+
     // Reset unread count when window is focused
     useEffect(() => {
         const handleFocus = () => setUnreadCount(0);
@@ -39,16 +52,36 @@ export const ChatRoom: React.FC<ChatRoomProps> = ({ roomId, roomKey, roomName, u
         return () => window.removeEventListener('focus', handleFocus);
     }, []);
 
-    // Increment unread count when new messages arrive and window is hidden
+    // Increment unread count and show notification when new messages arrive
     const prevMessagesLength = useRef(messages.length);
     useEffect(() => {
         if (messages.length > prevMessagesLength.current) {
-            if (document.hidden) {
-                setTimeout(() => setUnreadCount(prev => prev + 1), 0);
+            const newMessage = messages[messages.length - 1];
+            // Check if it's a new message (not just history loading)
+            // We assume history loading happens in bulk or prepend, but here we check length increase
+            // Ideally we check timestamp or ID
+            
+            // Only notify if not mine
+            if (!newMessage.isMine) {
+                if (document.hidden) {
+                    setTimeout(() => setUnreadCount(prev => prev + 1), 0);
+                }
+
+                // Check for browser notification
+                if (settings.enableNotifications && !settings.mutedRooms.includes(roomId)) {
+                    if (document.hidden) {
+                         if (Notification.permission === 'granted') {
+                             new Notification(`New message in ${roomName}`, {
+                                 body: `${newMessage.sender}: ${newMessage.content}`,
+                                 icon: '/favicon.ico'
+                             });
+                         }
+                    }
+                }
             }
         }
         prevMessagesLength.current = messages.length;
-    }, [messages]);
+    }, [messages, settings, roomId, roomName]);
 
     const handleStartReached = async () => {
         if (loadingMore || messages.length === 0) return;

@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import type { User, Room } from '../types';
+import { SettingsModal } from './SettingsModal';
 
 interface LandingProps {
     user: User | null;
@@ -12,6 +13,7 @@ interface LandingProps {
 export function Landing({ onJoin, onCreate, onEmergency, onEnterRoom }: LandingProps) {
     const [rooms, setRooms] = useState<{ owned: Room[], joined: Room[] }>({ owned: [], joined: [] });
     const [loading, setLoading] = useState(true);
+    const [showSettings, setShowSettings] = useState(false);
 
     useEffect(() => {
         fetch('/api/user/rooms', { credentials: 'include' })
@@ -37,6 +39,9 @@ export function Landing({ onJoin, onCreate, onEmergency, onEnterRoom }: LandingP
                             <i className="fas fa-exclamation-triangle"></i>
                         </button>
                     )}
+                    <button onClick={() => setShowSettings(true)} className="w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center shadow-lg transition">
+                        <i className="fas fa-cog"></i>
+                    </button>
                  </div>
                  <div className="flex items-center gap-4 pointer-events-auto mr-32">
                     {hasRooms && (
@@ -121,6 +126,13 @@ export function Landing({ onJoin, onCreate, onEmergency, onEnterRoom }: LandingP
                         </div>
                     )}
                 </div>
+            )}
+            {showSettings && (
+                <SettingsModal
+                    isOpen={showSettings}
+                    onClose={() => setShowSettings(false)}
+                    joinedRooms={rooms.joined}
+                />
             )}
         </div>
     );
