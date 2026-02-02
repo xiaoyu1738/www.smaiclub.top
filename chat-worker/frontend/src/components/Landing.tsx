@@ -131,7 +131,7 @@ export function Landing({ onJoin, onCreate, onEmergency, onEnterRoom }: LandingP
                 <SettingsModal
                     isOpen={showSettings}
                     onClose={() => setShowSettings(false)}
-                    joinedRooms={rooms.joined}
+                    joinedRooms={[...rooms.owned, ...rooms.joined]}
                 />
             )}
         </div>
