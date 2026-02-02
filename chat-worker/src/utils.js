@@ -210,6 +210,11 @@ export function getTierLimits(role) {
 export function getEffectiveRole(user) {
   if (!user || !user.role || user.role === 'user') return 'user';
 
+  // Admin and Owner roles never expire
+  if (['admin', 'owner'].includes(user.role)) {
+      return user.role;
+  }
+
   // Check expiration (1 year = 31536000000 ms)
   const ONE_YEAR = 31536000000;
   const lastPurchase = user.lastPurchase || 0;
