@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { ChatRoom } from './components/ChatRoom';
 import { Landing } from './components/Landing';
 import { CreateRoom } from './components/CreateRoom';
@@ -37,6 +37,7 @@ function App() {
   const [room, setRoom] = useState<Room | null>(null);
   const [joinId, setJoinId] = useState("");
   const [joinName, setJoinName] = useState("");
+  const authInitialized = useRef(false);
 
   useEffect(() => {
       fetch('https://login.smaiclub.top/api/me', { credentials: 'include' })
@@ -51,12 +52,6 @@ function App() {
                       avatarUrl: data.avatarUrl || null
                   });
                   setView("landing");
-                  
-                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                  if ((window as any).CommonAuth) {
-                      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                      (window as any).CommonAuth.init('auth-container-root');
-                  }
               } else {
                   const returnUrl = window.location.href;
                   window.location.href = "https://login.smaiclub.top?redirect=" + encodeURIComponent(returnUrl);
@@ -69,11 +64,25 @@ function App() {
   }, []);
 
   useEffect(() => {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    if ((window as any).CommonAuth) {
+    if (authInitialized.current) return;
+
+    const initAuth = () => {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        setTimeout(() => (window as any).CommonAuth.init('auth-container-root'), 100);
-    }
+        if ((window as any).CommonAuth && !authInitialized.current) {
+            authInitialized.current = true;
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            (window as any).CommonAuth.init('auth-container-root');
+        }
+    };
+
+    // Try immediately
+    initAuth();
+
+    // If not loaded yet, wait a bit or listen for load (if possible, but setTimeout loop is simpler for now)
+    // Actually, the script is blocking in head, so it should be available.
+    // But DOM element might need a tick.
+    const timer = setTimeout(initAuth, 100);
+    return () => clearTimeout(timer);
   }, []);
 
   if (view === 'loading') return (
