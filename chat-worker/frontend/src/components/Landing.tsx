@@ -49,7 +49,6 @@ export function Landing({ onJoin, onCreate, onEmergency, onEnterRoom }: LandingP
                             </button>
                         </>
                     )}
-                    <div id="auth-container-root"></div>
                  </div>
              </div>
 

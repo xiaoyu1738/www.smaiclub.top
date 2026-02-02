@@ -85,65 +85,68 @@ function App() {
     return () => clearTimeout(timer);
   }, []);
 
-  if (view === 'loading') return (
-      <div className="flex flex-col items-center gap-4 text-white">
-          <i className="fas fa-spinner fa-spin text-3xl text-blue-500"></i>
-          <div className="text-sm text-gray-500">Authenticating...</div>
-      </div>
-  );
-
   return (
     <div className="relative h-screen flex flex-col items-center justify-center p-4">
         <div className="absolute top-6 right-6 z-50">
             <div id="auth-container-root"></div>
         </div>
-        {user && user.isBanned && (
-            <BannedModal
-                user={user}
-                onEmergency={() => {
-                    setRoom({ id: '000001', key: 'smaiclub_issues', name: 'Emergency Channel' });
-                    setView('chat');
-                }}
-            />
-        )}
-        {view === 'landing' && (
-            <Landing
-                user={user}
-                onCreate={() => setView('create')}
-                onJoin={() => { setJoinId(""); setJoinName(""); setView('join'); }}
-                onEnterRoom={(r: Room) => { setJoinId(r.id.toString()); setJoinName(r.name); setView('join'); }}
-                onEmergency={() => {
-                    setRoom({ id: '000001', key: 'smaiclub_issues', name: 'Emergency Channel' });
-                    setView('chat');
-                }}
-            />
-        )}
-        {view === 'create' && (
-            <CreateRoom
-                onBack={() => setView('landing')}
-                onCreated={(r: Room) => {
-                    localStorage.setItem(`room_key_${r.id}`, r.key);
-                    setRoom(r);
-                    setView('chat');
-                }}
-            />
-        )}
-        {view === 'join' && (
-            <JoinRoom
-                initialRoomId={joinId}
-                initialRoomName={joinName}
-                onBack={() => setView('landing')}
-                onJoined={(r: Room) => { setRoom(r); setView('chat'); }}
-            />
-        )}
-        {view === 'chat' && room && user && (
-            <ChatRoom
-                roomId={parseInt(room.id.toString())}
-                roomKey={room.key}
-                roomName={room.name}
-                user={user}
-                onLeave={() => { setRoom(null); setView('landing'); }}
-            />
+        
+        {view === 'loading' ? (
+          <div className="flex flex-col items-center gap-4 text-white">
+              <i className="fas fa-spinner fa-spin text-3xl text-blue-500"></i>
+              <div className="text-sm text-gray-500">Authenticating...</div>
+          </div>
+        ) : (
+          <>
+            {user && user.isBanned && (
+                <BannedModal
+                    user={user}
+                    onEmergency={() => {
+                        setRoom({ id: '000001', key: 'smaiclub_issues', name: 'Emergency Channel' });
+                        setView('chat');
+                    }}
+                />
+            )}
+            {view === 'landing' && (
+                <Landing
+                    user={user}
+                    onCreate={() => setView('create')}
+                    onJoin={() => { setJoinId(""); setJoinName(""); setView('join'); }}
+                    onEnterRoom={(r: Room) => { setJoinId(r.id.toString()); setJoinName(r.name); setView('join'); }}
+                    onEmergency={() => {
+                        setRoom({ id: '000001', key: 'smaiclub_issues', name: 'Emergency Channel' });
+                        setView('chat');
+                    }}
+                />
+            )}
+            {view === 'create' && (
+                <CreateRoom
+                    onBack={() => setView('landing')}
+                    onCreated={(r: Room) => {
+                        localStorage.setItem(`room_key_${r.id}`, r.key);
+                        setRoom(r);
+                        setView('chat');
+                    }}
+                />
+            )}
+            {view === 'join' && (
+                <JoinRoom
+                    initialRoomId={joinId}
+                    initialRoomName={joinName}
+                    onBack={() => setView('landing')}
+                    onJoined={(r: Room) => { setRoom(r); setView('chat'); }}
+                />
+            )}
+            {view === 'chat' && room && user && (
+                <ChatRoom
+                    roomId={parseInt(room.id.toString())}
+                    roomKey={room.key}
+                    roomName={room.name}
+                    user={user}
+                    onLeave={() => { setRoom(null); setView('landing'); }}
+                />
+            )}
+          </>
         )}
     </div>
   );
