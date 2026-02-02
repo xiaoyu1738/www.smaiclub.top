@@ -70,10 +70,49 @@ export function useFaviconBadge(count: number) {
         // Load original favicon
         const img = new Image();
         img.crossOrigin = 'anonymous';
-        img.src = '/favicon.ico';
+        // Prefer existing favicon if available (it might be a data URI)
+        const existingHref = link.href;
+        img.src = existingHref && existingHref.startsWith('data:') ? existingHref : '/favicon.ico';
+        
         img.onload = () => {
             imgRef.current = img;
             setImageLoaded(true);
+        };
+        img.onerror = () => {
+            // Fallback: Draw a default icon if /favicon.ico fails (e.g. 404)
+            const ctx = canvas.getContext('2d');
+            if (ctx) {
+                ctx.fillStyle = '#2563eb'; // blue-600
+                ctx.beginPath();
+                ctx.arc(16, 16, 14, 0, 2 * Math.PI);
+                ctx.fill();
+                ctx.font = 'bold 18px sans-serif';
+                ctx.fillStyle = 'white';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText('S', 16, 16);
+            }
+            // Create a fallback image data URI
+            const fallbackCanvas = document.createElement('canvas');
+            fallbackCanvas.width = 32;
+            fallbackCanvas.height = 32;
+            const fCtx = fallbackCanvas.getContext('2d');
+            if (fCtx) {
+                fCtx.fillStyle = '#2563eb';
+                fCtx.beginPath();
+                fCtx.arc(16, 16, 16, 0, 2 * Math.PI);
+                fCtx.fill();
+                fCtx.fillStyle = 'white';
+                fCtx.font = 'bold 20px sans-serif';
+                fCtx.textAlign = 'center';
+                fCtx.textBaseline = 'middle';
+                fCtx.fillText('S', 16, 17);
+            }
+            img.onload = () => {
+                imgRef.current = img;
+                setImageLoaded(true);
+            };
+            img.src = fallbackCanvas.toDataURL();
         };
     }, []);
 

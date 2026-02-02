@@ -30,11 +30,15 @@ try {
     // Inline favicon into HTML content before escaping
     if (faviconBase64) {
         const dataUri = `data:image/x-icon;base64,${faviconBase64}`;
-        // Replace /favicon.ico with data URI
-        htmlContent = htmlContent.replace(/<link rel="icon" href="\/favicon.ico" \/>/g, `<link rel="icon" href="${dataUri}" />`);
-        // Also catch if it was modified to something else or handled by Vite differently but still points to a file
-        // Note: The previous regex is specific. Let's make it robust.
-        // If vite didn't touch it, it's href="/favicon.ico".
+        // Replace /favicon.ico or ./favicon.ico with data URI using a robust regex
+        // Match <link ... href="/favicon.ico" ... > or <link ... href="./favicon.ico" ... />
+        const regex = /<link[^>]*href="\.?\/favicon\.ico"[^>]*>/g;
+        if (regex.test(htmlContent)) {
+            htmlContent = htmlContent.replace(regex, `<link rel="icon" href="${dataUri}" />`);
+            console.log('Successfully inlined favicon into HTML.');
+        } else {
+            console.warn('Warning: Could not find favicon link in HTML to inline.');
+        }
     }
 
     // Escape backticks and other characters that might break the template string
