@@ -96,3 +96,5 @@ async function decryptMessage(key: CryptoKey, ivB64: string, contentB64: string)
         return "[Decryption Failed]";
     }
 }
+
+export {}; // Make this a module
