@@ -70,11 +70,11 @@ function App() {
 
   useEffect(() => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    if (view === 'landing' && (window as any).CommonAuth) {
+    if ((window as any).CommonAuth) {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         setTimeout(() => (window as any).CommonAuth.init('auth-container-root'), 100);
     }
-  }, [view]);
+  }, []);
 
   if (view === 'loading') return (
       <div className="flex flex-col items-center gap-4 text-white">
@@ -85,6 +85,9 @@ function App() {
 
   return (
     <div className="relative h-screen flex flex-col items-center justify-center p-4">
+        <div className="absolute top-6 right-6 z-50">
+            <div id="auth-container-root"></div>
+        </div>
         {user && user.isBanned && (
             <BannedModal
                 user={user}
