@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>2026 马到成功 · 定制版</title>
+    
+    <!-- 引入书法字体 -->
+    <link href="https://fonts.googleapis.com/css2?family=Zcool+KuaiLe&family=Ma+Shan+Zheng&display=swap" rel="stylesheet">
+
+    <style>
+        :root {
+            --gold-light: #fffebb;
+            --gold-main: #ffd700;
+            --red-bg: #2b0a0a;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: var(--red-bg);
+            /* 延续高级暗纹背景 */
+            background-image: 
+                radial-gradient(circle at 50% 40%, #5e0000 0%, #1a0505 80%),
+                repeating-linear-gradient(45deg, rgba(255,215,0,0.02) 0px, rgba(255,215,0,0.02) 1px, transparent 1px, transparent 15px);
+            height: 100vh;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Ma Shan Zheng', cursive;
+        }
+
+        /* 粒子画布 */
+        #stage-canvas {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            pointer-events: none; z-index: 1;
+        }
+
+        /* 主容器 */
+        .container {
+            position: relative;
+            z-index: 10;
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 100%;
+            max-width: 800px;
+        }
+
+        /* ------------------------------------------------
+           定制 WebP 图片样式
+           ------------------------------------------------ */
+        .hero-horse {
+            width: 100%;
+            max-width: 500px; /* 控制最大宽度 */
+            height: auto;
+            /* 关键：增加金色背光，使图片与深红背景融合 */
+            filter: drop-shadow(0 0 25px rgba(255, 215, 0, 0.5)); 
+            animation: float-horse 6s ease-in-out infinite;
+            margin-bottom: -30px; /* 调整与文字的距离 */
+            display: block;
+            object-fit: contain;
+        }
+
+        /* ------------------------------------------------
+           文字排版
+           ------------------------------------------------ */
+        .title-group {
+            position: relative;
+            z-index: 20;
+            margin-top: 20px;
+        }
+
+        h1 {
+            font-size: clamp(3rem, 10vw, 6rem);
+            margin: 0;
+            line-height: 1;
+            /* 奢华流光金渐变 */
+            background: linear-gradient(180deg, #fff 10%, #ffd700 40%, #bf953f 70%, #8a6e2f 100%);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            text-shadow: 0 10px 20px rgba(0,0,0,0.5);
+        }
+
+        .subtitle {
+            font-size: clamp(1rem, 3vw, 1.5rem);
+            color: #ffcccc;
+            letter-spacing: 0.6em;
+            margin-top: 10px;
+            margin-bottom: 40px;
+            font-family: 'Zcool KuaiLe', cursive;
+            opacity: 0.9;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+        }
+
+        /* ------------------------------------------------
+           交互按钮
+           ------------------------------------------------ */
+        .trigger-btn {
+            position: relative;
+            background: linear-gradient(to right, #d90429, #b90504);
+            border: 2px solid #ffd700;
+            padding: 16px 45px;
+            border-radius: 50px;
+            color: #ffd700;
+            font-size: 1.5rem;
+            font-family: 'Ma Shan Zheng', cursive;
+            cursor: pointer;
+            box-shadow: 0 0 25px rgba(217, 4, 41, 0.4);
+            transition: all 0.3s;
+            user-select: none;
+            z-index: 30;
+        }
+
+        .trigger-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 0 35px rgba(217, 4, 41, 0.6);
+        }
+        
+        .trigger-btn:active {
+            transform: scale(0.95);
+        }
+
+        /* ------------------------------------------------
+           动画定义
+           ------------------------------------------------ */
+        @keyframes float-horse {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+
+        .shake-screen {
+            animation: shake 0.5s cubic-bezier(.36,.07,.19,.97) both;
+        }
+        @keyframes shake {
+            10%, 90% { transform: translate3d(-2px, 0, 0); }
+            20%, 80% { transform: translate3d(4px, 0, 0); }
+            30%, 50%, 70% { transform: translate3d(-6px, 0, 0); }
+            40%, 60% { transform: translate3d(6px, 0, 0); }
+        }
+
+    </style>
+</head>
+<body>
+
+    <canvas id="stage-canvas"></canvas>
+
+    <div class="container">
+        <!-- 
+            ===========================================
+            用户指定 WebP 图片
+            ===========================================
+        -->
+        <img 
+            src="https://youke.xn--y7xa690gmna.cn/s1/2026/02/16/699327f19bb4d.webp" 
+            alt="2026 马到成功" 
+            class="hero-horse"
+            onerror="this.style.display='none'; console.log('图片加载失败');"
+        >
+
+        <div class="title-group">
+            <h1>2026 马到成功</h1>
+            <p class="subtitle">金马开路 · 势不可挡</p>
+        </div>
+
+        <button id="btn" class="trigger-btn">🧨 开启鸿运 🧨</button>
+    </div>
+
+    <script>
+        /* Javascript Physics - Explosion Effect */
+
+        const canvas = document.getElementById('stage-canvas');
+        const ctx = canvas.getContext('2d');
+        let width, height;
+        let particles = [];
+        let isAnimating = false;
+
+        function resize() {
+            width = canvas.width = window.innerWidth;
+            height = canvas.height = window.innerHeight;
+        }
+        window.addEventListener('resize', resize);
+        resize();
+
+        // 1. 资源生成 (Canvas 绘图)
+        function createAsset(type) {
+            const c = document.createElement('canvas');
+            const cx = c.getContext('2d');
+            c.width = 64;
+            c.height = 64;
+
+            if (type === 'redPacket') {
+                // 红包
+                cx.fillStyle = '#d90429';
+                cx.beginPath();
+                cx.roundRect(14, 10, 36, 48, 4);
+                cx.fill();
+                cx.strokeStyle = '#ffd700';
+                cx.lineWidth = 2;
+                cx.stroke();
+                cx.beginPath();
+                cx.moveTo(14, 22);
+                cx.quadraticCurveTo(32, 36, 50, 22);
+                cx.stroke();
+                cx.fillStyle = '#ffd700';
+                cx.font = 'bold 20px "Ma Shan Zheng"';
+                cx.textAlign = 'center';
+                cx.fillText('福', 32, 45);
+            } else if (type === 'coin') {
+                // 金币
+                cx.beginPath();
+                cx.arc(32, 32, 18, 0, Math.PI * 2);
+                cx.fillStyle = '#ffd700';
+                cx.fill();
+                cx.strokeStyle = '#b8860b';
+                cx.lineWidth = 3;
+                cx.stroke();
+                cx.fillStyle = '#b8860b';
+                cx.fillRect(26, 26, 12, 12);
+            } else if (type === 'ingot') {
+                // 元宝
+                cx.fillStyle = '#ffd700';
+                cx.beginPath();
+                cx.moveTo(10, 20);
+                cx.quadraticCurveTo(32, 45, 54, 20);
+                cx.lineTo(48, 15);
+                cx.quadraticCurveTo(32, 25, 16, 15);
+                cx.closePath();
+                cx.fill();
+                cx.strokeStyle = '#d4af37';
+                cx.lineWidth = 2;
+                cx.stroke();
+                cx.fillStyle = '#fffebb';
+                cx.beginPath();
+                cx.ellipse(32, 18, 8, 5, 0, 0, Math.PI*2);
+                cx.fill();
+            }
+            return c;
+        }
+
+        const assets = {
+            redPacket: createAsset('redPacket'),
+            coin: createAsset('coin'),
+            ingot: createAsset('ingot')
+        };
+
+        // 2. 粒子类
+        class Particle {
+            constructor(x, y) {
+                this.x = x;
+                this.y = y;
+                const angle = -Math.PI / 2 + (Math.random() - 0.5) * 2; 
+                const force = Math.random() * 18 + 12;
+
+                this.vx = Math.cos(angle) * force;
+                this.vy = Math.sin(angle) * force;
+
+                this.gravity = 0.8;
+                this.friction = 0.96;
+                this.rotation = Math.random() * 360;
+                this.rotationSpeed = (Math.random() - 0.5) * 20;
+                
+                const rand = Math.random();
+                if(rand < 0.4) this.type = 'redPacket';
+                else if(rand < 0.7) this.type = 'coin';
+                else this.type = 'ingot';
+
+                this.scale = Math.random() * 0.6 + 0.6;
+            }
+
+            update() {
+                this.vy += this.gravity;
+                this.vx *= this.friction;
+                this.vy *= this.friction;
+
+                this.x += this.vx;
+                this.y += this.vy;
+                this.rotation += this.rotationSpeed;
+            }
+
+            draw() {
+                ctx.save();
+                ctx.translate(this.x, this.y);
+                ctx.rotate(this.rotation * Math.PI / 180);
+                ctx.scale(this.scale, this.scale);
+                ctx.drawImage(assets[this.type], -32, -32);
+                ctx.restore();
+            }
+        }
+
+        // 3. 循环
+        function loop() {
+            ctx.clearRect(0, 0, width, height);
+
+            let active = false;
+            for (let i = particles.length - 1; i >= 0; i--) {
+                const p = particles[i];
+                p.update();
+                p.draw();
+                
+                if (p.y > height + 100) {
+                    particles.splice(i, 1);
+                } else {
+                    active = true;
+                }
+            }
+
+            if (active) requestAnimationFrame(loop);
+            else isAnimating = false;
+        }
+
+        // 4. 交互
+        const btn = document.getElementById('btn');
+        btn.addEventListener('click', () => {
+            document.body.classList.remove('shake-screen');
+            void document.body.offsetWidth;
+            document.body.classList.add('shake-screen');
+
+            btn.innerHTML = "🐍 辞乙巳 · 🐎 迎丙午";
+            
+            const rect = btn.getBoundingClientRect();
+            const cx = rect.left + rect.width/2;
+            const cy = rect.top + rect.height/2;
+
+            for(let i=0; i<300; i++) {
+                particles.push(new Particle(cx, cy));
+            }
+
+            if(!isAnimating) {
+                isAnimating = true;
+                loop();
+            }
+            
+            setTimeout(() => {
+                btn.innerHTML = "🧨 开启鸿运 🧨";
+            }, 3000);
+        });
+
+    </script>
+</body>
+</html>
+
