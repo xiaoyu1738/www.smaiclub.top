@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>2026 马到成功 · 定制版</title>
+    <title>2026 马到成功 · 福气冲天</title>
     
     <!-- 引入书法字体 -->
     <link href="https://fonts.googleapis.com/css2?family=Zcool+KuaiLe&family=Ma+Shan+Zheng&display=swap" rel="stylesheet">
@@ -254,14 +254,20 @@
             constructor(x, y) {
                 this.x = x;
                 this.y = y;
-                const angle = -Math.PI / 2 + (Math.random() - 0.5) * 2; 
-                const force = Math.random() * 18 + 12;
+                
+                // 调整：更聚拢的角度，避免太过分散，让力道更集中向上
+                const angle = -Math.PI / 2 + (Math.random() - 0.5) * 1.5; 
+                
+                // 核心修改：大幅增加喷射力度！
+                // 旧值: Math.random() * 18 + 12;
+                // 新值: Math.random() * 30 + 25; (最小力度都比原来的最大力度大)
+                const force = Math.random() * 30 + 25; 
 
                 this.vx = Math.cos(angle) * force;
                 this.vy = Math.sin(angle) * force;
 
                 this.gravity = 0.8;
-                this.friction = 0.96;
+                this.friction = 0.98; // 稍微减小摩擦力，让它飞得更远
                 this.rotation = Math.random() * 360;
                 this.rotationSpeed = (Math.random() - 0.5) * 20;
                 
