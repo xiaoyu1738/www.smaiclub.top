@@ -50,7 +50,7 @@ export default {
 
                 // sessionRole 是经过许可证验证后的实际权限
                 let effectiveRole = user.sessionRole || user.role || 'user';
-                
+
                 if (isBanned) {
                     effectiveRole = 'banned';
                 }
@@ -86,12 +86,12 @@ export default {
 
                 let query = "SELECT username, role, banned_until, createdAt FROM users";
                 let params = [];
-                
+
                 if (search) {
                     query += " WHERE username LIKE ?";
                     params.push(`%${search}%`);
                 }
-                
+
                 query += " ORDER BY createdAt DESC LIMIT ? OFFSET ?";
                 params.push(limit, offset);
 
@@ -151,7 +151,20 @@ export default {
 
             // --- 登录 ---
             if (url.pathname === "/api/login") {
-                const { username, password, licenseKey } = body;
+                const { username, password, licenseKey, redirect: redirectParam } = body;
+
+                // 验证 redirect 参数安全性（仅允许 *.smaiclub.top 域名）
+                let safeRedirect = "https://www.smaiclub.top";
+                if (redirectParam) {
+                    try {
+                        const redirectUrl = new URL(redirectParam);
+                        if (redirectUrl.hostname.endsWith('smaiclub.top') && ['https:', 'http:'].includes(redirectUrl.protocol)) {
+                            safeRedirect = redirectParam;
+                        }
+                    } catch (e) {
+                        // 无效 URL，使用默认
+                    }
+                }
 
                 // D1 获取用户
                 const user = await env.DB.prepare('SELECT * FROM users WHERE username = ?').bind(username).first();
@@ -200,7 +213,7 @@ export default {
                 const sessionToken = await encryptData(sessionData, env.SECRET_KEY, "SESSION_SALT");
                 const cookie = `auth_token=${sessionToken}; Path=/; Domain=.smaiclub.top; Secure; SameSite=None; Max-Age=86400`;
 
-                return new Response(JSON.stringify({ success: true, redirect: "https://www.smaiclub.top", warning }), {
+                return new Response(JSON.stringify({ success: true, redirect: safeRedirect, warning }), {
                     headers: {
                         "Content-Type": "application/json",
                         "Set-Cookie": cookie,
@@ -307,7 +320,7 @@ export default {
                 // 设置完成后，自动清除当前 session 强制用户重登以应用新权限
                 const cookie = `auth_token=; Path=/; Domain=.smaiclub.top; Max-Age=0; Secure; SameSite=None`;
                 return new Response(JSON.stringify({ success: true }), {
-                     headers: { "Content-Type": "application/json", "Set-Cookie": cookie, ...responseHeaders }
+                    headers: { "Content-Type": "application/json", "Set-Cookie": cookie, ...responseHeaders }
                 });
             }
 
@@ -344,12 +357,12 @@ export default {
 
                 // 修改成功后，强制重登
                 const cookie = `auth_token=; Path=/; Domain=.smaiclub.top; Max-Age=0; Secure; SameSite=None`;
-                
+
                 // Log License Update
                 ctx.waitUntil(sendLog(env, 'update_license', user.username, { action: 'update_license' }, request.headers.get("CF-Connecting-IP")));
 
                 return new Response(JSON.stringify({ success: true, message: "修改成功，请重新登录" }), {
-                     headers: { "Content-Type": "application/json", "Set-Cookie": cookie, ...responseHeaders }
+                    headers: { "Content-Type": "application/json", "Set-Cookie": cookie, ...responseHeaders }
                 });
             }
 
@@ -360,7 +373,7 @@ export default {
                 if (!user) return jsonResp({ error: "请先登录" }, 401, responseHeaders);
 
                 const { avatarUrl } = body;
-                
+
                 // 验证 URL 格式
                 if (avatarUrl !== null && avatarUrl !== '') {
                     try {
@@ -433,7 +446,7 @@ export default {
                 // If user is VIP/SVIP, require license key
                 if (['vip', 'svip1', 'svip2'].includes(user.role)) {
                     if (!licenseKey) return jsonResp({ error: "请输入许可证密钥以确认注销" }, 400, responseHeaders);
-                    
+
                     if (user.licenseKey) {
                         const decryptedLicense = await decryptData(user.licenseKey, env.SECRET_KEY, user.salt);
                         if (licenseKey !== decryptedLicense) return jsonResp({ error: "许可证密钥错误" }, 401, responseHeaders);
@@ -472,7 +485,7 @@ export default {
             if (url.pathname === "/api/admin/set-role") {
                 const user = await getUserFromCookie(request, env);
                 if (!user || user.role !== 'owner') { // Only owner can set roles arbitrarily
-                     return jsonResp({ error: "Forbidden" }, 403, responseHeaders);
+                    return jsonResp({ error: "Forbidden" }, 403, responseHeaders);
                 }
 
                 const { username, role } = body;
@@ -489,12 +502,12 @@ export default {
             if (url.pathname === "/api/admin/ban") {
                 const user = await getUserFromCookie(request, env);
                 if (!user || !['admin', 'owner'].includes(user.role)) {
-                     return jsonResp({ error: "Forbidden" }, 403, responseHeaders);
+                    return jsonResp({ error: "Forbidden" }, 403, responseHeaders);
                 }
 
                 const { username, duration, unit, banIp, reason } = body;
                 // duration: number, unit: 'seconds','minutes','hours','days','months','years','permanent'
-                
+
                 if (!username) return jsonResp({ error: "Missing username" }, 400, responseHeaders);
 
                 const targetUser = await env.DB.prepare("SELECT * FROM users WHERE username = ?").bind(username).first();
@@ -542,7 +555,7 @@ export default {
                     // we can't easily get the IP unless we store it in users table on login.
                     // Let's add last_ip to users table in a future update. For now, we skip IP ban if we can't find it,
                     // or we rely on the current request if the user is the one making it (which is not the case here).
-                    
+
                     // Workaround: We can't ban IP easily without storing it.
                     // Let's just log that we couldn't ban IP or rely on client sending it.
                     // But requirement says "Support IP ban".
@@ -575,11 +588,11 @@ export default {
             if (url.pathname === "/api/admin/unban") {
                 const user = await getUserFromCookie(request, env);
                 if (!user || !['admin', 'owner'].includes(user.role)) {
-                     return jsonResp({ error: "Forbidden" }, 403, responseHeaders);
+                    return jsonResp({ error: "Forbidden" }, 403, responseHeaders);
                 }
                 const { username } = body;
                 await env.DB.prepare("UPDATE users SET banned_until = NULL WHERE username = ?").bind(username).run();
-                
+
                 // Notify Chat Worker
                 ctx.waitUntil(fetch('https://chat.smaiclub.top/api/internal/handle-ban', {
                     method: 'POST',
@@ -634,7 +647,7 @@ async function getUserFromCookie(request, env) {
 
         // 应用过期逻辑
         applyExpiration(user);
-        
+
         user.sessionRole = session.role;
         // 如果已过期，确保 sessionRole 也降级，防止 cookie 中旧的高级权限生效
         if (user.isExpired) {
@@ -1008,9 +1021,10 @@ async function generateCommonScript() {
                     </div>
                 \`;
             } else {
-                // 未登录
+                // 未登录 - 携带当前页面URL作为redirect参数
+                const currentPageUrl = encodeURIComponent(window.location.href);
                 wrapper.innerHTML = \`
-                    <a href="https://login.smaiclub.top" class="smai-auth-btn">
+                    <a href="https://login.smaiclub.top?redirect=\${currentPageUrl}" class="smai-auth-btn">
                         <i class="fas fa-user"></i> 登录 / 注册
                     </a>
                 \`;

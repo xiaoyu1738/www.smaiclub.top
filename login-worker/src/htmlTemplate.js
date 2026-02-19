@@ -236,14 +236,28 @@ export function htmlTemplate() {
     <script>
         const API_BASE = window.location.origin + '/api';
 
+        // 从 URL 获取 redirect 参数
+        function getRedirectParam() {
+            const params = new URLSearchParams(window.location.search);
+            const redirect = params.get('redirect');
+            if (redirect) {
+                try {
+                    const url = new URL(redirect);
+                    if (url.hostname.endsWith('smaiclub.top')) return redirect;
+                } catch(e) {}
+            }
+            return 'https://www.smaiclub.top';
+        }
+
         // 页面加载时检查登录状态
         document.addEventListener('DOMContentLoaded', async () => {
             try {
                 const res = await fetch(API_BASE + '/me', { credentials: 'include' });
                 const data = await res.json();
                 if (data.loggedIn) {
+                    const redirectTo = getRedirectParam();
                     showNotification("您已登录，正在跳转...", "success");
-                    setTimeout(() => window.location.href = "https://www.smaiclub.top", 1000);
+                    setTimeout(() => window.location.href = redirectTo, 1000);
                     // 隐藏表单以防闪烁
                     document.querySelector('.container').style.display = 'none';
                 }
@@ -338,10 +352,11 @@ export function htmlTemplate() {
             errorDiv.style.display = 'none';
 
             try {
+                const redirectParam = getRedirectParam();
                 const res = await fetch(API_BASE + '/login', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ username: user, password: pass, licenseKey: license })
+                    body: JSON.stringify({ username: user, password: pass, licenseKey: license, redirect: redirectParam })
                 });
                 const data = await res.json();
 
