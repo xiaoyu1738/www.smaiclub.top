@@ -39,6 +39,10 @@ export default {
             if (url.pathname === "/" || url.pathname === "/login" || url.pathname === "/register") {
                 return new Response(htmlTemplate(), { headers: { "Content-Type": "text/html" } });
             }
+            // 增加 favicon.ico 路由支持
+            if (url.pathname === "/favicon.ico") {
+                return Response.redirect("https://www.smaiclub.top/favicon.ico", 301);
+            }
             // 验证当前用户状态 API
             if (url.pathname === "/api/me") {
                 const user = await getUserFromCookie(request, env);
