@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -7,7 +8,7 @@
     <!-- 【新增】引入 Login Worker 提供的通用认证脚本 -->
     <script src="https://login.smaiclub.top/common-auth.js"></script>
 
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=SF+Pro+Display:wght@300;400;500;600;700&display=swap">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <link rel="icon" type="image/x-icon" href="/favicon.ico">
     <style>
@@ -31,7 +32,7 @@
         }
 
         body {
-            font-family: 'SF Pro Display', -apple-system, BlinkMacSystemFont, sans-serif;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', Roboto, sans-serif;
             background-color: #ffffff;
             color: var(--text-dark);
             overflow-x: hidden;
@@ -39,81 +40,116 @@
             -webkit-font-smoothing: antialiased;
         }
 
+        @keyframes navSlideDown {
+            0% {
+                transform: translateX(-50%) translateY(-120%);
+                opacity: 0;
+            }
+
+            60% {
+                transform: translateX(-50%) translateY(6px);
+                opacity: 1;
+            }
+
+            80% {
+                transform: translateX(-50%) translateY(-2px);
+            }
+
+            100% {
+                transform: translateX(-50%) translateY(0);
+            }
+        }
+
         .navbar {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 0 22px;
-            background-color: rgba(0, 0, 0, 0.8);
-            backdrop-filter: saturate(180%) blur(20px);
             position: fixed;
-            width: 100%;
+            width: calc(100% - 48px);
+            max-width: 1400px;
+            left: 50%;
+            transform: translateX(-50%);
+            top: 16px;
             z-index: 1000;
-            height: 60px;
+            height: 58px;
+            padding: 0 36px;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: saturate(120%) blur(16px);
+            -webkit-backdrop-filter: saturate(120%) blur(16px);
+            border-radius: 980px;
+            border: 1px solid rgba(0, 0, 0, 0.06);
+            box-shadow: 0 4px 24px rgba(0, 0, 0, 0.08), 0 1px 4px rgba(0, 0, 0, 0.04);
+            animation: navSlideDown 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
         }
 
         .logo {
-            font-size: 28px;
-            font-weight: 600;
-            color: var(--text-light);
+            position: absolute;
+            left: 36px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 22px;
+            font-weight: 700;
+            color: var(--text-dark);
             text-decoration: none;
+            letter-spacing: -0.3px;
+            white-space: nowrap;
+        }
+
+        .auth-container {
+            position: absolute;
+            right: 28px;
+            top: 50%;
+            transform: translateY(-50%);
+            display: flex;
+            align-items: center;
         }
 
         .nav-links {
             display: flex;
             list-style: none;
             align-items: center;
+            position: absolute;
+            left: 50%;
+            transform: translateX(-50%);
             height: 100%;
-            flex-grow: 1; /* 让导航链接区域占据剩余空间 */
-            justify-content: center; /* 居中剩余的按钮 */
+            justify-content: center;
+            gap: 8px;
         }
 
         .nav-links li {
-            margin: 0 20px;
+            margin: 0 6px;
             position: relative;
         }
 
         .nav-links a {
-            color: var(--text-light);
+            color: var(--text-dark);
             text-decoration: none;
-            font-weight: 400;
-            font-size: 16px;
-            transition: all 0.3s ease;
-            opacity: 0.9;
-            display: flex;
+            font-weight: 450;
+            font-size: 15px;
+            transition: color 0.25s ease;
+            opacity: 1;
+            display: inline-flex;
             align-items: center;
+            position: relative;
+            padding: 6px 12px;
+            -webkit-text-fill-color: initial;
+            background: none;
         }
+
+        .nav-links a::after {
+            content: '';
+            position: absolute;
+            left: 12px;
+            bottom: 2px;
+            width: 0;
+            height: 1.5px;
+            background-color: var(--text-dark);
+            transition: width 0.35s cubic-bezier(0.25, 0.8, 0.25, 1);
+        }
+
         .nav-links a:hover {
             opacity: 1;
         }
 
-        .news-link {
-            background: var(--gradient-1);
-            -webkit-background-clip: text;
-            background-clip: text;
-            -webkit-text-fill-color: transparent;
-            color: transparent;
-            opacity: 1 !important;
-            font-weight: 500 !important;
-        }
-
-        /* 商店链接指向新页面 */
-        .shop-link {
-            color: #28a745;
-            -webkit-text-fill-color: initial;
-            opacity: 1 !important;
-            font-weight: 500 !important;
-            cursor: pointer;
-        }
-
-        .exhibition-link {
-            background: var(--gradient-3);
-            -webkit-background-clip: text;
-            background-clip: text;
-            -webkit-text-fill-color: transparent;
-            color: transparent;
-            opacity: 1 !important;
-            font-weight: 500 !important;
+        .nav-links a:hover::after {
+            width: calc(100% - 24px);
         }
 
         .gradient-text {
@@ -139,6 +175,7 @@
             max-width: 800px;
             padding: 0 22px;
         }
+
         .hero h1 {
             font-size: 72px;
             font-weight: 700;
@@ -205,6 +242,7 @@
         .section-title {
             margin-bottom: 80px;
         }
+
         .section-title h2 {
             font-size: 48px;
             font-weight: 700;
@@ -293,6 +331,7 @@
             line-height: 1.5;
             font-size: 17px;
         }
+
         .features li::before {
             content: '✓';
             position: absolute;
@@ -348,6 +387,7 @@
             margin-bottom: 30px;
             color: var(--accent-color);
         }
+
         .benefit-card h3 {
             font-size: 28px;
             margin-bottom: 20px;
@@ -564,8 +604,11 @@
 
         @media (max-width: 768px) {
             .navbar {
-                padding: 0 16px;
-                height: 70px;
+                padding: 0 18px;
+                height: 50px;
+                max-width: calc(100% - 24px);
+                top: 10px;
+                border-radius: 980px;
             }
 
             .nav-links {
@@ -625,263 +668,251 @@
         }
     </style>
 </head>
+
 <body>
-<nav class="navbar">
-    <a href="#" class="logo">SMAI CLUB</a>
-    <ul class="nav-links">
-        <li><a href="https://www.smaiclub.top/shop/" class="shop-link">购买</a></li>
-        <li><a href="https://news.smaiclub.top/" class="news-link">新闻</a></li>
-        <li><a href="#">首页</a></li>
-        <li><a href="https://hall.smaiclub.top/" class="exhibition-link">展览馆</a></li>
-        <li><a href="#">联系我们</a></li>
-    </ul>
-    <!-- 独立的认证按钮容器 -->
-    <div class="auth-container"></div>
-    <div class="menu-toggle">
-        <i class="fas fa-bars"></i>
-    </div>
-</nav>
+    <nav class="navbar">
+        <a href="#" class="logo">SMAI CLUB</a>
+        <ul class="nav-links">
+            <li><a href="https://www.smaiclub.top/shop/" class="shop-link">购买</a></li>
+            <li><a href="https://news.smaiclub.top/" class="news-link">新闻</a></li>
+            <li><a href="#">首页</a></li>
+            <li><a href="https://hall.smaiclub.top/" class="exhibition-link">展览馆</a></li>
+            <li><a href="#">联系我们</a></li>
+        </ul>
+        <!-- 独立的认证按钮容器 -->
+        <div class="auth-container"></div>
+    </nav>
 
-<section class="hero">
-    <div class="hero-content">
-        <h1>SMAI CLUB</h1>
-        <h2>斯麦俱乐部</h2>
-        <p>全球精英专属俱乐部，为您提供无与伦比的奢华体验、独家活动和顶级社交网络。</p>
-        <div class="hero-links">
-            <a href="#" class="hero-link">了解更多 <i class="fas fa-chevron-right"></i></a>
-            <!-- 更新购买链接 -->
-            <a href="https://www.smaiclub.top/shop/" class="hero-link">立即加入 <i class="fas fa-chevron-right"></i></a>
+    <section class="hero">
+        <div class="hero-content">
+            <h1>SMAI CLUB</h1>
+            <h2>斯麦俱乐部</h2>
+            <p>全球精英专属俱乐部，为您提供无与伦比的奢华体验、独家活动和顶级社交网络。</p>
+            <div class="hero-links">
+                <a href="#" class="hero-link">了解更多 <i class="fas fa-chevron-right"></i></a>
+                <!-- 更新购买链接 -->
+                <a href="https://www.smaiclub.top/shop/" class="hero-link">立即加入 <i class="fas fa-chevron-right"></i></a>
+            </div>
         </div>
-    </div>
-</section>
+    </section>
 
-<section class="section section-gray">
-    <div class="section-title">
-        <h2 class="gradient-text">会员等级</h2>
-        <h3>选择适合您的会员等级</h3>
-        <p>我们为每位会员量身定制卓越体验，享受不同层次的专属特权和服务。</p>
-    </div>
-    <div class="tiers">
-        <div class="tier">
-            <h3>SMAI VIP</h3>
-            <div class="price">$5,000<span>/年</span></div>
-            <ul class="features">
-                <li>专属会员活动邀请</li>
-                <li>全球顶级酒店优惠</li>
-                <li>私人助理服务</li>
-                <li>优先预订特权</li>
-                <li>24小时会员专线</li>
-            </ul>
-            <!-- 更新购买链接 -->
-            <button class="tier-btn" onclick="window.location.href='https://www.smaiclub.top/shop/'">加入SMAI VIP</button>
-        </div>
-        <div class="tier">
-            <h3>SMAI SVIP I</h3>
-            <div class="price">$15,000<span>/年</span></div>
-            <ul class="features">
-                <li>所有黄金会员特权</li>
-                <li>私人飞机和游艇租赁优惠</li>
-                <li>全球顶级餐厅优先预订</li>
-                <li>奢侈品购物专属折扣</li>
-                <li>专属社交活动邀请</li>
-                <li>私人定制旅行规划</li>
-            </ul>
-            <!-- 更新购买链接 -->
-            <button class="tier-btn" onclick="window.location.href='https://www.smaiclub.top/shop/'">加入SMAI SVIP I</button>
-        </div>
-        <div class="tier">
-            <h3>SMAI SVIP II</h3>
-            <div class="price">$50,000<span>/年</span></div>
-            <ul class="features">
-                <li>所有铂金会员特权</li>
-                <li>全球顶级活动VIP通行证</li>
-                <li>私人岛屿度假体验</li>
-                <li>奢侈品定制服务</li>
-                <li>全球顶级医疗资源</li>
-                <li>私人安全顾问</li>
-                <li>专属资产管理服务</li>
-            </ul>
-            <!-- 更新购买链接 -->
-            <button class="tier-btn" onclick="window.location.href='https://www.smaiclub.top/shop/'">加入SMAI SVIP II</button>
-        </div>
-    </div>
-</section>
-
-<section class="section">
-    <div class="section-title">
-        <h2 class="gradient-text">专属特权</h2>
-        <h3>SMAI CLUB为会员提供无与伦比的专属特权</h3>
-        <p>让您体验真正的高端生活方式</p>
-    </div>
-    <div class="benefits-grid">
-        <div class="benefit-card">
-            <div class="benefit-icon">
-                <i class="fas fa-globe"></i>
-            </div>
-            <h3>全球网络</h3>
-            <p>加入我们的全球精英网络，与来自世界各地的成功人士建立联系，拓展您的社交圈。</p>
-        </div>
-        <div class="benefit-card">
-            <div class="benefit-icon">
-                <i class="fas fa-gem"></i>
-            </div>
-            <h3>独家活动</h3>
-            <p>受邀参加全球顶级私人活动，包括艺术展览、音乐会和体育赛事VIP体验。</p>
-        </div>
-        <div class="benefit-card">
-            <div class="benefit-icon">
-                <i class="fas fa-concierge-bell"></i>
-            </div>
-            <h3>奢华生活</h3>
-            <p>享受全球顶级酒店、餐厅和度假村的专属优惠和优先预订权。</p>
-        </div>
-        <div class="benefit-card">
-            <div class="benefit-icon">
-                <i class="fas fa-plane"></i>
-            </div>
-            <h3>旅行特权</h3>
-            <p>私人飞机租赁、豪华游艇体验和全球顶级度假胜地的专属通道。</p>
-        </div>
-        <div class="benefit-card">
-            <div class="benefit-icon">
-                <i class="fas fa-user-tie"></i>
-            </div>
-            <h3>商业机会</h3>
-            <p>通过我们的精英网络获取独家商业机会和投资渠道。</p>
-        </div>
-        <div class="benefit-card">
-            <div class="benefit-icon">
-                <i class="fas fa-heartbeat"></i>
-            </div>
-            <h3>健康管理</h3>
-            <p>全球顶级医疗资源和健康管理服务，为您和家人的健康保驾护航。</p>
-        </div>
-    </div>
-</section>
-
-<!-- 用户评价板块 -->
-<section class="testimonials">
-    <div class="testimonials-container">
+    <section class="section section-gray">
         <div class="section-title">
-            <h2 class="gradient-text">会员评价</h2>
-            <h3>听听我们的会员怎么说</h3>
+            <h2 class="gradient-text">会员等级</h2>
+            <h3>选择适合您的会员等级</h3>
+            <p>我们为每位会员量身定制卓越体验，享受不同层次的专属特权和服务。</p>
         </div>
-        <div class="testimonials-grid">
-            <div class="testimonial-card">
-                <div class="testimonial-content">
-                    SMAI CLUB彻底改变了我的社交圈。通过俱乐部，我结识了来自全球的行业领袖，建立了宝贵的商业关系。私人飞机服务和全球顶级活动邀请让我的生活方式提升到了全新高度。
+        <div class="tiers">
+            <div class="tier">
+                <h3>SMAI VIP</h3>
+                <div class="price">$5,000<span>/年</span></div>
+                <ul class="features">
+                    <li>专属会员活动邀请</li>
+                    <li>全球顶级酒店优惠</li>
+                    <li>私人助理服务</li>
+                    <li>优先预订特权</li>
+                    <li>24小时会员专线</li>
+                </ul>
+                <!-- 更新购买链接 -->
+                <button class="tier-btn" onclick="window.location.href='https://www.smaiclub.top/shop/'">加入SMAI
+                    VIP</button>
+            </div>
+            <div class="tier">
+                <h3>SMAI SVIP I</h3>
+                <div class="price">$15,000<span>/年</span></div>
+                <ul class="features">
+                    <li>所有黄金会员特权</li>
+                    <li>私人飞机和游艇租赁优惠</li>
+                    <li>全球顶级餐厅优先预订</li>
+                    <li>奢侈品购物专属折扣</li>
+                    <li>专属社交活动邀请</li>
+                    <li>私人定制旅行规划</li>
+                </ul>
+                <!-- 更新购买链接 -->
+                <button class="tier-btn" onclick="window.location.href='https://www.smaiclub.top/shop/'">加入SMAI SVIP
+                    I</button>
+            </div>
+            <div class="tier">
+                <h3>SMAI SVIP II</h3>
+                <div class="price">$50,000<span>/年</span></div>
+                <ul class="features">
+                    <li>所有铂金会员特权</li>
+                    <li>全球顶级活动VIP通行证</li>
+                    <li>私人岛屿度假体验</li>
+                    <li>奢侈品定制服务</li>
+                    <li>全球顶级医疗资源</li>
+                    <li>私人安全顾问</li>
+                    <li>专属资产管理服务</li>
+                </ul>
+                <!-- 更新购买链接 -->
+                <button class="tier-btn" onclick="window.location.href='https://www.smaiclub.top/shop/'">加入SMAI SVIP
+                    II</button>
+            </div>
+        </div>
+    </section>
+
+    <section class="section">
+        <div class="section-title">
+            <h2 class="gradient-text">专属特权</h2>
+            <h3>SMAI CLUB为会员提供无与伦比的专属特权</h3>
+            <p>让您体验真正的高端生活方式</p>
+        </div>
+        <div class="benefits-grid">
+            <div class="benefit-card">
+                <div class="benefit-icon">
+                    <i class="fas fa-globe"></i>
                 </div>
-                <div class="testimonial-author">
-                    <img src="https://randomuser.me/api/portraits/men/32.jpg" alt="James Wilson" class="testimonial-avatar">
-                    <div class="author-info">
-                        <h4>Da Satbeen</h4>
-                        <p>大便试吃人 | SMAI SVIP II会员</p>
+                <h3>全球网络</h3>
+                <p>加入我们的全球精英网络，与来自世界各地的成功人士建立联系，拓展您的社交圈。</p>
+            </div>
+            <div class="benefit-card">
+                <div class="benefit-icon">
+                    <i class="fas fa-gem"></i>
+                </div>
+                <h3>独家活动</h3>
+                <p>受邀参加全球顶级私人活动，包括艺术展览、音乐会和体育赛事VIP体验。</p>
+            </div>
+            <div class="benefit-card">
+                <div class="benefit-icon">
+                    <i class="fas fa-concierge-bell"></i>
+                </div>
+                <h3>奢华生活</h3>
+                <p>享受全球顶级酒店、餐厅和度假村的专属优惠和优先预订权。</p>
+            </div>
+            <div class="benefit-card">
+                <div class="benefit-icon">
+                    <i class="fas fa-plane"></i>
+                </div>
+                <h3>旅行特权</h3>
+                <p>私人飞机租赁、豪华游艇体验和全球顶级度假胜地的专属通道。</p>
+            </div>
+            <div class="benefit-card">
+                <div class="benefit-icon">
+                    <i class="fas fa-user-tie"></i>
+                </div>
+                <h3>商业机会</h3>
+                <p>通过我们的精英网络获取独家商业机会和投资渠道。</p>
+            </div>
+            <div class="benefit-card">
+                <div class="benefit-icon">
+                    <i class="fas fa-heartbeat"></i>
+                </div>
+                <h3>健康管理</h3>
+                <p>全球顶级医疗资源和健康管理服务，为您和家人的健康保驾护航。</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- 用户评价板块 -->
+    <section class="testimonials">
+        <div class="testimonials-container">
+            <div class="section-title">
+                <h2 class="gradient-text">会员评价</h2>
+                <h3>听听我们的会员怎么说</h3>
+            </div>
+            <div class="testimonials-grid">
+                <div class="testimonial-card">
+                    <div class="testimonial-content">
+                        SMAI CLUB彻底改变了我的社交圈。通过俱乐部，我结识了来自全球的行业领袖，建立了宝贵的商业关系。私人飞机服务和全球顶级活动邀请让我的生活方式提升到了全新高度。
+                    </div>
+                    <div class="testimonial-author">
+                        <img src="https://randomuser.me/api/portraits/men/32.jpg" alt="James Wilson"
+                            class="testimonial-avatar">
+                        <div class="author-info">
+                            <h4>Da Satbeen</h4>
+                            <p>大便试吃人 | SMAI SVIP II会员</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="testimonial-card">
+                    <div class="testimonial-content">
+                        作为SMAI CLUB的五年会员，我可以说这是最值得的投资。俱乐部的私人定制旅行服务无与伦比，为我安排了最独特的度假体验。医疗资源网络在我家人需要时提供了极大帮助。
+                    </div>
+                    <div class="testimonial-author">
+                        <img src="https://randomuser.me/api/portraits/women/44.jpg" alt="Sophia Chen"
+                            class="testimonial-avatar">
+                        <div class="author-info">
+                            <h4>Mother Fucker</h4>
+                            <p>狄克银行集团CEO | SMAI SVIP I会员</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="testimonial-card">
+                    <div class="testimonial-content">
+                        加入SMAI CLUB后，我体验到了真正的精英生活方式。从私人岛屿度假到米其林三星餐厅的专属预订，每一项服务都超出预期。俱乐部的社交活动质量极高，每次都能结识志同道合的成功人士。
+                    </div>
+                    <div class="testimonial-author">
+                        <img src="https://randomuser.me/api/portraits/men/75.jpg" alt="Michael Rodriguez"
+                            class="testimonial-avatar">
+                        <div class="author-info">
+                            <h4>Bitch</h4>
+                            <p>大便食品集团CEO | SMAI SVIP II会员</p>
+                        </div>
                     </div>
                 </div>
             </div>
-            <div class="testimonial-card">
-                <div class="testimonial-content">
-                    作为SMAI CLUB的五年会员，我可以说这是最值得的投资。俱乐部的私人定制旅行服务无与伦比，为我安排了最独特的度假体验。医疗资源网络在我家人需要时提供了极大帮助。
-                </div>
-                <div class="testimonial-author">
-                    <img src="https://randomuser.me/api/portraits/women/44.jpg" alt="Sophia Chen" class="testimonial-avatar">
-                    <div class="author-info">
-                        <h4>Mother Fucker</h4>
-                        <p>狄克银行集团CEO | SMAI SVIP I会员</p>
-                    </div>
-                </div>
+        </div>
+    </section>
+
+    <section class="cta">
+        <h2>准备好加入精英圈了吗？</h2>
+        <p>立即申请成为SMAI CLUB会员，开启非凡人生。</p>
+        <!-- 更新购买链接 -->
+        <a href="https://www.smaiclub.top/shop/" class="cta-btn">立即申请</a>
+    </section>
+
+    <footer class="footer">
+        <div class="footer-content">
+            <div class="footer-column">
+                <h3>SMAI CLUB</h3>
+                <p>全球精英专属俱乐部，致力于为会员提供无与伦比的高端生活体验和社交网络。</p>
             </div>
-            <div class="testimonial-card">
-                <div class="testimonial-content">
-                    加入SMAI CLUB后，我体验到了真正的精英生活方式。从私人岛屿度假到米其林三星餐厅的专属预订，每一项服务都超出预期。俱乐部的社交活动质量极高，每次都能结识志同道合的成功人士。
-                </div>
-                <div class="testimonial-author">
-                    <img src="https://randomuser.me/api/portraits/men/75.jpg" alt="Michael Rodriguez" class="testimonial-avatar">
-                    <div class="author-info">
-                        <h4>Bitch</h4>
-                        <p>大便食品集团CEO | SMAI SVIP II会员</p>
-                    </div>
-                </div>
+            <div class="footer-column">
+                <h3>快速链接</h3>
+                <ul class="footer-links">
+                    <li><a href="#">首页</a></li>
+                    <li><a href="#">会员特权</a></li>
+                    <li><a href="#">关于我们</a></li>
+                    <li><a href="#">联系我们</a></li>
+                </ul>
+            </div>
+            <div class="footer-column">
+                <h3>关注我们</h3>
+                <ul class="footer-links">
+                    <li><a href="#">BiliBili</a></li>
+                    <li><a href="#">YouTube</a></li>
+                    <li><a href="#">LinkedIn</a></li>
+                    <li><a href="#">Instagram</a></li>
+                </ul>
+            </div>
+            <div class="footer-column">
+                <h3>联系我们</h3>
+                <ul class="footer-links">
+                    <li><a href="#">美国硅谷</a></li>
+                    <li><a href="#">+1 (114) 666 1145 </a></li>
+                    <li><a href="#">info@smaiclub.com</a></li>
+                </ul>
             </div>
         </div>
-    </div>
-</section>
-
-<section class="cta">
-    <h2>准备好加入精英圈了吗？</h2>
-    <p>立即申请成为SMAI CLUB会员，开启非凡人生。</p>
-    <!-- 更新购买链接 -->
-    <a href="https://www.smaiclub.top/shop/" class="cta-btn">立即申请</a>
-</section>
-
-<footer class="footer">
-    <div class="footer-content">
-        <div class="footer-column">
-            <h3>SMAI CLUB</h3>
-            <p>全球精英专属俱乐部，致力于为会员提供无与伦比的高端生活体验和社交网络。</p>
+        <div class="footer-bottom">
+            <p>© 2025 SMAI CLUB. 保留所有权利。</p>
         </div>
-        <div class="footer-column">
-            <h3>快速链接</h3>
-            <ul class="footer-links">
-                <li><a href="#">首页</a></li>
-                <li><a href="#">会员特权</a></li>
-                <li><a href="#">关于我们</a></li>
-                <li><a href="#">联系我们</a></li>
-            </ul>
-        </div>
-        <div class="footer-column">
-            <h3>关注我们</h3>
-            <ul class="footer-links">
-                <li><a href="#">BiliBili</a></li>
-                <li><a href="#">YouTube</a></li>
-                <li><a href="#">LinkedIn</a></li>
-                <li><a href="#">Instagram</a></li>
-            </ul>
-        </div>
-        <div class="footer-column">
-            <h3>联系我们</h3>
-            <ul class="footer-links">
-                <li><a href="#">美国硅谷</a></li>
-                <li><a href="#">+1 (114) 666 1145 </a></li>
-                <li><a href="#">info@smaiclub.com</a></li>
-            </ul>
-        </div>
-    </div>
-    <div class="footer-bottom">
-        <p>© 2025 SMAI CLUB. 保留所有权利。</p>
-    </div>
-</footer>
+    </footer>
 
-<script>
-    // 导航栏滚动效果
-    window.addEventListener('scroll', function() {
-        const navbar = document.querySelector('.navbar');
-        if (window.scrollY > 10) {
-            navbar.style.background = "rgba(0, 0, 0, 0.9)";
-        } else {
-            navbar.style.background = "rgba(0, 0, 0, 0.8)";
-        }
-    });
+    <script>
 
-    // 移动端菜单切换逻辑
-    const menuToggle = document.querySelector('.menu-toggle');
-    const navLinks = document.querySelector('.nav-links');
+        // 为新闻链接添加单独的重定向
+        document.querySelector('.news-link').addEventListener('click', function (e) {
+            e.preventDefault();
+            window.location.href = 'https://news.smaiclub.top/';
+        });
 
-    menuToggle.addEventListener('click', function() {
-        navLinks.classList.toggle('active');
-    });
-
-    // 为新闻链接添加单独的重定向
-    document.querySelector('.news-link').addEventListener('click', function(e) {
-        e.preventDefault();
-        window.location.href = 'https://news.smaiclub.top/';
-    });
-
-    // 为展览馆链接添加单独的重定向
-    document.querySelector('.exhibition-link').addEventListener('click', function(e) {
-        e.preventDefault();
-        window.location.href = 'https://hall.smaiclub.top/';
-    });
-</script>
+        // 为展览馆链接添加单独的重定向
+        document.querySelector('.exhibition-link').addEventListener('click', function (e) {
+            e.preventDefault();
+            window.location.href = 'https://hall.smaiclub.top/';
+        });
+    </script>
 </body>
+
 </html>
