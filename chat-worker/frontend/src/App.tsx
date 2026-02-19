@@ -1,8 +1,9 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { ChatRoom } from './components/ChatRoom';
 import { Landing } from './components/Landing';
 import { CreateRoom } from './components/CreateRoom';
 import { JoinRoom } from './components/JoinRoom';
+import { AuthControl } from './components/AuthControl';
 import type { User, Room } from './types';
 import './App.css';
 
@@ -16,7 +17,7 @@ function BannedModal({ user, onEmergency }: { user: User, onEmergency: () => voi
                 </div>
                 <h2 className="text-2xl font-bold text-white mb-2">账号已被封禁</h2>
                 <p className="text-gray-400 mb-6">
-                    您的账号因违反社区规定已被封禁。<br/>
+                    您的账号因违反社区规定已被封禁。<br />
                     解封时间: {user.bannedUntil ? new Date(user.bannedUntil).toLocaleString() : '永久'}
                 </p>
                 <button
@@ -31,74 +32,79 @@ function BannedModal({ user, onEmergency }: { user: User, onEmergency: () => voi
     );
 }
 
+type ViewState = 'loading' | 'landing' | 'create' | 'join' | 'chat' | 'banned' | 'error';
+
 function App() {
-  const [view, setView] = useState("loading"); // loading, landing, create, join, chat
-  const [user, setUser] = useState<User | null>(null);
-  const [room, setRoom] = useState<Room | null>(null);
-  const [joinId, setJoinId] = useState("");
-  const [joinName, setJoinName] = useState("");
-  const authInitialized = useRef(false);
+    const [view, setView] = useState<ViewState>("loading");
+    const [user, setUser] = useState<User | null>(null);
+    const [room, setRoom] = useState<Room | null>(null);
+    const [joinId, setJoinId] = useState("");
+    const [joinName, setJoinName] = useState("");
+    const [errorMsg, setErrorMsg] = useState("");
 
-  useEffect(() => {
-      fetch('/api/me', { credentials: 'include' })
-          .then(res => res.json())
-          .then(data => {
-              if (data.loggedIn) {
-                  setUser({
-                      username: data.username,
-                      role: data.role,
-                      isBanned: data.isBanned,
-                      bannedUntil: data.bannedUntil,
-                      avatarUrl: data.avatarUrl || null
-                  });
-                  setView("landing");
-              } else {
-                  const returnUrl = window.location.href;
-                  window.location.href = "https://login.smaiclub.top?redirect=" + encodeURIComponent(returnUrl);
-              }
-          })
-          .catch(() => {
-              const returnUrl = window.location.href;
-              window.location.href = "https://login.smaiclub.top?redirect=" + encodeURIComponent(returnUrl);
-          });
-  }, []);
+    useEffect(() => {
+        fetch('/api/me', { credentials: 'include' })
+            .then(res => {
+                if (res.ok) return res.json();
+                throw new Error("Network response was not ok");
+            })
+            .then(data => {
+                if (data.loggedIn) {
+                    const userData: User = {
+                        username: data.username,
+                        role: data.role,
+                        isBanned: data.isBanned,
+                        bannedUntil: data.bannedUntil,
+                        avatarUrl: data.avatarUrl || null
+                    };
+                    setUser(userData);
 
-  useEffect(() => {
-    if (authInitialized.current) return;
+                    if (data.isBanned) {
+                        setView("banned");
+                    } else {
+                        setView("landing");
+                    }
+                } else {
+                    // Redirect to login if not logged in (standard flow)
+                    const returnUrl = window.location.href;
+                    window.location.href = "https://login.smaiclub.top?redirect=" + encodeURIComponent(returnUrl);
+                }
+            })
+            .catch((err) => {
+                console.error("Auth check failed:", err);
+                setErrorMsg("无法连接到认证服务器。请检查您的网络连接或稍后再试。");
+                setView("error");
+            });
+    }, []);
 
-    const initAuth = () => {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        if ((window as any).CommonAuth && !authInitialized.current) {
-            authInitialized.current = true;
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            (window as any).CommonAuth.init('auth-container-root');
-        }
-    };
+    return (
+        <div className="relative h-screen flex flex-col items-center justify-center p-4">
+            <div className="absolute top-6 right-6 z-50">
+                <AuthControl />
+            </div>
 
-    // Try immediately
-    initAuth();
+            {view === 'loading' && (
+                <div className="flex flex-col items-center gap-4 text-white">
+                    <i className="fas fa-spinner fa-spin text-3xl text-blue-500"></i>
+                    <div className="text-sm text-gray-500">正在验证身份...</div>
+                </div>
+            )}
 
-    // If not loaded yet, wait a bit or listen for load (if possible, but setTimeout loop is simpler for now)
-    // Actually, the script is blocking in head, so it should be available.
-    // But DOM element might need a tick.
-    const timer = setTimeout(initAuth, 100);
-    return () => clearTimeout(timer);
-  }, []);
+            {view === 'error' && (
+                <div className="text-center p-8 bg-zinc-900 border border-red-500/30 rounded-2xl max-w-md shadow-2xl">
+                    <i className="fas fa-exclamation-triangle text-4xl text-red-500 mb-4"></i>
+                    <h2 className="text-xl font-bold text-white mb-2">连接错误</h2>
+                    <p className="text-gray-400 mb-6">{errorMsg}</p>
+                    <button
+                        onClick={() => window.location.reload()}
+                        className="px-6 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg transition"
+                    >
+                        重试
+                    </button>
+                </div>
+            )}
 
-  return (
-    <div className="relative h-screen flex flex-col items-center justify-center p-4">
-        <div className="absolute top-6 right-6 z-50">
-            <div id="auth-container-root"></div>
-        </div>
-        
-        {view === 'loading' ? (
-          <div className="flex flex-col items-center gap-4 text-white">
-              <i className="fas fa-spinner fa-spin text-3xl text-blue-500"></i>
-              <div className="text-sm text-gray-500">Authenticating...</div>
-          </div>
-        ) : (
-          <>
-            {user && user.isBanned && (
+            {view === 'banned' && user && (
                 <BannedModal
                     user={user}
                     onEmergency={() => {
@@ -107,7 +113,8 @@ function App() {
                     }}
                 />
             )}
-            {view === 'landing' && (
+
+            {view === 'landing' && user && (
                 <Landing
                     user={user}
                     onCreate={() => setView('create')}
@@ -119,6 +126,7 @@ function App() {
                     }}
                 />
             )}
+
             {view === 'create' && (
                 <CreateRoom
                     onBack={() => setView('landing')}
@@ -129,6 +137,7 @@ function App() {
                     }}
                 />
             )}
+
             {view === 'join' && (
                 <JoinRoom
                     initialRoomId={joinId}
@@ -137,19 +146,26 @@ function App() {
                     onJoined={(r: Room) => { setRoom(r); setView('chat'); }}
                 />
             )}
+
             {view === 'chat' && room && user && (
                 <ChatRoom
                     roomId={parseInt(room.id.toString())}
                     roomKey={room.key}
                     roomName={room.name}
                     user={user}
-                    onLeave={() => { setRoom(null); setView('landing'); }}
+                    onLeave={() => {
+                        setRoom(null);
+                        // Redirect banned users back to banned view, others to landing
+                        if (user.isBanned) {
+                            setView('banned');
+                        } else {
+                            setView('landing');
+                        }
+                    }}
                 />
             )}
-          </>
-        )}
-    </div>
-  );
+        </div>
+    );
 }
 
 export default App;

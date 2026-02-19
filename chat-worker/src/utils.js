@@ -14,9 +14,9 @@ export async function generateRoomKey() {
 }
 
 export function generateSalt() {
-    const array = new Uint8Array(16);
-    crypto.getRandomValues(array);
-    return Array.from(array).map(b => b.toString(16).padStart(2, '0')).join('');
+  const array = new Uint8Array(16);
+  crypto.getRandomValues(array);
+  return Array.from(array).map(b => b.toString(16).padStart(2, '0')).join('');
 }
 
 export function validateCustomKey(key) {
@@ -36,19 +36,19 @@ export async function importRoomKey(password, salt = "SMAICLUB_CHAT_SALT", itera
       false,
       ["deriveKey"]
     );
-    
+
     // Support both string salt (legacy) and hex string salt (new)
     let saltBuffer;
     if (salt === "SMAICLUB_CHAT_SALT" || salt === "SALT_FOR_ISSUES") {
-        saltBuffer = enc.encode(salt);
+      saltBuffer = enc.encode(salt);
     } else {
-        // Hex string to Uint8Array
-        const match = salt.match(/.{1,2}/g);
-        if (match) {
-             saltBuffer = new Uint8Array(match.map(byte => parseInt(byte, 16)));
-        } else {
-             saltBuffer = enc.encode(salt); // Fallback
-        }
+      // Hex string to Uint8Array
+      const match = salt.match(/.{1,2}/g);
+      if (match) {
+        saltBuffer = new Uint8Array(match.map(byte => parseInt(byte, 16)));
+      } else {
+        saltBuffer = enc.encode(salt); // Fallback
+      }
     }
 
     return await crypto.subtle.deriveKey(
@@ -127,7 +127,7 @@ export async function encryptLogData(data) {
     const iv = crypto.getRandomValues(new Uint8Array(12));
     const enc = new TextEncoder();
     const jsonStr = JSON.stringify(data);
-    
+
     const encrypted = await crypto.subtle.encrypt(
       { name: "AES-GCM", iv },
       key,
@@ -148,16 +148,16 @@ export async function decryptLogData(encryptedJson) {
   try {
     const { iv: ivB64, content: contentB64 } = JSON.parse(encryptedJson);
     const key = await getLogKey();
-    
+
     const iv = Uint8Array.from(atob(ivB64), c => c.charCodeAt(0));
     const data = Uint8Array.from(atob(contentB64), c => c.charCodeAt(0));
-    
+
     const decrypted = await crypto.subtle.decrypt(
       { name: "AES-GCM", iv },
       key,
       data
     );
-    
+
     return JSON.parse(new TextDecoder().decode(decrypted));
   } catch (e) {
     console.error("Log Decryption Failed", e);
@@ -212,7 +212,7 @@ export function getEffectiveRole(user) {
 
   // Admin and Owner roles never expire
   if (['admin', 'owner'].includes(user.role)) {
-      return user.role;
+    return user.role;
   }
 
   // Check expiration (1 year = 31536000000 ms)
@@ -247,14 +247,14 @@ export async function getUserFromRequest(request, env) {
     if (!response.ok) return null;
 
     const data = await response.json();
-    
+
     if (!data.loggedIn) return null;
 
     // 返回用户信息，格式与之前兼容
     return {
       username: data.username,
       role: data.effectiveRole || data.role || 'user',
-      lastPurchase: Date.now(), // 由于 /api/me 不返回 lastPurchase，我们假设有效
+      lastPurchase: data.lastPurchase || 0,
       avatarUrl: data.avatarUrl || null,
       bannedUntil: data.bannedUntil
     };
@@ -272,6 +272,6 @@ export function isUserBanned(user) {
   }
   // Also check if role is explicitly 'banned' (though mostly handled by timestamp)
   if (user.role === 'banned') return true;
-  
+
   return false;
 }

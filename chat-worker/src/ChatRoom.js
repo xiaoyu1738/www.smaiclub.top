@@ -1,513 +1,529 @@
 import { encryptMessage, importRoomKey, getTierLimits, getEffectiveRole, encryptLogData } from './utils.js';
 
 export class ChatRoom {
-  constructor(state, env) {
-    this.state = state;
-    this.env = env;
-    this.sessions = new Set();
-    this.rateLimits = new Map(); // username -> { count, startTime, history: [] }
-  }
-
-  async fetch(request) {
-    const url = new URL(request.url);
-
-    // WebSocket upgrade
-    if (request.headers.get("Upgrade") === "websocket") {
-      const roomKey = url.searchParams.get("key");
-      const username = url.searchParams.get("username");
-      const role = url.searchParams.get("role");
-      const avatarUrl = url.searchParams.get("avatarUrl") || '';
-      const sinceParam = url.searchParams.get("since");
-      const sinceTimestamp = sinceParam ? parseInt(sinceParam, 10) : 0;
-      
-      // Get salt and iterations from query params (passed by Worker)
-      const salt = url.searchParams.get("salt") || 'SMAICLUB_CHAT_SALT';
-      const iterations = parseInt(url.searchParams.get("iterations") || '10000', 10);
-
-      if (!roomKey) return new Response("Missing Room Key", { status: 400 });
-      if (!username) return new Response("Unauthorized", { status: 401 });
-
-      const pair = new WebSocketPair();
-      const [client, server] = Object.values(pair);
-
-      // Handle Session (awaiting not strictly necessary for handshake but good for flow)
-      await this.handleSession(server, username, role, roomKey, sinceTimestamp, avatarUrl, salt, iterations);
-
-      return new Response(null, { status: 101, webSocket: client });
+    constructor(state, env) {
+        this.state = state;
+        this.env = env;
+        this.sessions = new Set();
+        this.rateLimits = new Map(); // username -> { count, startTime, history: [] }
     }
 
-    // Internal API to initialize room (called by Worker on creation)
-    if (url.pathname === "/init") {
-        if (request.method === "POST") {
-            const { keyHash, roomId, salt, iterations } = await request.json();
-            // Store roomId, keyHash, salt, iterations
-            await this.state.storage.put("keyHash", keyHash);
-            await this.state.storage.put("roomId", roomId);
-            if (salt) await this.state.storage.put("salt", salt);
-            if (iterations) await this.state.storage.put("iterations", iterations);
-            return new Response("OK");
+    async fetch(request) {
+        const url = new URL(request.url);
+
+        // WebSocket upgrade
+        if (request.headers.get("Upgrade") === "websocket") {
+            const roomKey = url.searchParams.get("key");
+            const username = url.searchParams.get("username");
+            const role = url.searchParams.get("role");
+            const avatarUrl = url.searchParams.get("avatarUrl") || '';
+            const sinceParam = url.searchParams.get("since");
+            const sinceTimestamp = sinceParam ? parseInt(sinceParam, 10) : 0;
+
+            // Get salt and iterations from query params (passed by Worker)
+            const salt = url.searchParams.get("salt") || 'SMAICLUB_CHAT_SALT';
+            const iterations = parseInt(url.searchParams.get("iterations") || '10000', 10);
+
+            if (!roomKey) return new Response("Missing Room Key", { status: 400 });
+            if (!username) return new Response("Unauthorized", { status: 401 });
+
+            const pair = new WebSocketPair();
+            const [client, server] = Object.values(pair);
+
+            // Handle Session (awaiting not strictly necessary for handshake but good for flow)
+            await this.handleSession(server, username, role, roomKey, sinceTimestamp, avatarUrl, salt, iterations);
+
+            return new Response(null, { status: 101, webSocket: client });
         }
+
+        // Internal API to initialize room (called by Worker on creation)
+        if (url.pathname === "/init") {
+            if (request.method === "POST") {
+                const { keyHash, roomId, salt, iterations } = await request.json();
+                // Store roomId, keyHash, salt, iterations
+                await this.state.storage.put("keyHash", keyHash);
+                await this.state.storage.put("roomId", roomId);
+                if (salt) await this.state.storage.put("salt", salt);
+                if (iterations) await this.state.storage.put("iterations", iterations);
+                return new Response("OK");
+            }
+        }
+
+        // Internal API to destroy room (called by Worker on cleanup)
+        if (url.pathname === "/destroy") {
+            if (request.method === "POST") {
+                // Broadcast system message
+                const shutdownMsg = JSON.stringify({
+                    type: "system",
+                    content: "Room has been closed.",
+                    timestamp: Date.now()
+                });
+
+                this.sessions.forEach(ws => {
+                    if (ws.readyState === WebSocket.OPEN) {
+                        ws.send(shutdownMsg);
+                        ws.close(1000, "Room Deleted");
+                    }
+                });
+                this.sessions.clear();
+
+                // Clear Storage
+                await this.state.storage.deleteAll();
+
+                return new Response("OK");
+            }
+        }
+
+        // Internal API to broadcast system message (called by Worker on ownership transfer)
+        if (url.pathname === "/broadcast-system") {
+            if (request.method === "POST") {
+                const { content } = await request.json();
+                const msg = JSON.stringify({
+                    type: "system",
+                    content: content,
+                    timestamp: Date.now()
+                });
+
+                this.sessions.forEach(ws => {
+                    if (ws.readyState === WebSocket.OPEN) {
+                        ws.send(msg);
+                    }
+                });
+
+                // Also save to DB so new joiners see it
+                // We store it as a special message with 'SYSTEM' sender and empty IV/Content that frontend handles?
+                // No, the current frontend expects encrypted content unless type is 'system' (which comes from websocket).
+                // But history API returns rows from 'messages' table.
+                // If we want history to include system messages, we need to insert them into 'messages' table.
+                // But 'messages' table has 'iv' and 'content' columns which are usually encrypted strings.
+                // We can repurpose them: iv="SYSTEM", content=plaintext.
+                // And update frontend to handle this.
+                // Or, just don't save to history for now to keep it simple, as the modal/alert requirement
+                // implies a one-time notification or we rely on the live broadcast.
+                // The prompt says: "Implement a notification trigger so that when the new owner next enters... a modal/alert is displayed"
+                // This implies persistent state.
+                // We can't easily query "next enter" without a DB flag.
+                // Let's rely on the system message in chat for now, which is simpler and effective.
+                // If we want persistence, we'd need a 'notifications' table.
+                // Given the constraints, a live broadcast covers active users.
+                // For offline users, they won't see it unless we persist.
+                // Let's persist as a special message: sender='SYSTEM', iv='SYSTEM', content=plain_text
+
+                try {
+                    const roomId = await this.state.storage.get("roomId");
+                    if (roomId) {
+                        await this.env.CHAT_DB.prepare(
+                            "INSERT INTO messages (room_id, iv, content, sender, created_at) VALUES (?, 'SYSTEM', ?, 'SYSTEM', ?)"
+                        ).bind(roomId, content, Date.now()).run();
+                    }
+                } catch (e) { console.error("Failed to persist system message", e); }
+
+                return new Response("OK");
+            }
+        }
+
+        return new Response("Not found", { status: 404 });
     }
 
-    // Internal API to destroy room (called by Worker on cleanup)
-    if (url.pathname === "/destroy") {
-        if (request.method === "POST") {
-            // Broadcast system message
-            const shutdownMsg = JSON.stringify({
-                type: "system",
-                content: "Room has been closed.",
-                timestamp: Date.now()
+    async handleSession(webSocket, username, role, clientKey, sinceTimestamp = 0, avatarUrl = '', salt = 'SMAICLUB_CHAT_SALT', iterations = 10000) {
+        webSocket.accept();
+        this.sessions.add(webSocket);
+
+        // Verify Key Hash (Strict Mode)
+        const storedHash = await this.state.storage.get("keyHash");
+        let isAuthorized = false;
+
+        if (storedHash) {
+            // Normal verification
+            const enc = new TextEncoder();
+            const data = enc.encode(clientKey);
+            const hashBuffer = await crypto.subtle.digest("SHA-256", data);
+            const hashArray = Array.from(new Uint8Array(hashBuffer));
+            const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+
+            if (hashHex === storedHash) {
+                isAuthorized = true;
+            }
+        } else {
+            // Fallback for Emergency Room (Room 1)
+            if (clientKey === 'smaiclub_issues') {
+                await this.state.storage.put("roomId", 1);
+                isAuthorized = true;
+            }
+        }
+
+        if (!isAuthorized) {
+            webSocket.send(JSON.stringify({ error: "Invalid Room Key" }));
+            webSocket.close(1008, "Invalid Room Key");
+            this.sessions.delete(webSocket);
+            return;
+        }
+
+        // Try to get salt/iterations from storage if not passed correctly (redundancy)
+        const storedSalt = await this.state.storage.get("salt");
+        const storedIterations = await this.state.storage.get("iterations");
+
+        const finalSalt = storedSalt || salt;
+        const finalIterations = storedIterations || iterations;
+
+        // Send Handshake Info (Salt & Iterations)
+        webSocket.send(JSON.stringify({
+            type: 'handshake',
+            salt: finalSalt,
+            iterations: finalIterations
+        }));
+
+        const storedRoomId = await this.state.storage.get("roomId");
+        const roomId = storedRoomId || 0;
+
+        // --- Session Tracking: Start ---
+        let sessionId = null;
+        try {
+            const res = await this.env.CHAT_DB.prepare(
+                "INSERT INTO chat_sessions (room_id, user_id, start_time) VALUES (?, ?, ?) RETURNING id"
+            ).bind(roomId, username, Date.now()).first();
+            sessionId = res.id;
+        } catch (e) {
+            console.error("Session start failed", e);
+        }
+
+        // --- Log Login Event ---
+        try {
+            const logDetails = await encryptLogData({
+                action: 'login',
+                roomId: roomId,
+                sessionId: sessionId
             });
+            await this.env.CHAT_DB.prepare(
+                "INSERT INTO activity_logs (event_type, user_id, details, ip_address, created_at) VALUES (?, ?, ?, ?, ?)"
+            ).bind('login', username, logDetails, 'websocket', Date.now()).run();
+        } catch (e) { console.error("Logging failed", e); }
 
-            this.sessions.forEach(ws => {
-                if (ws.readyState === WebSocket.OPEN) {
-                    ws.send(shutdownMsg);
-                    ws.close(1000, "Room Deleted");
-                }
-            });
-            this.sessions.clear();
-
-            // Clear Storage
-            await this.state.storage.deleteAll();
-
-            return new Response("OK");
-        }
-    }
-
-    // Internal API to broadcast system message (called by Worker on ownership transfer)
-    if (url.pathname === "/broadcast-system") {
-        if (request.method === "POST") {
-            const { content } = await request.json();
-            const msg = JSON.stringify({
-                type: "system",
-                content: content,
-                timestamp: Date.now()
-            });
-
-            this.sessions.forEach(ws => {
-                if (ws.readyState === WebSocket.OPEN) {
-                    ws.send(msg);
-                }
-            });
-            
-            // Also save to DB so new joiners see it
-            // We store it as a special message with 'SYSTEM' sender and empty IV/Content that frontend handles?
-            // No, the current frontend expects encrypted content unless type is 'system' (which comes from websocket).
-            // But history API returns rows from 'messages' table.
-            // If we want history to include system messages, we need to insert them into 'messages' table.
-            // But 'messages' table has 'iv' and 'content' columns which are usually encrypted strings.
-            // We can repurpose them: iv="SYSTEM", content=plaintext.
-            // And update frontend to handle this.
-            // Or, just don't save to history for now to keep it simple, as the modal/alert requirement
-            // implies a one-time notification or we rely on the live broadcast.
-            // The prompt says: "Implement a notification trigger so that when the new owner next enters... a modal/alert is displayed"
-            // This implies persistent state.
-            // We can't easily query "next enter" without a DB flag.
-            // Let's rely on the system message in chat for now, which is simpler and effective.
-            // If we want persistence, we'd need a 'notifications' table.
-            // Given the constraints, a live broadcast covers active users.
-            // For offline users, they won't see it unless we persist.
-            // Let's persist as a special message: sender='SYSTEM', iv='SYSTEM', content=plain_text
-            
-            try {
-                const roomId = await this.state.storage.get("roomId");
-                if (roomId) {
-                    await this.env.CHAT_DB.prepare(
-                        "INSERT INTO messages (room_id, iv, content, sender, created_at) VALUES (?, 'SYSTEM', ?, 'SYSTEM', ?)"
-                    ).bind(roomId, content, Date.now()).run();
-                }
-            } catch (e) { console.error("Failed to persist system message", e); }
-
-            return new Response("OK");
-        }
-    }
-
-    return new Response("Not found", { status: 404 });
-  }
-
-  async handleSession(webSocket, username, role, clientKey, sinceTimestamp = 0, avatarUrl = '', salt = 'SMAICLUB_CHAT_SALT', iterations = 10000) {
-    webSocket.accept();
-    this.sessions.add(webSocket);
-
-    // Verify Key Hash (Strict Mode)
-    const storedHash = await this.state.storage.get("keyHash");
-    let isAuthorized = false;
-
-    if (storedHash) {
-        // Normal verification
-        const enc = new TextEncoder();
-        const data = enc.encode(clientKey);
-        const hashBuffer = await crypto.subtle.digest("SHA-256", data);
-        const hashArray = Array.from(new Uint8Array(hashBuffer));
-        const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
-
-        if (hashHex === storedHash) {
-            isAuthorized = true;
-        }
-    } else {
-        // Fallback for Emergency Room (Room 1)
-        if (clientKey === 'smaiclub_issues') {
-             await this.state.storage.put("roomId", 1);
-             isAuthorized = true;
-        }
-    }
-
-    if (!isAuthorized) {
-         webSocket.send(JSON.stringify({ error: "Invalid Room Key" }));
-         webSocket.close(1008, "Invalid Room Key");
-         this.sessions.delete(webSocket);
-         return;
-    }
-
-    // Try to get salt/iterations from storage if not passed correctly (redundancy)
-    const storedSalt = await this.state.storage.get("salt");
-    const storedIterations = await this.state.storage.get("iterations");
-    
-    const finalSalt = storedSalt || salt;
-    const finalIterations = storedIterations || iterations;
-
-    // Send Handshake Info (Salt & Iterations)
-    webSocket.send(JSON.stringify({
-        type: 'handshake',
-        salt: finalSalt,
-        iterations: finalIterations
-    }));
-
-    const storedRoomId = await this.state.storage.get("roomId");
-    const roomId = storedRoomId || 0;
-
-    // --- Session Tracking: Start ---
-    let sessionId = null;
-    try {
-        const res = await this.env.CHAT_DB.prepare(
-            "INSERT INTO chat_sessions (room_id, user_id, start_time) VALUES (?, ?, ?) RETURNING id"
-        ).bind(roomId, username, Date.now()).first();
-        sessionId = res.id;
-    } catch (e) {
-        console.error("Session start failed", e);
-    }
-
-    // --- Log Login Event ---
-    try {
-        const logDetails = await encryptLogData({
-            action: 'login',
-            roomId: roomId,
-            sessionId: sessionId
-        });
-        await this.env.CHAT_DB.prepare(
-            "INSERT INTO activity_logs (event_type, user_id, details, ip_address, created_at) VALUES (?, ?, ?, ?, ?)"
-        ).bind('login', username, logDetails, 'websocket', Date.now()).run();
-    } catch (e) { console.error("Logging failed", e); }
-    
-    // --- Load History ---
-    try {
-        let messages;
-        if (sinceTimestamp > 0) {
-            // Incremental sync: only fetch messages after the given timestamp
-            messages = await this.env.CHAT_DB.prepare(
-                `SELECT iv, content, sender, sender_role as senderRole, sender_avatar as senderAvatar, created_at as timestamp
+        // --- Load History ---
+        try {
+            let messages;
+            if (sinceTimestamp > 0) {
+                // Incremental sync: only fetch messages after the given timestamp
+                messages = await this.env.CHAT_DB.prepare(
+                    `SELECT iv, content, sender, sender_role as senderRole, sender_avatar as senderAvatar, created_at as timestamp
                  FROM messages
                  WHERE room_id = ? AND created_at > ?
                  ORDER BY created_at ASC
                  LIMIT 500`
-            ).bind(roomId, sinceTimestamp).all();
-            
-            if (messages.results && messages.results.length > 0) {
-                webSocket.send(JSON.stringify({
-                    type: 'history_incremental',
-                    messages: messages.results,
-                    since: sinceTimestamp
-                }));
+                ).bind(roomId, sinceTimestamp).all();
+
+                if (messages.results && messages.results.length > 0) {
+                    webSocket.send(JSON.stringify({
+                        type: 'history_incremental',
+                        messages: messages.results,
+                        since: sinceTimestamp
+                    }));
+                } else {
+                    // No new messages, send empty incremental response
+                    webSocket.send(JSON.stringify({
+                        type: 'history_incremental',
+                        messages: [],
+                        since: sinceTimestamp
+                    }));
+                }
             } else {
-                // No new messages, send empty incremental response
-                webSocket.send(JSON.stringify({
-                    type: 'history_incremental',
-                    messages: [],
-                    since: sinceTimestamp
-                }));
-            }
-        } else {
-            // Full sync: fetch recent messages (last 100)
-            messages = await this.env.CHAT_DB.prepare(
-                `SELECT iv, content, sender, sender_role as senderRole, sender_avatar as senderAvatar, created_at as timestamp
+                // Full sync: fetch recent messages (last 100)
+                messages = await this.env.CHAT_DB.prepare(
+                    `SELECT iv, content, sender, sender_role as senderRole, sender_avatar as senderAvatar, created_at as timestamp
                  FROM messages
                  WHERE room_id = ?
                  ORDER BY created_at DESC
                  LIMIT 100`
-            ).bind(roomId).all();
+                ).bind(roomId).all();
 
-            if (messages.results && messages.results.length > 0) {
-                // Reverse to get chronological order (oldest first)
-                const chronologicalMessages = messages.results.reverse();
-                webSocket.send(JSON.stringify({
-                    type: 'history',
-                    messages: chronologicalMessages
-                }));
+                if (messages.results && messages.results.length > 0) {
+                    // Reverse to get chronological order (oldest first)
+                    const chronologicalMessages = messages.results.reverse();
+                    webSocket.send(JSON.stringify({
+                        type: 'history',
+                        messages: chronologicalMessages
+                    }));
+                }
+            }
+        } catch (e) {
+            console.error("History load failed", e);
+        }
+
+
+        // Rate Limit Setup
+        const limits = getTierLimits(role);
+
+        // Emergency Room Override
+        if (storedRoomId == 1) {
+            if (['admin', 'owner'].includes(role)) {
+                // Unlimited for specific users and admin/owner roles
+            } else {
+                limits.rateLimit = { count: 1, window: 3600 * 1000 }; // 1 message per hour for others
             }
         }
-    } catch (e) {
-        console.error("History load failed", e);
-    }
 
-
-    // Rate Limit Setup
-    const limits = getTierLimits(role);
-
-    // Emergency Room Override
-    if (storedRoomId == 1) {
-         if (['admin', 'owner'].includes(role)) {
-             // Unlimited for specific users and admin/owner roles
-         } else {
-             limits.rateLimit = { count: 1, window: 3600 * 1000 }; // 1 message per hour for others
-         }
-    }
-
-    webSocket.addEventListener("message", async (event) => {
-      try {
-        const msg = JSON.parse(event.data);
-
-        // Rate Limit Check
-        if (!this.checkRateLimit(username, limits.rateLimit)) {
-             webSocket.send(JSON.stringify({ error: "RATE_LIMIT_EXCEEDED", message: "发言频率过快，请稍后再试" }));
-             
-             // Log Rate Limit (without content)
-             try {
-                 const intId = await this.state.storage.get("roomId") || 0;
-                 const logDetails = await encryptLogData({
-                     action: 'rate_limit_exceeded',
-                     roomId: intId
-                 });
-                 await this.env.CHAT_DB.prepare(
-                     "INSERT INTO activity_logs (event_type, user_id, details, ip_address, created_at) VALUES (?, ?, ?, ?, ?)"
-                 ).bind('rate_limit', username, logDetails, 'websocket', Date.now()).run();
-             } catch (e) { console.error("Logging failed", e); }
-
-             return;
-        }
-
-        // Validate Key (Encryption Test)
-        let cryptoKey;
-        try {
-            // Use the correct salt/iterations for this room (handles special cases internally in importRoomKey)
-            cryptoKey = await importRoomKey(clientKey, finalSalt, finalIterations);
-        } catch (e) {
-            webSocket.send(JSON.stringify({ error: "Invalid Key Format" }));
-            return;
-        }
-
-        // Encrypt
-        const encrypted = await encryptMessage(cryptoKey, msg.content, username);
-
-        // Retrieve Room ID
-        const intId = await this.state.storage.get("roomId") || 0;
-
-        // --- ENFORCE STORAGE CAP (Total Count Limit) ---
+        webSocket.addEventListener("message", async (event) => {
             try {
-                // Check total count
-                const countRes = await this.env.CHAT_DB.prepare(
-                    "SELECT COUNT(*) as count FROM messages WHERE room_id = ?"
-                ).bind(intId).first();
-    
-                const currentCount = countRes.count;
-                const maxStorage = limits.msgStorage;
-    
-                if (currentCount >= maxStorage) {
-                    // Delete enough messages to make space for the new one (and clear any excess)
-                    // We want final count to be maxStorage (after insert), so we need currentCount - maxStorage + 1 deleted.
-                    const deleteCount = (currentCount - maxStorage) + 1;
-                    
-                    if (deleteCount > 0) {
-                        // Delete oldest 'deleteCount' messages
+                const msg = JSON.parse(event.data);
+
+                // Rate Limit Check
+                if (!this.checkRateLimit(username, limits.rateLimit)) {
+                    webSocket.send(JSON.stringify({ error: "RATE_LIMIT_EXCEEDED", message: "发言频率过快，请稍后再试" }));
+
+                    // Log Rate Limit (without content)
+                    try {
+                        const intId = await this.state.storage.get("roomId") || 0;
+                        const logDetails = await encryptLogData({
+                            action: 'rate_limit_exceeded',
+                            roomId: intId
+                        });
                         await this.env.CHAT_DB.prepare(
-                            `DELETE FROM messages
+                            "INSERT INTO activity_logs (event_type, user_id, details, ip_address, created_at) VALUES (?, ?, ?, ?, ?)"
+                        ).bind('rate_limit', username, logDetails, 'websocket', Date.now()).run();
+                    } catch (e) { console.error("Logging failed", e); }
+
+                    return;
+                }
+
+                // Validate Key (Encryption Test)
+                let cryptoKey;
+                try {
+                    // Use the correct salt/iterations for this room (handles special cases internally in importRoomKey)
+                    cryptoKey = await importRoomKey(clientKey, finalSalt, finalIterations);
+                } catch (e) {
+                    webSocket.send(JSON.stringify({ error: "Invalid Key Format" }));
+                    return;
+                }
+
+                // Encrypt
+                const encrypted = await encryptMessage(cryptoKey, msg.content, username);
+
+                // Retrieve Room ID
+                const intId = await this.state.storage.get("roomId") || 0;
+
+                // --- ENFORCE STORAGE CAP (Total Count Limit) ---
+                try {
+                    // Check total count
+                    const countRes = await this.env.CHAT_DB.prepare(
+                        "SELECT COUNT(*) as count FROM messages WHERE room_id = ?"
+                    ).bind(intId).first();
+
+                    const currentCount = countRes.count;
+                    const maxStorage = limits.msgStorage;
+
+                    if (currentCount >= maxStorage) {
+                        // Delete enough messages to make space for the new one (and clear any excess)
+                        // We want final count to be maxStorage (after insert), so we need currentCount - maxStorage + 1 deleted.
+                        const deleteCount = (currentCount - maxStorage) + 1;
+
+                        if (deleteCount > 0) {
+                            // Delete oldest 'deleteCount' messages
+                            await this.env.CHAT_DB.prepare(
+                                `DELETE FROM messages
                              WHERE id IN (
                                  SELECT id FROM messages
                                  WHERE room_id = ?
                                  ORDER BY created_at ASC
                                  LIMIT ?
                              )`
-                        ).bind(intId, deleteCount).run();
+                            ).bind(intId, deleteCount).run();
+                        }
                     }
+
+                    // Insert New Message with sender role
+                    const timestamp = Date.now();
+                    const result = await this.env.CHAT_DB.prepare(
+                        `INSERT INTO messages (room_id, iv, content, sender, sender_role, sender_avatar, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)`
+                    ).bind(intId, encrypted.iv, encrypted.content, encrypted.sender, role, avatarUrl || null, timestamp).run();
+
+                    if (!result.success) throw new Error("DB Write Failed");
+
+                    // Send ACK back to sender
+                    if (msg.tempId) {
+                        webSocket.send(JSON.stringify({
+                            type: 'ack',
+                            tempId: msg.tempId,
+                            serverTimestamp: timestamp,
+                            success: true
+                        }));
+                    }
+
+                } catch (e) {
+                    // TRIGGER EMERGENCY MODE
+                    webSocket.send(JSON.stringify({
+                        error: "EMERGENCY_MODE",
+                        message: "Operation failed. Contact Smaiclub Admin or enter Room ID 000001 (Key: smaiclub_issues)."
+                    }));
+                    return;
                 }
-    
-                // Insert New Message with sender role
-            const timestamp = Date.now();
-            const result = await this.env.CHAT_DB.prepare(
-                `INSERT INTO messages (room_id, iv, content, sender, sender_role, sender_avatar, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)`
-            ).bind(intId, encrypted.iv, encrypted.content, encrypted.sender, role, avatarUrl || null, timestamp).run();
 
-            if (!result.success) throw new Error("DB Write Failed");
-            
-            // Send ACK back to sender
-            if (msg.tempId) {
-                webSocket.send(JSON.stringify({
-                    type: 'ack',
-                    tempId: msg.tempId,
-                    serverTimestamp: timestamp,
-                    success: true
-                }));
+                // Log Message Event (Async)
+                try {
+                    const logDetails = await encryptLogData({
+                        action: 'message',
+                        roomId: intId,
+                        contentLength: msg.content.length,
+                        encryptedContent: encrypted.content // Store encrypted content for audit
+                    });
+                    await this.env.CHAT_DB.prepare(
+                        "INSERT INTO activity_logs (event_type, user_id, details, ip_address, created_at) VALUES (?, ?, ?, ?, ?)"
+                    ).bind('message', username, logDetails, 'websocket', Date.now()).run();
+                } catch (e) { console.error("Logging failed", e); }
+
+                // Broadcast with role information and avatar
+                const broadcastPayload = JSON.stringify({
+                    iv: encrypted.iv,
+                    content: encrypted.content,
+                    sender: encrypted.sender,
+                    senderRole: role, // Include sender's role for badge display
+                    senderAvatar: avatarUrl || null, // Include sender's avatar URL
+                    timestamp: Date.now(),
+                    tempId: msg.tempId // Include tempId for deduplication on sender side
+                });
+
+                this.sessions.forEach(ws => {
+                    if (ws.readyState === WebSocket.OPEN) {
+                        ws.send(broadcastPayload);
+                    }
+                });
+
+            } catch (err) {
+                webSocket.send(JSON.stringify({ error: err.message }));
             }
+        });
 
-        } catch (e) {
-            // TRIGGER EMERGENCY MODE
-            webSocket.send(JSON.stringify({
-                error: "EMERGENCY_MODE",
-                message: "Operation failed. Contact Smaiclub Admin or enter Room ID 000001 (Key: smaiclub_issues)."
-            }));
-            return;
+        webSocket.addEventListener("close", async () => {
+            this.sessions.delete(webSocket);
+            // --- Session Tracking: End ---
+            if (sessionId) {
+                try {
+                    await this.env.CHAT_DB.prepare(
+                        "UPDATE chat_sessions SET end_time = ? WHERE id = ?"
+                    ).bind(Date.now(), sessionId).run();
+                } catch (e) {
+                    console.error("Session end failed", e);
+                }
+            }
+        });
+
+        // Ensure cleanup alarm is scheduled
+        this.scheduleCleanup();
+    }
+
+    async scheduleCleanup() {
+        // Schedule next alarm if not already scheduled
+        // We check roughly once a day for cleanup
+        const currentAlarm = await this.state.storage.getAlarm();
+        if (currentAlarm === null) {
+            // Set alarm for 24 hours from now
+            this.state.storage.setAlarm(Date.now() + 24 * 60 * 60 * 1000);
         }
+    }
 
-        // Log Message Event (Async)
+    async alarm() {
+        // Perform Time-based Cleanup
         try {
-            const logDetails = await encryptLogData({
-                action: 'message',
-                roomId: intId,
-                contentLength: msg.content.length,
-                encryptedContent: encrypted.content // Store encrypted content for audit
-            });
-            await this.env.CHAT_DB.prepare(
-                "INSERT INTO activity_logs (event_type, user_id, details, ip_address, created_at) VALUES (?, ?, ?, ?, ?)"
-            ).bind('message', username, logDetails, 'websocket', Date.now()).run();
-        } catch (e) { console.error("Logging failed", e); }
+            const roomId = await this.state.storage.get("roomId");
+            if (!roomId) return;
 
-        // Broadcast with role information and avatar
-        const broadcastPayload = JSON.stringify({
-            iv: encrypted.iv,
-            content: encrypted.content,
-            sender: encrypted.sender,
-            senderRole: role, // Include sender's role for badge display
-            senderAvatar: avatarUrl || null, // Include sender's avatar URL
-            timestamp: Date.now(),
-            tempId: msg.tempId // Include tempId for deduplication on sender side
-        });
+            // 1. Get Room Owner Role & Created At
+            const room = await this.env.CHAT_DB.prepare(
+                "SELECT created_at, owner_role FROM rooms WHERE id = ?"
+            ).bind(roomId).first();
 
-        this.sessions.forEach(ws => {
-            if (ws.readyState === WebSocket.OPEN) {
-                ws.send(broadcastPayload);
-            }
-        });
+            if (!room) return;
 
-      } catch (err) {
-        webSocket.send(JSON.stringify({ error: err.message }));
-      }
-    });
+            const limits = getTierLimits(room.owner_role || 'user');
+            const ONE_WEEK = 7 * 24 * 60 * 60 * 1000;
+            const now = Date.now();
 
-    webSocket.addEventListener("close", async () => {
-      this.sessions.delete(webSocket);
-      // --- Session Tracking: End ---
-      if (sessionId) {
-          try {
-              await this.env.CHAT_DB.prepare(
-                  "UPDATE chat_sessions SET end_time = ? WHERE id = ?"
-              ).bind(Date.now(), sessionId).run();
-          } catch (e) {
-              console.error("Session end failed", e);
-          }
-      }
-    });
-    
-    // Ensure cleanup alarm is scheduled
-    this.scheduleCleanup();
-  }
+            // 2. Calculate Avg Msg/Week
+            let weeksAlive = (now - room.created_at) / ONE_WEEK;
+            if (weeksAlive < 1) weeksAlive = 1;
 
-  async scheduleCleanup() {
-      // Schedule next alarm if not already scheduled
-      // We check roughly once a day for cleanup
-      const currentAlarm = await this.state.storage.getAlarm();
-      if (currentAlarm === null) {
-          // Set alarm for 24 hours from now
-          this.state.storage.setAlarm(Date.now() + 24 * 60 * 60 * 1000);
-      }
-  }
+            const msgCountRes = await this.env.CHAT_DB.prepare(
+                "SELECT COUNT(*) as count FROM messages WHERE room_id = ?"
+            ).bind(roomId).first();
 
-  async alarm() {
-      // Perform Time-based Cleanup
-      try {
-          const roomId = await this.state.storage.get("roomId");
-          if (!roomId) return;
+            const avgMsgPerWeek = msgCountRes.count / weeksAlive;
 
-          // 1. Get Room Owner Role & Created At
-          const room = await this.env.CHAT_DB.prepare(
-              "SELECT created_at, owner_role FROM rooms WHERE id = ?"
-          ).bind(roomId).first();
+            // 3. Determine Delete Batch Size
+            let deleteBatch = 5;
+            if (avgMsgPerWeek > 1000) deleteBatch = 100;
+            else if (avgMsgPerWeek > 400) deleteBatch = 50;
+            else if (avgMsgPerWeek > 50) deleteBatch = 20;
 
-          if (!room) return;
+            // 4. Perform Deletion (Gradual Decay of Expired Messages)
+            const deleteCutoff = now - limits.autoDeleteTime;
 
-          const limits = getTierLimits(room.owner_role || 'user');
-          const ONE_WEEK = 7 * 24 * 60 * 60 * 1000;
-          const now = Date.now();
-
-          // 2. Calculate Avg Msg/Week
-          let weeksAlive = (now - room.created_at) / ONE_WEEK;
-          if (weeksAlive < 1) weeksAlive = 1;
-
-          const msgCountRes = await this.env.CHAT_DB.prepare(
-              "SELECT COUNT(*) as count FROM messages WHERE room_id = ?"
-          ).bind(roomId).first();
-          
-          const avgMsgPerWeek = msgCountRes.count / weeksAlive;
-
-          // 3. Determine Delete Batch Size
-          let deleteBatch = 5;
-          if (avgMsgPerWeek > 1000) deleteBatch = 100;
-          else if (avgMsgPerWeek > 400) deleteBatch = 50;
-          else if (avgMsgPerWeek > 50) deleteBatch = 20;
-
-          // 4. Perform Deletion (Gradual Decay of Expired Messages)
-          const deleteCutoff = now - limits.autoDeleteTime;
-
-          const result = await this.env.CHAT_DB.prepare(
-              `DELETE FROM messages
+            const result = await this.env.CHAT_DB.prepare(
+                `DELETE FROM messages
                WHERE id IN (
                    SELECT id FROM messages
                    WHERE room_id = ? AND created_at < ?
                    ORDER BY created_at ASC
                    LIMIT ?
                )`
-          ).bind(roomId, deleteCutoff, deleteBatch).run();
-          
-          if (result.meta.changes > 0) {
-              try {
-                  const logDetails = await encryptLogData({
-                      action: 'cleanup_messages',
-                      roomId: roomId,
-                      deletedCount: result.meta.changes,
-                      reason: 'auto_decay'
-                  });
-                  await this.env.CHAT_DB.prepare(
-                      "INSERT INTO activity_logs (event_type, user_id, details, ip_address, created_at) VALUES (?, ?, ?, ?, ?)"
-                  ).bind('cleanup', 'system', logDetails, 'internal', Date.now()).run();
-              } catch (logErr) {
-                  console.error("Cleanup logging failed", logErr);
-              }
-          }
+            ).bind(roomId, deleteCutoff, deleteBatch).run();
 
-      } catch (e) {
-          console.error("Alarm cleanup failed", e);
-      }
+            if (result.meta.changes > 0) {
+                try {
+                    const logDetails = await encryptLogData({
+                        action: 'cleanup_messages',
+                        roomId: roomId,
+                        deletedCount: result.meta.changes,
+                        reason: 'auto_decay'
+                    });
+                    await this.env.CHAT_DB.prepare(
+                        "INSERT INTO activity_logs (event_type, user_id, details, ip_address, created_at) VALUES (?, ?, ?, ?, ?)"
+                    ).bind('cleanup', 'system', logDetails, 'internal', Date.now()).run();
+                } catch (logErr) {
+                    console.error("Cleanup logging failed", logErr);
+                }
+            }
 
-      // Reschedule for next day
-      this.state.storage.setAlarm(Date.now() + 24 * 60 * 60 * 1000);
-  }
+        } catch (e) {
+            console.error("Alarm cleanup failed", e);
+        }
 
-  checkRateLimit(username, limitConfig) {
-      const { count, window } = limitConfig;
-      if (window === 0) return true; // No limit
+        // 5. Cleanup Rate Limits (Memory Management)
+        try {
+            // Cleanup entries older than 5 minutes
+            const CUTOFF = 5 * 60 * 1000;
+            for (const [username, record] of this.rateLimits.entries()) {
+                // Filter out old timestamps
+                record.history = record.history.filter(t => Date.now() - t < CUTOFF);
+                // If empty, delete the user entry
+                if (record.history.length === 0) {
+                    this.rateLimits.delete(username);
+                }
+            }
+        } catch (e) {
+            console.error("Rate limit cleanup failed", e);
+        }
 
-      const now = Date.now();
-      let record = this.rateLimits.get(username);
+        // Reschedule for next day
+        this.state.storage.setAlarm(Date.now() + 24 * 60 * 60 * 1000);
+    }
 
-      if (!record) {
-          record = { history: [] };
-          this.rateLimits.set(username, record);
-      }
+    checkRateLimit(username, limitConfig) {
+        const { count, window } = limitConfig;
+        if (window === 0) return true; // No limit
 
-      // Remove timestamps outside the window
-      record.history = record.history.filter(t => now - t < window);
+        const now = Date.now();
+        let record = this.rateLimits.get(username);
 
-      if (record.history.length >= count) return false;
+        if (!record) {
+            record = { history: [] };
+            this.rateLimits.set(username, record);
+        }
 
-      record.history.push(now);
-      return true;
-  }
+        // Remove timestamps outside the window
+        record.history = record.history.filter(t => now - t < window);
+
+        if (record.history.length >= count) return false;
+
+        record.history.push(now);
+        return true;
+    }
 }
