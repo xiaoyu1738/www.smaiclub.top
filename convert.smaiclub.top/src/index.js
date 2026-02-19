@@ -89,13 +89,13 @@ customElements.define(
 
     // Reflect src property to attribute to style :host based on it
     updated(changedProperties) {
-        if (changedProperties.has('src')) {
-            if (this.src) {
-                this.setAttribute('src', this.src);
-            } else {
-                this.removeAttribute('src');
-            }
+      if (changedProperties.has('src')) {
+        if (this.src) {
+          this.setAttribute('src', this.src);
+        } else {
+          this.removeAttribute('src');
         }
+      }
     }
 
     render() {
@@ -135,7 +135,7 @@ customElements.define(
           // Ideally use a toast, but alert is fine for logic preservation
           console.error(`Error: ${this.tracks[data.id].file.name} is not ncm file.`);
           this.tracks = produce(this.tracks, draft => {
-             draft[data.id].error = true;
+            draft[data.id].error = true;
           });
           return;
         }
@@ -150,7 +150,7 @@ customElements.define(
 
       this.fileHandler = /** @param {FileList} fileList */ fileList => {
         const files = [...fileList]
-          .filter(f => f.name.endsWith(".ncm"))
+          // Removed .filter(f => f.name.endsWith(".ncm")) to allow detection by worker
           .map((file, index) => {
             return { id: this.tracks.length + index, file };
           });
@@ -273,12 +273,12 @@ customElements.define(
 
         <section ?hidden=${this.tracks.length === 0}>
           ${repeat(
-            this.tracks,
-            track => track.id,
-            track => html`
+        this.tracks,
+        track => track.id,
+        track => html`
               <ncmc-card .track=${track} />
             `
-          )}
+      )}
 
           <!-- Small upload button when list is populated -->
           <label for="upload-ncm" style="display: flex; align-items: center; justify-content: center; min-height: 120px; border: 2px dashed rgba(255,255,255,0.2); border-radius: 12px; cursor: pointer; color: #94a3b8; transition: all 0.2s;" onmouseover="this.style.borderColor='#818cf8';this.style.color='#fff'" onmouseout="this.style.borderColor='rgba(255,255,255,0.2)';this.style.color='#94a3b8'">
@@ -292,7 +292,7 @@ customElements.define(
         <input
           id="upload-ncm"
           type="file"
-          accept=".ncm"
+          accept="*"
           multiple
           @change=${e => this.fileHandler(e.target.files)}
           hidden
@@ -352,17 +352,17 @@ customElements.define(
     }
 
     get title() {
-        if (this.track.meta && this.track.meta.musicName) {
-            return this.track.meta.musicName;
-        }
-        return this.track.file.name.slice(0, -4);
+      if (this.track.meta && this.track.meta.musicName) {
+        return this.track.meta.musicName;
+      }
+      return this.track.file.name.slice(0, -4);
     }
 
     get artist() {
-        if (this.track.meta && this.track.meta.artist) {
-            return this.track.meta.artist.map(ar => ar[0]).join(", ");
-        }
-        return "Unknown Artist";
+      if (this.track.meta && this.track.meta.artist) {
+        return this.track.meta.artist.map(ar => ar[0]).join(", ");
+      }
+      return "Unknown Artist";
     }
 
     get album() {
@@ -550,11 +550,11 @@ customElements.define(
       let statusText = "PROCESSING";
 
       if (isReady) {
-          statusClass = "status-done";
-          statusText = this.track.meta ? this.track.meta.format.toUpperCase() : "READY";
+        statusClass = "status-done";
+        statusText = this.track.meta ? this.track.meta.format.toUpperCase() : "READY";
       } else if (isError) {
-          statusClass = "status-error";
-          statusText = "ERROR";
+        statusClass = "status-error";
+        statusText = "ERROR";
       }
 
       return html`
