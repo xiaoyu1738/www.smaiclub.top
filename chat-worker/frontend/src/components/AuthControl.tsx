@@ -9,33 +9,39 @@ export function AuthControl() {
             if (!containerRef.current) return;
 
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            const commonAuth = (window as any).CommonAuth;
+            if ((window as any).CommonAuth) {
+                // Already loaded
+                if (!initialized.current || containerRef.current.innerHTML === '') {
+                    // Update ID for script to find
+                    containerRef.current.id = 'smai-auth-stable-container';
+                    containerRef.current.innerHTML = '';
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                    (window as any).CommonAuth.init('smai-auth-stable-container');
+                    initialized.current = true;
+                }
+                return;
+            }
 
-            // Retry only if commonAuth exists AND we haven't successfully initialized yet OR the container is empty (re-render)
-            if (commonAuth && (!initialized.current || containerRef.current.innerHTML === '')) {
-                // Ensure ID match for the script to find it
-                containerRef.current.id = 'smai-auth-stable-container';
-
-                // Clear potential duplicates
-                containerRef.current.innerHTML = '';
-
-                commonAuth.init('smai-auth-stable-container');
-                initialized.current = true;
+            // Load Script if not present
+            if (!document.getElementById('smai-auth-script')) {
+                const script = document.createElement('script');
+                script.id = 'smai-auth-script';
+                script.src = "https://login.smaiclub.top/common-auth.js";
+                script.async = true;
+                script.onload = () => {
+                    if (containerRef.current) {
+                        containerRef.current.id = 'smai-auth-stable-container';
+                        containerRef.current.innerHTML = '';
+                        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                        (window as any).CommonAuth.init('smai-auth-stable-container');
+                        initialized.current = true;
+                    }
+                };
+                document.body.appendChild(script);
             }
         };
 
         loadAuth();
-
-        // Polling for script load
-        const timer = setInterval(() => {
-            if (!initialized.current || (containerRef.current && containerRef.current.innerHTML === '')) {
-                loadAuth();
-            } else {
-                clearInterval(timer);
-            }
-        }, 100);
-
-        return () => clearInterval(timer);
     }, []);
 
     return (
