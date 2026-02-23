@@ -5,24 +5,27 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SMAI CLUB | 斯麦俱乐部</title>
-    <!-- 【新增】引入 Login Worker 提供的通用认证脚本 -->
     <script src="https://login.smaiclub.top/common-auth.js"></script>
 
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap">
+    <link rel="stylesheet"
+        href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Noto+Serif+SC:wght@600;700;900&family=ZCOOL+XiaoWei&display=swap">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <link rel="icon" type="image/x-icon" href="/favicon.ico">
     <style>
         :root {
-            --primary-color: #000000;
-            --secondary-color: #1d1d1f;
-            --accent-color: #0071e3;
-            --text-light: #f5f5f7;
-            --text-dark: #1d1d1f;
-            --text-gray: #86868b;
-            --bg-gray: #f5f5f7;
-            --gradient-1: linear-gradient(45deg, #ff4d4d 0%, #f9cb28 100%);
-            --gradient-2: linear-gradient(45deg, #f72585 0%, #7209b7 50%, #3a0ca3 100%);
-            --gradient-3: linear-gradient(45deg, #00b4d8 0%, #0096c7 50%, #0077b6 100%);
+            --red-deep: #6e0d1f;
+            --red-main: #a91a2f;
+            --red-bright: #cb3948;
+            --gold-main: #f0c56a;
+            --gold-strong: #dca445;
+            --ink: #2f1715;
+            --muted: #6f514b;
+            --cream: #fff4e5;
+            --paper: #fff7eb;
+            --white-soft: #fffef9;
+            --success: #d65645;
+            --gradient-gold: linear-gradient(120deg, #fff1bc 0%, #f0c56a 38%, #d69a33 100%);
+            --gradient-red: linear-gradient(120deg, #680d1d 0%, #a91a2f 52%, #cb3948 100%);
         }
 
         * {
@@ -32,12 +35,29 @@
         }
 
         body {
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', Roboto, sans-serif;
-            background-color: #ffffff;
-            color: var(--text-dark);
+            font-family: 'Manrope', 'Segoe UI', sans-serif;
+            background: radial-gradient(circle at 18% 0%, #ffedd1 0%, transparent 34%),
+                radial-gradient(circle at 85% 18%, #ffdca8 0%, transparent 30%),
+                linear-gradient(180deg, #fff8ed 0%, #fff2df 45%, #fff7ef 100%);
+            color: var(--ink);
             overflow-x: hidden;
-            line-height: 1.5;
+            line-height: 1.6;
             -webkit-font-smoothing: antialiased;
+            position: relative;
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            pointer-events: none;
+            background-image:
+                repeating-radial-gradient(circle at 0 0, rgba(170, 45, 52, 0.07) 0 3px, transparent 3px 30px),
+                linear-gradient(120deg, rgba(183, 29, 52, 0.03) 25%, transparent 25%, transparent 50%, rgba(183, 29, 52, 0.03) 50%, rgba(183, 29, 52, 0.03) 75%, transparent 75%, transparent),
+                radial-gradient(circle at 1px 1px, rgba(176, 63, 69, 0.1) 1px, transparent 0);
+            background-size: 240px 240px, 84px 84px, 28px 28px;
+            opacity: 0.34;
+            z-index: -2;
         }
 
         @keyframes navSlideDown {
@@ -46,13 +66,9 @@
                 opacity: 0;
             }
 
-            60% {
-                transform: translateX(-50%) translateY(6px);
+            65% {
+                transform: translateX(-50%) translateY(8px);
                 opacity: 1;
-            }
-
-            80% {
-                transform: translateX(-50%) translateY(-2px);
             }
 
             100% {
@@ -60,13 +76,49 @@
             }
         }
 
+        @keyframes glowPulse {
+
+            0%,
+            100% {
+                box-shadow: 0 0 0 rgba(243, 201, 110, 0);
+            }
+
+            50% {
+                box-shadow: 0 0 38px rgba(243, 201, 110, 0.4);
+            }
+        }
+
+        @keyframes floatY {
+
+            0%,
+            100% {
+                transform: translateY(0);
+            }
+
+            50% {
+                transform: translateY(-12px);
+            }
+        }
+
+        @keyframes riseUp {
+            from {
+                opacity: 0;
+                transform: translateY(34px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
         .navbar {
-            --nav-foreground: rgba(255, 255, 255, 0.96);
-            --nav-border-color: rgba(255, 255, 255, 0.28);
-            --nav-bg: rgba(255, 255, 255, 0.1);
+            --nav-foreground: #fff8ea;
+            --nav-border-color: rgba(243, 201, 110, 0.48);
+            --nav-bg: rgba(126, 15, 34, 0.34);
             position: fixed;
-            width: calc(100% - 48px);
-            max-width: 1400px;
+            width: calc(100% - 42px);
+            max-width: 1360px;
             left: 50%;
             transform: translateX(-50%);
             top: 16px;
@@ -74,20 +126,20 @@
             height: 58px;
             padding: 0 36px;
             background: var(--nav-bg);
-            backdrop-filter: saturate(120%) blur(16px);
-            -webkit-backdrop-filter: saturate(120%) blur(16px);
-            border-radius: 980px;
+            backdrop-filter: saturate(185%) blur(22px);
+            -webkit-backdrop-filter: saturate(185%) blur(22px);
+            border-radius: 999px;
             border: 1px solid var(--nav-border-color);
-            box-shadow: 0 4px 24px rgba(0, 0, 0, 0.08), 0 1px 4px rgba(0, 0, 0, 0.04);
+            box-shadow: 0 8px 32px rgba(71, 8, 18, 0.2), inset 0 1px 0 rgba(255, 241, 209, 0.24);
             animation: navSlideDown 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
             transition: background 0.35s ease, border-color 0.35s ease, color 0.35s ease;
             color: var(--nav-foreground);
         }
 
         .navbar.is-on-light {
-            --nav-foreground: #6e6e73;
-            --nav-border-color: rgba(0, 0, 0, 0.1);
-            --nav-bg: rgba(255, 255, 255, 0.24);
+            --nav-foreground: var(--red-deep);
+            --nav-border-color: rgba(126, 15, 34, 0.26);
+            --nav-bg: rgba(255, 244, 221, 0.56);
         }
 
         .logo {
@@ -95,18 +147,19 @@
             left: 36px;
             top: 50%;
             transform: translateY(-50%);
-            font-size: 22px;
-            font-weight: 700;
+            font-family: 'ZCOOL XiaoWei', 'Noto Serif SC', serif;
+            font-size: 21px;
+            font-weight: 900;
             color: var(--nav-foreground);
             text-decoration: none;
-            letter-spacing: -0.3px;
+            letter-spacing: 0.6px;
             white-space: nowrap;
             transition: color 0.35s ease;
         }
 
         .auth-container {
             position: absolute;
-            right: 28px;
+            right: 26px;
             top: 50%;
             transform: translateY(-50%);
             display: flex;
@@ -126,23 +179,20 @@
         }
 
         .nav-links li {
-            margin: 0 6px;
+            margin: 0 5px;
             position: relative;
         }
 
         .nav-links a {
             color: var(--nav-foreground);
             text-decoration: none;
-            font-weight: 450;
-            font-size: 15px;
+            font-weight: 600;
+            font-size: 14px;
             transition: color 0.25s ease;
-            opacity: 1;
             display: inline-flex;
             align-items: center;
             position: relative;
             padding: 6px 12px;
-            -webkit-text-fill-color: initial;
-            background: none;
         }
 
         .nav-links a::after {
@@ -151,13 +201,10 @@
             left: 12px;
             bottom: 2px;
             width: 0;
-            height: 1.5px;
-            background-color: currentColor;
+            height: 2px;
+            border-radius: 99px;
+            background: var(--gradient-gold);
             transition: width 0.35s cubic-bezier(0.25, 0.8, 0.25, 1);
-        }
-
-        .nav-links a:hover {
-            opacity: 1;
         }
 
         .nav-links a:hover::after {
@@ -165,7 +212,7 @@
         }
 
         .gradient-text {
-            background: var(--gradient-2);
+            background: var(--gradient-red);
             -webkit-background-clip: text;
             background-clip: text;
             -webkit-text-fill-color: transparent;
@@ -173,311 +220,470 @@
         }
 
         .hero {
-            height: 100vh;
-            background: linear-gradient(rgba(0, 0, 0, 0.3), rgba(0, 0, 0, 0.3)), url('https://images.unsplash.com/photo-1519671482749-fd09be7ccebf?ixlib=rb-1.2.1&auto=format&fit=crop&w=1350&q=80') no-repeat center center/cover;
+            position: relative;
+            min-height: 100vh;
+            padding-top: 96px;
+            background:
+                radial-gradient(circle at 8% 10%, rgba(255, 224, 151, 0.24) 0%, transparent 28%),
+                radial-gradient(circle at 88% 4%, rgba(255, 213, 125, 0.2) 0%, transparent 25%),
+                linear-gradient(145deg, rgba(97, 10, 30, 0.95) 0%, rgba(126, 17, 39, 0.94) 42%, rgba(87, 11, 27, 0.98) 100%);
             display: flex;
             align-items: center;
             justify-content: center;
             text-align: center;
-            padding-top: 60px;
-            color: white;
+            color: var(--white-soft);
+            overflow: hidden;
+        }
+
+        .hero::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background:
+                radial-gradient(ellipse at 22% 72%, rgba(255, 229, 170, 0.2) 0 16%, transparent 20%),
+                radial-gradient(ellipse at 76% 68%, rgba(255, 229, 170, 0.2) 0 14%, transparent 18%),
+                repeating-linear-gradient(120deg, rgba(255, 236, 186, 0.06) 0 16px, transparent 16px 34px),
+                radial-gradient(circle at 50% 120%, rgba(243, 201, 110, 0.2), transparent 58%);
+            opacity: 0.8;
+            pointer-events: none;
+        }
+
+        .hero-decor {
+            position: absolute;
+            width: 110px;
+            height: 160px;
+            top: 130px;
+            border-radius: 999px;
+            background: linear-gradient(180deg, #ff5f65 0%, #cd253f 100%);
+            border: 4px solid rgba(255, 226, 164, 0.95);
+            box-shadow: 0 20px 45px rgba(0, 0, 0, 0.26), inset 0 -16px 24px rgba(67, 7, 16, 0.28);
+            animation: floatY 4.6s ease-in-out infinite;
+            z-index: 1;
+        }
+
+        .hero-decor::before,
+        .hero-decor::after {
+            content: '';
+            position: absolute;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+
+        .hero-decor::before {
+            top: -18px;
+            width: 24px;
+            height: 20px;
+            border-radius: 999px;
+            background: var(--gold-main);
+        }
+
+        .hero-decor::after {
+            bottom: -34px;
+            width: 3px;
+            height: 34px;
+            background: rgba(255, 220, 150, 0.88);
+            box-shadow: 0 0 12px rgba(255, 219, 136, 0.8);
+        }
+
+        .hero-decor-left {
+            left: max(20px, calc(50% - 620px));
+        }
+
+        .hero-decor-right {
+            right: max(20px, calc(50% - 620px));
+            animation-delay: -2.2s;
         }
 
         .hero-content {
-            max-width: 800px;
-            padding: 0 22px;
+            max-width: 860px;
+            padding: 0 24px;
+            position: relative;
+            z-index: 2;
+            animation: riseUp 0.8s ease-out;
+        }
+
+        .hero-badge {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 18px;
+            padding: 8px 18px;
+            border-radius: 999px;
+            font-size: 13px;
+            letter-spacing: 0.18em;
+            text-transform: none;
+            font-weight: 700;
+            color: #6b111f;
+            background: var(--gradient-gold);
+            border: 1px solid rgba(255, 245, 210, 0.8);
+            animation: glowPulse 3.2s ease-in-out infinite;
         }
 
         .hero h1 {
-            font-size: 72px;
-            font-weight: 700;
-            margin-bottom: 10px;
-            line-height: 1.1;
-            background: var(--gradient-2);
-            -webkit-background-clip: text;
-            background-clip: text;
-            -webkit-text-fill-color: transparent;
-            color: transparent;
+            font-family: 'ZCOOL XiaoWei', 'Noto Serif SC', serif;
+            font-size: clamp(48px, 8vw, 84px);
+            font-weight: 900;
+            margin-bottom: 14px;
+            line-height: 1.08;
+            letter-spacing: 2px;
+            color: #fff3d2;
+            text-shadow: 0 12px 30px rgba(32, 6, 9, 0.45);
         }
 
         .hero h2 {
-            font-size: 32px;
-            font-weight: 400;
-            margin-bottom: 15px;
+            font-size: clamp(22px, 3.5vw, 34px);
+            font-weight: 700;
+            margin-bottom: 18px;
+            color: rgba(255, 241, 209, 0.95);
         }
 
         .hero p {
-            font-size: 21px;
-            margin-bottom: 30px;
-            color: rgba(255, 255, 255, 0.8);
+            font-size: clamp(17px, 2vw, 22px);
+            margin: 0 auto 34px;
+            max-width: 700px;
+            color: rgba(255, 238, 208, 0.88);
         }
 
         .hero-links {
             display: flex;
             justify-content: center;
-            gap: 26px;
+            gap: 16px;
+            flex-wrap: wrap;
         }
 
         .hero-link {
-            color: var(--accent-color);
-            font-size: 21px;
+            color: #5d0f1e;
+            font-size: 17px;
             text-decoration: none;
-            display: flex;
+            display: inline-flex;
             align-items: center;
-            font-weight: 500;
+            justify-content: center;
+            font-weight: 700;
             cursor: pointer;
+            gap: 8px;
+            min-width: 166px;
+            padding: 12px 22px;
+            border-radius: 999px;
+            border: 1px solid rgba(255, 240, 202, 0.8);
+            background: var(--gradient-gold);
+            transition: transform 0.25s ease, filter 0.25s ease;
+        }
+
+        .hero-link.secondary {
+            color: #fff5de;
+            border-color: rgba(255, 232, 178, 0.5);
+            background: rgba(255, 255, 255, 0.08);
+            backdrop-filter: blur(4px);
         }
 
         .hero-link:hover {
-            text-decoration: underline;
+            transform: translateY(-2px);
+            filter: brightness(1.05);
         }
 
         .hero-link i {
-            margin-left: 8px;
-            font-size: 16px;
+            font-size: 14px;
         }
 
         .section {
-            padding: 100px 0;
+            padding: 104px 0;
             text-align: center;
-        }
-
-        .section-dark {
-            background-color: var(--secondary-color);
-            color: white;
+            position: relative;
         }
 
         .section-gray {
-            background-color: var(--bg-gray);
+            background: linear-gradient(180deg, #fff9f0 0%, #fff4e6 100%);
         }
 
         .section-title {
-            margin-bottom: 80px;
+            margin-bottom: 66px;
+            padding: 0 22px;
         }
 
         .section-title h2 {
-            font-size: 48px;
-            font-weight: 700;
-            margin-bottom: 10px;
-            line-height: 1.1;
+            font-family: 'ZCOOL XiaoWei', 'Noto Serif SC', serif;
+            font-size: clamp(36px, 6vw, 56px);
+            font-weight: 900;
+            margin-bottom: 14px;
+            line-height: 1.12;
+            letter-spacing: 0.6px;
         }
 
         .section-title h3 {
-            font-size: 24px;
-            font-weight: 400;
-            margin-bottom: 15px;
-            color: var(--text-gray);
+            font-size: clamp(20px, 3vw, 28px);
+            font-weight: 700;
+            margin-bottom: 12px;
+            color: #5f2f2a;
         }
 
         .section-title p {
             font-size: 18px;
-            max-width: 600px;
+            max-width: 720px;
             margin: 0 auto;
-            color: var(--text-gray);
-        }
-
-        .section-dark .section-title h3,
-        .section-dark .section-title p {
-            color: rgba(255, 255, 255, 0.8);
+            color: var(--muted);
         }
 
         .tiers {
-            display: flex;
-            justify-content: center;
-            flex-wrap: wrap;
-            gap: 30px;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 28px;
             align-items: stretch;
-            max-width: 1200px;
+            max-width: 1180px;
             margin: 0 auto;
+            padding: 0 22px;
         }
 
         .tier {
-            background: white;
-            border-radius: 18px;
-            padding: 40px;
-            width: 350px;
-            transition: all 0.3s ease;
+            background: linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(255, 251, 242, 0.98));
+            border-radius: 22px;
+            padding: 38px 30px;
             position: relative;
             overflow: hidden;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+            box-shadow: 0 14px 36px rgba(140, 34, 37, 0.13);
             display: flex;
             flex-direction: column;
+            border: 1px solid rgba(227, 165, 108, 0.24);
+            transition: transform 0.28s ease, box-shadow 0.28s ease;
+        }
+
+        .tier::after {
+            content: '';
+            position: absolute;
+            inset: 8px;
+            border: 1px solid rgba(217, 166, 86, 0.16);
+            border-radius: 18px;
+            pointer-events: none;
+        }
+
+        .tier::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 6px;
+            background: var(--gradient-red);
         }
 
         .tier:hover {
-            transform: translateY(-10px);
-            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            transform: translateY(-8px);
+            box-shadow: 0 20px 40px rgba(130, 22, 35, 0.2);
         }
 
         .tier h3 {
-            font-size: 28px;
-            margin-bottom: 20px;
-            font-weight: 600;
+            font-size: 30px;
+            margin-bottom: 18px;
+            font-weight: 800;
             line-height: 1.2;
+            color: #711525;
         }
 
         .price {
             font-size: 52px;
-            font-weight: 700;
-            margin-bottom: 20px;
+            font-weight: 800;
+            margin-bottom: 24px;
             line-height: 1;
+            color: #8f1126;
         }
 
         .price span {
             font-size: 17px;
-            font-weight: 400;
-            color: var(--text-gray);
+            font-weight: 600;
+            color: #986f64;
         }
 
         .features {
-            margin-bottom: 30px;
+            margin-bottom: 28px;
             flex-grow: 1;
             text-align: left;
         }
 
         .features li {
-            margin-bottom: 15px;
+            margin-bottom: 14px;
             list-style: none;
             position: relative;
-            padding-left: 30px;
+            padding-left: 28px;
             line-height: 1.5;
-            font-size: 17px;
+            font-size: 16px;
+            color: #4f2d28;
         }
 
         .features li::before {
-            content: '✓';
+            content: '✦';
             position: absolute;
             left: 0;
-            color: var(--accent-color);
-            font-weight: bold;
+            top: 0;
+            color: #c54840;
+            font-weight: 700;
         }
 
         .tier-btn {
             width: 100%;
-            padding: 15px 25px;
-            border-radius: 980px;
-            font-weight: 600;
+            padding: 14px 24px;
+            border-radius: 999px;
+            font-weight: 800;
             cursor: pointer;
-            transition: all 0.3s ease;
+            transition: transform 0.25s ease, filter 0.25s ease;
             border: none;
             outline: none;
-            font-size: 18px;
-            background: var(--accent-color);
-            color: white;
+            font-size: 17px;
+            background: var(--gradient-red);
+            color: #fff8e9;
             margin-top: auto;
+            letter-spacing: 0.3px;
         }
 
         .tier-btn:hover {
-            background: #0077ed;
             transform: translateY(-2px);
+            filter: brightness(1.06);
         }
 
         .benefits-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 40px;
-            max-width: 1200px;
-            margin: 0 auto;
-        }
-
-        .benefit-card {
-            background: white;
-            border-radius: 18px;
-            padding: 50px 40px;
-            transition: all 0.3s ease;
-            text-align: center;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
-        }
-
-        .benefit-card:hover {
-            transform: translateY(-10px);
-            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
-        }
-
-        .benefit-icon {
-            font-size: 60px;
-            margin-bottom: 30px;
-            color: var(--accent-color);
-        }
-
-        .benefit-card h3 {
-            font-size: 28px;
-            margin-bottom: 20px;
-            font-weight: 600;
-            line-height: 1.2;
-        }
-
-        .benefit-card p {
-            font-size: 17px;
-            color: var(--text-gray);
-            line-height: 1.5;
-        }
-
-        .testimonials {
-            background-color: var(--secondary-color);
-            padding: 100px 0;
-            color: white;
-        }
-
-        .testimonials-container {
-            max-width: 1200px;
+            grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+            gap: 24px;
+            max-width: 1180px;
             margin: 0 auto;
             padding: 0 22px;
         }
 
+        .benefit-card {
+            background: linear-gradient(165deg, #fffef8 0%, #fff8ee 100%);
+            border-radius: 20px;
+            padding: 38px 28px;
+            transition: transform 0.28s ease, box-shadow 0.28s ease;
+            text-align: center;
+            box-shadow: 0 12px 28px rgba(127, 28, 31, 0.12);
+            border: 1px solid rgba(212, 130, 86, 0.18);
+        }
+
+        .benefit-card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 18px 34px rgba(116, 20, 26, 0.18);
+        }
+
+        .benefit-icon {
+            font-size: 46px;
+            margin-bottom: 22px;
+            color: #b92a37;
+        }
+
+        .benefit-card h3 {
+            font-size: 28px;
+            margin-bottom: 14px;
+            font-weight: 800;
+            line-height: 1.2;
+            color: #731726;
+        }
+
+        .benefit-card p {
+            font-size: 16px;
+            color: #694843;
+            line-height: 1.6;
+        }
+
+        .testimonials {
+            background:
+                radial-gradient(circle at 8% 8%, rgba(255, 213, 128, 0.15), transparent 28%),
+                radial-gradient(circle at 92% 0%, rgba(255, 228, 170, 0.1), transparent 24%),
+                linear-gradient(135deg, #690f20 0%, #82152a 46%, #6a0f21 100%);
+            padding: 104px 0;
+            color: #fff7e8;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .testimonials::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: repeating-linear-gradient(150deg, rgba(255, 239, 205, 0.05) 0 18px, transparent 18px 38px);
+            pointer-events: none;
+        }
+
+        .testimonials-container {
+            max-width: 1180px;
+            margin: 0 auto;
+            padding: 0 22px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .testimonials .section-title h3,
+        .testimonials .section-title p {
+            color: rgba(255, 239, 209, 0.86);
+        }
+
+        .testimonials .gradient-text {
+            background: linear-gradient(120deg, #fff7da 0%, #ffd88a 46%, #efb64b 100%);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            color: transparent;
+            text-shadow: 0 8px 18px rgba(23, 3, 8, 0.24);
+        }
+
         .testimonials-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 40px;
-            margin-top: 60px;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 24px;
+            margin-top: 52px;
         }
 
         .testimonial-card {
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 18px;
-            padding: 40px;
-            transition: all 0.3s ease;
+            background: rgba(255, 255, 255, 0.08);
+            border-radius: 20px;
+            padding: 34px 28px;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
             backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 221, 161, 0.3);
+            box-shadow: 0 10px 24px rgba(27, 4, 8, 0.24);
+            text-align: left;
+            display: flex;
+            flex-direction: column;
+            height: 100%;
         }
 
         .testimonial-card:hover {
-            transform: translateY(-10px);
-            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+            transform: translateY(-8px);
+            box-shadow: 0 16px 30px rgba(22, 4, 7, 0.34);
         }
 
         .testimonial-content {
-            font-size: 17px;
-            line-height: 1.6;
-            margin-bottom: 30px;
-            color: rgba(255, 255, 255, 0.9);
+            font-size: 16px;
+            line-height: 1.7;
+            margin-bottom: 24px;
+            color: rgba(255, 244, 222, 0.92);
             font-style: italic;
             position: relative;
+            padding-left: 12px;
+            flex: 1;
         }
 
         .testimonial-content::before {
-            content: '"';
-            font-size: 60px;
+            content: '“';
+            font-size: 52px;
             position: absolute;
-            left: -20px;
-            top: -20px;
-            color: rgba(255, 255, 255, 0.2);
+            left: -24px;
+            top: -30px;
+            color: rgba(255, 220, 148, 0.35);
             font-family: serif;
         }
 
         .testimonial-author {
             display: flex;
             align-items: center;
-            min-height: 80px;
+            min-height: 72px;
+            margin-top: auto;
         }
 
         .testimonial-avatar {
-            width: 60px;
-            height: 60px;
+            width: 56px;
+            height: 56px;
             border-radius: 50%;
             object-fit: cover;
-            margin-right: 20px;
-            border: 2px solid var(--accent-color);
+            margin-right: 16px;
+            border: 2px solid rgba(243, 201, 110, 0.95);
             flex-shrink: 0;
         }
 
@@ -485,102 +691,118 @@
             display: flex;
             flex-direction: column;
             justify-content: center;
-            height: 100%;
+            min-height: 56px;
         }
 
         .author-info h4 {
-            font-size: 18px;
-            margin-bottom: 5px;
-            font-weight: 600;
+            font-size: 17px;
+            margin-bottom: 4px;
+            font-weight: 700;
             line-height: 1.3;
         }
 
         .author-info p {
-            font-size: 14px;
-            color: var(--text-gray);
+            font-size: 13px;
+            color: rgba(255, 237, 202, 0.76);
             line-height: 1.3;
             margin: 0;
+            min-height: 2.6em;
         }
 
         .cta {
-            padding: 100px 0;
-            background: linear-gradient(rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.5)), url('https://images.unsplash.com/photo-1531058020387-3be344556be6?ixlib=rb-1.2.1&auto=format&fit=crop&w=1350&q=80') no-repeat center center/cover;
+            padding: 114px 22px;
+            background:
+                radial-gradient(circle at 10% 15%, rgba(255, 218, 137, 0.24) 0%, transparent 26%),
+                radial-gradient(circle at 90% 78%, rgba(255, 219, 143, 0.2) 0%, transparent 28%),
+                linear-gradient(135deg, #7a0f23 0%, #b11f37 52%, #8b1128 100%);
             text-align: center;
-            color: white;
+            color: #fff5dd;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .cta::before {
+            content: '';
+            position: absolute;
+            inset: -2px;
+            background: repeating-linear-gradient(140deg, rgba(255, 236, 197, 0.07) 0 16px, transparent 16px 34px);
+            pointer-events: none;
+        }
+
+        .cta>* {
+            position: relative;
+            z-index: 1;
         }
 
         .cta h2 {
-            font-size: 72px;
-            font-weight: 700;
-            margin-bottom: 20px;
+            font-family: 'ZCOOL XiaoWei', 'Noto Serif SC', serif;
+            font-size: clamp(38px, 7vw, 72px);
+            font-weight: 900;
+            margin-bottom: 18px;
             line-height: 1.1;
-            background: var(--gradient-3);
-            -webkit-background-clip: text;
-            background-clip: text;
-            -webkit-text-fill-color: transparent;
-            color: transparent;
+            color: #fff2cb;
+            text-shadow: 0 12px 24px rgba(43, 4, 11, 0.35);
         }
 
         .cta p {
-            font-size: 32px;
-            margin-bottom: 40px;
-            max-width: 700px;
-            margin-left: auto;
-            margin-right: auto;
-            line-height: 1.2;
-            font-weight: 400;
-            color: rgba(255, 255, 255, 0.8);
+            font-size: clamp(20px, 3.5vw, 30px);
+            margin: 0 auto 34px;
+            max-width: 760px;
+            line-height: 1.35;
+            font-weight: 600;
+            color: rgba(255, 240, 211, 0.9);
         }
 
         .cta-btn {
-            padding: 18px 32px;
-            border-radius: 980px;
-            font-weight: 600;
+            padding: 16px 34px;
+            border-radius: 999px;
+            font-weight: 800;
             cursor: pointer;
-            transition: all 0.3s ease;
-            border: none;
+            transition: transform 0.25s ease, filter 0.25s ease;
+            border: 1px solid rgba(255, 237, 194, 0.8);
             outline: none;
-            font-size: 24px;
-            background: var(--accent-color);
-            color: white;
+            font-size: 20px;
+            background: var(--gradient-gold);
+            color: #671120;
             display: inline-block;
             text-decoration: none;
+            box-shadow: 0 8px 20px rgba(44, 5, 11, 0.24);
         }
 
         .cta-btn:hover {
-            background: #0077ed;
             transform: translateY(-2px);
+            filter: brightness(1.04);
         }
 
         .footer {
-            background-color: var(--secondary-color);
-            color: var(--text-light);
-            padding: 80px 0 40px;
+            background: linear-gradient(180deg, #3d0d16 0%, #2b070f 100%);
+            color: #ffeecb;
+            padding: 82px 0 40px;
         }
 
         .footer-content {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 40px;
-            max-width: 1200px;
-            margin: 0 auto 40px;
+            gap: 34px;
+            max-width: 1180px;
+            margin: 0 auto 38px;
             padding: 0 22px;
         }
 
         .footer-column h3 {
             font-size: 14px;
-            margin-bottom: 20px;
-            font-weight: 600;
-            color: var(--text-gray);
+            margin-bottom: 18px;
+            font-weight: 800;
+            color: #f4ce7c;
             text-transform: uppercase;
-            letter-spacing: 0.5px;
+            letter-spacing: 0.08em;
         }
 
         .footer-column p {
             font-size: 14px;
-            color: var(--text-gray);
-            line-height: 1.5;
-            margin-bottom: 15px;
+            color: rgba(255, 228, 182, 0.78);
+            line-height: 1.6;
+            margin-bottom: 14px;
         }
 
         .footer-links {
@@ -588,39 +810,43 @@
         }
 
         .footer-links li {
-            margin-bottom: 12px;
+            margin-bottom: 11px;
         }
 
         .footer-links a {
-            color: var(--text-gray);
+            color: rgba(255, 228, 182, 0.78);
             text-decoration: none;
             font-size: 14px;
-            transition: all 0.3s ease;
+            transition: color 0.25s ease;
         }
 
         .footer-links a:hover {
-            color: var(--accent-color);
+            color: #ffd67f;
             text-decoration: underline;
         }
 
         .footer-bottom {
             text-align: center;
-            padding-top: 40px;
-            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            padding-top: 34px;
+            border-top: 1px solid rgba(255, 223, 168, 0.2);
             font-size: 14px;
-            color: var(--text-gray);
-            max-width: 1200px;
+            color: rgba(255, 220, 163, 0.7);
+            max-width: 1180px;
             margin: 0 auto;
-            padding: 40px 22px 0;
+            padding-left: 22px;
+            padding-right: 22px;
         }
 
-        @media (max-width: 768px) {
+        @media (max-width: 980px) {
+            .hero-decor {
+                display: none;
+            }
+
             .navbar {
-                padding: 0 18px;
-                height: 50px;
-                max-width: calc(100% - 24px);
+                width: calc(100% - 28px);
+                padding: 0 16px;
+                height: 52px;
                 top: 10px;
-                border-radius: 980px;
             }
 
             .nav-links {
@@ -628,54 +854,66 @@
             }
 
             .logo {
-                font-size: 24px;
+                font-size: 20px;
+                left: 18px;
             }
 
-            .hero h1 {
-                font-size: 48px;
+            .auth-container {
+                right: 14px;
             }
 
-            .hero h2 {
-                font-size: 24px;
+            .section,
+            .testimonials,
+            .cta {
+                padding-top: 80px;
+                padding-bottom: 80px;
             }
 
-            .hero p {
-                font-size: 17px;
+            .hero {
+                min-height: 92vh;
+                padding-top: 78px;
             }
 
             .hero-links {
                 flex-direction: column;
-                gap: 15px;
+                align-items: center;
             }
 
-            .section-title h2 {
-                font-size: 36px;
+            .hero-link {
+                width: min(280px, 90%);
             }
 
-            .section-title h3 {
-                font-size: 20px;
+            .tier h3 {
+                font-size: 26px;
             }
 
-            .tier {
-                width: 100%;
-                max-width: 400px;
-            }
-
-            .testimonials-grid {
-                grid-template-columns: 1fr;
-            }
-
-            .cta h2 {
-                font-size: 48px;
-            }
-
-            .cta p {
-                font-size: 24px;
+            .price {
+                font-size: 46px;
             }
 
             .cta-btn {
-                padding: 15px 25px;
                 font-size: 18px;
+                padding: 14px 28px;
+            }
+        }
+
+        @media (max-width: 560px) {
+            .hero h1 {
+                letter-spacing: 1px;
+            }
+
+            .hero p {
+                font-size: 16px;
+            }
+
+            .section-title p {
+                font-size: 16px;
+            }
+
+            .tier,
+            .benefit-card,
+            .testimonial-card {
+                padding: 28px 22px;
             }
         }
     </style>
@@ -683,7 +921,7 @@
 
 <body>
     <nav class="navbar">
-        <a href="#" class="logo">SMAI CLUB</a>
+        <a href="#" class="logo">斯麦会馆 · 贰零贰陆</a>
         <ul class="nav-links">
             <li><a href="https://www.smaiclub.top/shop/" class="shop-link">购买</a></li>
             <li><a href="https://news.smaiclub.top/" class="news-link">新闻</a></li>
@@ -691,18 +929,19 @@
             <li><a href="https://hall.smaiclub.top/" class="exhibition-link">展览馆</a></li>
             <li><a href="#">联系我们</a></li>
         </ul>
-        <!-- 独立的认证按钮容器 -->
         <div class="auth-container"></div>
     </nav>
 
     <section class="hero">
+        <div class="hero-decor hero-decor-left" aria-hidden="true"></div>
+        <div class="hero-decor hero-decor-right" aria-hidden="true"></div>
         <div class="hero-content">
-            <h1>SMAI CLUB</h1>
-            <h2>斯麦俱乐部</h2>
-            <p>全球精英专属俱乐部，为您提供无与伦比的奢华体验、独家活动和顶级社交网络。</p>
+            <span class="hero-badge">丙午马年 · 新春雅集</span>
+            <h1>金鞍启岁，骏马踏春</h1>
+            <h2>SMAI CLUB 东方礼序特别季</h2>
+            <p>以红金礼序迎接 2026 马年，为全球会员呈现更具仪式感的社交盛典、尊享旅程与新春专属权益。</p>
             <div class="hero-links">
-                <a href="#" class="hero-link">了解更多 <i class="fas fa-chevron-right"></i></a>
-                <!-- 更新购买链接 -->
+                <a href="#" class="hero-link secondary">查看马年礼遇 <i class="fas fa-chevron-right"></i></a>
                 <a href="https://www.smaiclub.top/shop/" class="hero-link">立即加入 <i class="fas fa-chevron-right"></i></a>
             </div>
         </div>
@@ -710,126 +949,118 @@
 
     <section class="section section-gray">
         <div class="section-title">
-            <h2 class="gradient-text">会员等级</h2>
-            <h3>选择适合您的会员等级</h3>
-            <p>我们为每位会员量身定制卓越体验，享受不同层次的专属特权和服务。</p>
+            <h2 class="gradient-text">马年礼遇会员等级</h2>
+            <h3>按您的生活方式匹配尊享层级</h3>
+            <p>每一档会籍都包含新春加码权益，从商务宴请到环球旅居，为 2026 开启更高规格的精英体验。</p>
         </div>
         <div class="tiers">
             <div class="tier">
                 <h3>SMAI VIP</h3>
                 <div class="price">$5,000<span>/年</span></div>
                 <ul class="features">
-                    <li>专属会员活动邀请</li>
-                    <li>全球顶级酒店优惠</li>
-                    <li>私人助理服务</li>
-                    <li>优先预订特权</li>
-                    <li>24小时会员专线</li>
+                    <li>马年开春酒会入场资格</li>
+                    <li>全球高端酒店节庆升级礼遇</li>
+                    <li>专属行程顾问与接待支持</li>
+                    <li>热门活动优先席位预约</li>
+                    <li>会员专线 24 小时在线服务</li>
                 </ul>
-                <!-- 更新购买链接 -->
-                <button class="tier-btn" onclick="window.location.href='https://www.smaiclub.top/shop/'">加入SMAI
-                    VIP</button>
+                <button class="tier-btn" onclick="window.location.href='https://www.smaiclub.top/shop/'">加入 SMAI VIP</button>
             </div>
             <div class="tier">
                 <h3>SMAI SVIP I</h3>
                 <div class="price">$15,000<span>/年</span></div>
                 <ul class="features">
-                    <li>所有黄金会员特权</li>
-                    <li>私人飞机和游艇租赁优惠</li>
-                    <li>全球顶级餐厅优先预订</li>
-                    <li>奢侈品购物专属折扣</li>
-                    <li>专属社交活动邀请</li>
-                    <li>私人定制旅行规划</li>
+                    <li>包含 VIP 全部马年权益</li>
+                    <li>私人机队与游艇优享通道</li>
+                    <li>国际名店年节专属预留</li>
+                    <li>高净值社交晚宴优先邀请</li>
+                    <li>新春家庭旅行规划服务</li>
+                    <li>跨境礼宾服务快速响应</li>
                 </ul>
-                <!-- 更新购买链接 -->
-                <button class="tier-btn" onclick="window.location.href='https://www.smaiclub.top/shop/'">加入SMAI SVIP
-                    I</button>
+                <button class="tier-btn" onclick="window.location.href='https://www.smaiclub.top/shop/'">加入 SMAI SVIP I</button>
             </div>
             <div class="tier">
                 <h3>SMAI SVIP II</h3>
                 <div class="price">$50,000<span>/年</span></div>
                 <ul class="features">
-                    <li>所有铂金会员特权</li>
-                    <li>全球顶级活动VIP通行证</li>
-                    <li>私人岛屿度假体验</li>
-                    <li>奢侈品定制服务</li>
-                    <li>全球顶级医疗资源</li>
-                    <li>私人安全顾问</li>
-                    <li>专属资产管理服务</li>
+                    <li>包含 SVIP I 全部权益</li>
+                    <li>全球顶级赛事与晚宴贵宾通行</li>
+                    <li>私岛假期与家族团聚礼宾方案</li>
+                    <li>奢侈品与艺术品私享顾问服务</li>
+                    <li>高端医疗资源快速协同</li>
+                    <li>家族资产管理闭门对接</li>
+                    <li>专属安全顾问全年随行</li>
                 </ul>
-                <!-- 更新购买链接 -->
-                <button class="tier-btn" onclick="window.location.href='https://www.smaiclub.top/shop/'">加入SMAI SVIP
-                    II</button>
+                <button class="tier-btn" onclick="window.location.href='https://www.smaiclub.top/shop/'">加入 SMAI SVIP II</button>
             </div>
         </div>
     </section>
 
     <section class="section">
         <div class="section-title">
-            <h2 class="gradient-text">专属特权</h2>
-            <h3>SMAI CLUB为会员提供无与伦比的专属特权</h3>
-            <p>让您体验真正的高端生活方式</p>
+            <h2 class="gradient-text">新春专属特权</h2>
+            <h3>围绕“礼、聚、行、享”打造全年价值</h3>
+            <p>在马年主题季中，SMAI CLUB 为会员整合跨地域、跨行业、跨圈层的高密度资源链接。</p>
         </div>
         <div class="benefits-grid">
             <div class="benefit-card">
                 <div class="benefit-icon">
                     <i class="fas fa-globe"></i>
                 </div>
-                <h3>全球网络</h3>
-                <p>加入我们的全球精英网络，与来自世界各地的成功人士建立联系，拓展您的社交圈。</p>
+                <h3>全球连接</h3>
+                <p>在亚太、北美、欧洲多地建立新春会晤节点，帮助您更高效接入国际商业与文化网络。</p>
             </div>
             <div class="benefit-card">
                 <div class="benefit-icon">
                     <i class="fas fa-gem"></i>
                 </div>
-                <h3>独家活动</h3>
-                <p>受邀参加全球顶级私人活动，包括艺术展览、音乐会和体育赛事VIP体验。</p>
+                <h3>节庆盛典</h3>
+                <p>年度马年主题晚宴、艺术鉴赏夜与私享沙龙持续开放，优先邀请高活跃会员参与。</p>
             </div>
             <div class="benefit-card">
                 <div class="benefit-icon">
                     <i class="fas fa-concierge-bell"></i>
                 </div>
-                <h3>奢华生活</h3>
-                <p>享受全球顶级酒店、餐厅和度假村的专属优惠和优先预订权。</p>
+                <h3>礼宾生活</h3>
+                <p>专属礼宾团队统筹酒店、用餐、交通与伴手礼安排，让每一次出行都更从容体面。</p>
             </div>
             <div class="benefit-card">
                 <div class="benefit-icon">
                     <i class="fas fa-plane"></i>
                 </div>
-                <h3>旅行特权</h3>
-                <p>私人飞机租赁、豪华游艇体验和全球顶级度假胜地的专属通道。</p>
+                <h3>出行升级</h3>
+                <p>马年旺季期间开放航线与度假资源预留，减少等待时间并优化家庭或商务行程节奏。</p>
             </div>
             <div class="benefit-card">
                 <div class="benefit-icon">
                     <i class="fas fa-user-tie"></i>
                 </div>
-                <h3>商业机会</h3>
-                <p>通过我们的精英网络获取独家商业机会和投资渠道。</p>
+                <h3>商业合作</h3>
+                <p>借助俱乐部闭门会机制，与潜在合作方在可信环境中快速完成关系建立与方案匹配。</p>
             </div>
             <div class="benefit-card">
                 <div class="benefit-icon">
                     <i class="fas fa-heartbeat"></i>
                 </div>
-                <h3>健康管理</h3>
-                <p>全球顶级医疗资源和健康管理服务，为您和家人的健康保驾护航。</p>
+                <h3>健康守护</h3>
+                <p>整合国际医疗转诊、体检与健康管理服务，为个人与家族提供高质量安全保障。</p>
             </div>
         </div>
     </section>
 
-    <!-- 用户评价板块 -->
     <section class="testimonials">
         <div class="testimonials-container">
             <div class="section-title">
-                <h2 class="gradient-text">会员评价</h2>
-                <h3>听听我们的会员怎么说</h3>
+                <h2 class="gradient-text">会员新春寄语</h2>
+                <h3>来自不同领域会员的真实反馈</h3>
             </div>
             <div class="testimonials-grid">
                 <div class="testimonial-card">
                     <div class="testimonial-content">
-                        SMAI CLUB彻底改变了我的社交圈。通过俱乐部，我结识了来自全球的行业领袖，建立了宝贵的商业关系。私人飞机服务和全球顶级活动邀请让我的生活方式提升到了全新高度。
+                        今年的马年主题活动组织非常成熟，商务社交效率比往年高很多。尤其是跨城资源联动，让我在春节前后迅速推进了两个国际项目。
                     </div>
                     <div class="testimonial-author">
-                        <img src="https://randomuser.me/api/portraits/men/32.jpg" alt="James Wilson"
-                            class="testimonial-avatar">
+                        <img src="https://randomuser.me/api/portraits/men/32.jpg" alt="James Wilson" class="testimonial-avatar">
                         <div class="author-info">
                             <h4>Da Satbeen</h4>
                             <p>大便试吃人 | SMAI SVIP II会员</p>
@@ -838,11 +1069,10 @@
                 </div>
                 <div class="testimonial-card">
                     <div class="testimonial-content">
-                        作为SMAI CLUB的五年会员，我可以说这是最值得的投资。俱乐部的私人定制旅行服务无与伦比，为我安排了最独特的度假体验。医疗资源网络在我家人需要时提供了极大帮助。
+                        从家庭旅行到商务接待都很省心，礼宾团队响应速度快，细节也到位。马年礼遇确实做到了“高端但不繁琐”。
                     </div>
                     <div class="testimonial-author">
-                        <img src="https://randomuser.me/api/portraits/women/44.jpg" alt="Sophia Chen"
-                            class="testimonial-avatar">
+                        <img src="https://randomuser.me/api/portraits/women/44.jpg" alt="Sophia Chen" class="testimonial-avatar">
                         <div class="author-info">
                             <h4>Mother Fucker</h4>
                             <p>狄克银行集团CEO | SMAI SVIP I会员</p>
@@ -851,11 +1081,10 @@
                 </div>
                 <div class="testimonial-card">
                     <div class="testimonial-content">
-                        加入SMAI CLUB后，我体验到了真正的精英生活方式。从私人岛屿度假到米其林三星餐厅的专属预订，每一项服务都超出预期。俱乐部的社交活动质量极高，每次都能结识志同道合的成功人士。
+                        我最喜欢的是社交圈质量。活动节奏紧凑但体验完整，能在短时间内认识志同道合的人并形成长期合作关系。
                     </div>
                     <div class="testimonial-author">
-                        <img src="https://randomuser.me/api/portraits/men/75.jpg" alt="Michael Rodriguez"
-                            class="testimonial-avatar">
+                        <img src="https://randomuser.me/api/portraits/men/75.jpg" alt="Michael Rodriguez" class="testimonial-avatar">
                         <div class="author-info">
                             <h4>Bitch</h4>
                             <p>大便食品集团CEO | SMAI SVIP II会员</p>
@@ -867,9 +1096,8 @@
     </section>
 
     <section class="cta">
-        <h2>准备好加入精英圈了吗？</h2>
-        <p>立即申请成为SMAI CLUB会员，开启非凡人生。</p>
-        <!-- 更新购买链接 -->
+        <h2>2026 马年，和更高质量的圈层一起出发</h2>
+        <p>立即申请 SMAI CLUB 会籍，解锁新春专属礼遇与全年精英资源通道。</p>
         <a href="https://www.smaiclub.top/shop/" class="cta-btn">立即申请</a>
     </section>
 
@@ -877,7 +1105,7 @@
         <div class="footer-content">
             <div class="footer-column">
                 <h3>SMAI CLUB</h3>
-                <p>全球精英专属俱乐部，致力于为会员提供无与伦比的高端生活体验和社交网络。</p>
+                <p>全球精英专属俱乐部，以马年喜庆主题焕新品牌体验，持续提供高规格生活服务与高价值社交连接。</p>
             </div>
             <div class="footer-column">
                 <h3>快速链接</h3>
@@ -901,13 +1129,13 @@
                 <h3>联系我们</h3>
                 <ul class="footer-links">
                     <li><a href="#">美国硅谷</a></li>
-                    <li><a href="#">+1 (114) 666 1145 </a></li>
+                    <li><a href="#">+1 (114) 666 1145</a></li>
                     <li><a href="#">info@smaiclub.com</a></li>
                 </ul>
             </div>
         </div>
         <div class="footer-bottom">
-            <p>© 2025 SMAI CLUB. 保留所有权利。</p>
+            <p>© 2026 SMAI CLUB. 保留所有权利。</p>
         </div>
     </footer>
 
@@ -981,13 +1209,11 @@
         window.addEventListener('load', requestNavbarToneUpdate);
         requestNavbarToneUpdate();
 
-        // 为新闻链接添加单独的重定向
         document.querySelector('.news-link').addEventListener('click', function (e) {
             e.preventDefault();
             window.location.href = 'https://news.smaiclub.top/';
         });
 
-        // 为展览馆链接添加单独的重定向
         document.querySelector('.exhibition-link').addEventListener('click', function (e) {
             e.preventDefault();
             window.location.href = 'https://hall.smaiclub.top/';
