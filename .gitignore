@@ -7,3 +7,4 @@ chat-worker/node_modules/*
 login-worker/migrations/*
 convert.smaiclub.top/node_modules/*
 convert.smaiclub.top/dist/*
+.vscode/*
