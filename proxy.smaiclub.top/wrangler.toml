@@ -1,6 +1,7 @@
 name = "proxy-smaiclub-top"
 main = "_worker.js"
 compatibility_date = "2026-02-25"
+compatibility_flags = ["nodejs_compat"]
 
 [vars]
 UUID = "e2a60d8e-a15d-4645-96e3-1680d77fec8f" 

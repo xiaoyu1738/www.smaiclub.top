@@ -1,9 +1,19 @@
 // <!--GAMFC-->version base on commit 58686d5d125194d34a1137913b3a64ddcf55872f, time is 2024-11-27 09:26:01 UTC<!--GAMFC-END-->.
-// @ts-ignore
-import { connect } from 'cloudflare:sockets';
-
 // How to generate your own UUID:
 // [Windows] Press "Win + R", input cmd and run:  Powershell -NoExit -Command "[guid]::NewGuid()"
+
+/** @type {import('cloudflare:sockets').connect | null} */
+let connectFn = null;
+
+async function getConnect() {
+	if (connectFn) {
+		return connectFn;
+	}
+	// Delay loading sockets API to avoid module-load failures becoming global 1101s.
+	const mod = await import('cloudflare:sockets');
+	connectFn = mod.connect;
+	return connectFn;
+}
 
 export default {
 	/**
@@ -16,11 +26,6 @@ export default {
 		try {
 			const userID = env.UUID;
 			const proxyIP = env.PROXYIP;
-			function isValidUUID(uuid) {
- 			 // 更通用的正则，只检查 8-4-4-4-12 结构
- 				 const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
- 				 return uuidRegex.test(uuid.trim()); // 加上 .trim() 防止空格
-			}
 			const upgradeHeader = request.headers.get('Upgrade');
 			if (!upgradeHeader || upgradeHeader !== 'websocket') {
 				const url = new URL(request.url);
@@ -169,6 +174,7 @@ async function vlessOverWSHandler(request, userID, proxyIP) {
  */
 async function handleTCPOutBound(remoteSocket, addressRemote, portRemote, rawClientData, webSocket, vlessResponseHeader, log, proxyIP) {
 	async function connectAndWrite(address, port) {
+		const connect = await getConnect();
 		/** @type {import("@cloudflare/workers-types").Socket} */
 		const tcpSocket = connect({
 			hostname: address,
@@ -480,15 +486,6 @@ function base64ToArrayBuffer(base64Str) {
 	}
 }
 
-/**
- * This is not real UUID validation
- * @param {string} uuid 
- */
-function isValidUUID(uuid) {
-	const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[4][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-	return uuidRegex.test(uuid);
-}
-
 const WS_READY_STATE_OPEN = 1;
 const WS_READY_STATE_CLOSING = 2;
 /**
@@ -513,11 +510,7 @@ function unsafeStringify(arr, offset = 0) {
 	return (byteToHex[arr[offset + 0]] + byteToHex[arr[offset + 1]] + byteToHex[arr[offset + 2]] + byteToHex[arr[offset + 3]] + "-" + byteToHex[arr[offset + 4]] + byteToHex[arr[offset + 5]] + "-" + byteToHex[arr[offset + 6]] + byteToHex[arr[offset + 7]] + "-" + byteToHex[arr[offset + 8]] + byteToHex[arr[offset + 9]] + "-" + byteToHex[arr[offset + 10]] + byteToHex[arr[offset + 11]] + byteToHex[arr[offset + 12]] + byteToHex[arr[offset + 13]] + byteToHex[arr[offset + 14]] + byteToHex[arr[offset + 15]]).toLowerCase();
 }
 function stringify(arr, offset = 0) {
-	const uuid = unsafeStringify(arr, offset);
-	if (!isValidUUID(uuid)) {
-		throw TypeError("Stringified UUID is invalid");
-	}
-	return uuid;
+	return unsafeStringify(arr, offset);
 }
 
 
