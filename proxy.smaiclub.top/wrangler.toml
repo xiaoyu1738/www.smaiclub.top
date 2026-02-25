@@ -1,0 +1,22 @@
+name = "proxy-smaiclub-top"
+main = "_worker.js"
+compatibility_date = "2026-02-25"
+
+[vars]
+UUID = "e2a60d8e-a15d-4645-96e3-1680d77fec8f" 
+PROXYIP = "proxyip.cmliussss.net"
+
+[observability]
+enabled = false
+head_sampling_rate = 1
+
+[observability.logs]
+enabled = true
+head_sampling_rate = 1
+persist = true
+invocation_logs = true
+
+[observability.traces]
+enabled = false
+persist = true
+head_sampling_rate = 1
