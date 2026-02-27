@@ -1,0 +1,27 @@
+{
+  "name": "player.smaiclub.top",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "dev:devui": "vite --mode devui",
+    "dev:produi": "vite --mode produi",
+    "build": "vite build",
+    "build:devui": "vite build --mode devui",
+    "build:produi": "vite build --mode produi",
+    "preview": "vite preview",
+    "test": "node --test \"src/**/*.test.js\""
+  },
+  "dependencies": {
+    "artplayer": "^5.2.3",
+    "hls.js": "^1.5.17",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-router-dom": "^6.28.1"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^4.3.4",
+    "vite": "^5.4.11"
+  }
+}

@@ -1,0 +1,47 @@
+{
+  "siteTitle": "SMAI 俱乐部播放器",
+  "description": "在此文件中管理你的媒体资源。",
+  "defaultPoster": "https://images.unsplash.com/photo-1497032205916-ac775f0649ae?auto=format&fit=crop&w=1200&q=80",
+  "videos": [
+    {
+      "id": "demo-dual-codec",
+      "title": "运动会",
+      "cover": "https://images.unsplash.com/photo-1527443224154-c4f061c25d74?auto=format&fit=crop&w=1200&q=80",
+      "url": "https://assets.smaiclub.top/videos/Final_H265.mp4",
+      "codec": "H.265",
+      "resolution": "多规格",
+      "duration": "13:53",
+      "tags": [
+        "双编码",
+        "播放器",
+        "variants"
+      ],
+      "variants": [
+        {
+          "label": "4k / H.265",
+          "url": "https://assets.smaiclub.top/videos/Final_H265.mp4",
+          "codec": "H.265",
+          "resolution": "4K"
+        },
+        {
+          "label": "4k / H.264",
+          "url": "https://assets.smaiclub.top/videos/8bit_H264.mp4",
+          "codec": "H.264",
+          "resolution": "4K"
+        },
+        {
+          "label": "1080p / H.264",
+          "url": "https://assets.smaiclub.top/videos/1080p_Fast.mp4",
+          "codec": "H.264",
+          "resolution": "1080p"
+        },
+        {
+          "label": "720p / H.264",
+          "url": "https://assets.smaiclub.top/videos/720p.mp4",
+          "codec": "H.264",
+          "resolution": "720p"
+        }
+      ]
+    }
+  ]
+}
