@@ -16,7 +16,7 @@ function normalizeVariant(variant) {
   };
 }
 
-function normalizeVideo(video, index, defaultPoster) {
+function normalizeVideo(video, index) {
   const id = String(video?.id || `video-${index + 1}`).trim();
   const rawVariants = Array.isArray(video?.variants)
     ? video.variants.map((variant) => normalizeVariant(variant)).filter((variant) => variant.url)
@@ -25,7 +25,7 @@ function normalizeVideo(video, index, defaultPoster) {
   return {
     id,
     title: String(video?.title || `未命名视频 ${index + 1}`),
-    cover: String(video?.cover || defaultPoster || ''),
+    cover: String(video?.cover || ''),
     url: String(video?.url || rawVariants[0]?.url || '').trim(),
     codec: String(video?.codec || rawVariants[0]?.codec || '未知'),
     resolution: String(video?.resolution || rawVariants[0]?.resolution || '未知'),
@@ -49,7 +49,7 @@ export async function loadLibrary() {
 
   const videos = Array.isArray(base.videos)
     ? base.videos
-        .map((video, index) => normalizeVideo(video, index, base.defaultPoster))
+        .map((video, index) => normalizeVideo(video, index))
         .filter((video) => video.url)
     : [];
 

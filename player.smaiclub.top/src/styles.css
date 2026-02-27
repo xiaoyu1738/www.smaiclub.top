@@ -360,6 +360,13 @@ button:disabled {
   margin-top: 10px;
 }
 
+.download-row {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 10px;
+}
+
 .playlist-panel {
   padding: 14px;
 }

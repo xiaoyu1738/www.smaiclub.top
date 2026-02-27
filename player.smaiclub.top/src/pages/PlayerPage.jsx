@@ -37,6 +37,13 @@ function getCodecKey(codec) {
   return '';
 }
 
+function sanitizeFileName(input) {
+  return String(input || 'video')
+    .replace(/[<>:"/\\|?*\x00-\x1F]/g, '_')
+    .replace(/\s+/g, '_')
+    .slice(0, 120);
+}
+
 function getModeHint(mode) {
   if (mode === MODES.single) {
     return '单曲循环：仅重复播放当前文件。';
@@ -228,6 +235,40 @@ export default function PlayerPage({ variant = 'dev' }) {
     }
   }, []);
 
+  const downloadCurrent = useCallback(() => {
+    if (!playUrl) {
+      setToastText('当前没有可下载的视频地址。');
+      return;
+    }
+    const formatHint = detectArtType(playUrl) === 'm3u8' ? 'm3u8' : 'mp4';
+    const codecText = activeVariant?.codec || currentVideo?.codec || '';
+    const resolutionText = activeVariant?.resolution || currentVideo?.resolution || '';
+    const filename = sanitizeFileName(
+      `${currentVideo?.title || 'video'}-${resolutionText}-${codecText}.${formatHint}`,
+    );
+    const link = document.createElement('a');
+    link.href = playUrl;
+    link.download = filename;
+    link.rel = 'noreferrer';
+    link.target = '_blank';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  }, [activeVariant, currentVideo, playUrl]);
+
+  const copyDownloadLink = useCallback(async () => {
+    if (!playUrl) {
+      setToastText('当前没有可复制的下载地址。');
+      return;
+    }
+    try {
+      await navigator.clipboard.writeText(playUrl);
+      setToastText('下载链接已复制。');
+    } catch {
+      setToastText('复制失败，请检查剪贴板权限。');
+    }
+  }, [playUrl]);
+
   const handleCodecSelect = useCallback(
     (nextCodec) => {
       setCodecFilter(nextCodec);
@@ -283,7 +324,7 @@ export default function PlayerPage({ variant = 'dev' }) {
     const art = new Artplayer({
       container: artContainerRef.current,
       url: playUrl,
-      poster: currentVideo.cover || library?.defaultPoster || '',
+      poster: currentVideo.cover || '',
       type: detectArtType(playUrl),
       autoplay: true,
       autoMini: true,
@@ -475,6 +516,14 @@ export default function PlayerPage({ variant = 'dev' }) {
                 ))}
               </div>
             ) : null}
+            <div className="download-row" role="group" aria-label="下载">
+              <button type="button" className="ghost-btn" onClick={downloadCurrent}>
+                下载当前版本
+              </button>
+              <button type="button" className="ghost-btn" onClick={copyDownloadLink}>
+                复制下载链接
+              </button>
+            </div>
             {isProd ? <p className="muted small">生产版 UI：聚焦播放体验与队列控制。</p> : null}
           </div>
         </section>

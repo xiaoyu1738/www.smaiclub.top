@@ -3,6 +3,28 @@ import { Link } from 'react-router-dom';
 import { JSON_TEMPLATE, loadLibrary } from '../lib/videos';
 import { UI_NAME } from '../config/uiEntry';
 
+function VideoThumb({ video, className }) {
+  if (video.cover) {
+    return <img className={className} src={video.cover} alt={video.title} loading="lazy" />;
+  }
+  return (
+    <video
+      className={className}
+      src={video.url}
+      muted
+      playsInline
+      preload="metadata"
+      onLoadedMetadata={(event) => {
+        try {
+          event.currentTarget.currentTime = 0.01;
+        } catch {
+          // Ignore if browser blocks seeking before metadata is fully ready.
+        }
+      }}
+    />
+  );
+}
+
 export default function LibraryPage({ variant = 'dev' }) {
   const isProd = variant === 'prod';
   const [library, setLibrary] = useState(null);
@@ -106,7 +128,7 @@ export default function LibraryPage({ variant = 'dev' }) {
             {filteredVideos.map((video) =>
               isProd ? (
                 <Link className="video-row" key={video.id} to={`/player/${encodeURIComponent(video.id)}`}>
-                  <img className="video-row-cover" src={video.cover} alt={video.title} loading="lazy" />
+                  <VideoThumb video={video} className="video-row-cover" />
                   <div className="video-row-body">
                     <p className="video-title">{video.title}</p>
                     <p className="muted small">{[video.codec, video.resolution, video.duration].filter(Boolean).join(' | ')}</p>
@@ -124,7 +146,7 @@ export default function LibraryPage({ variant = 'dev' }) {
                 </Link>
               ) : (
                 <Link className="video-card" key={video.id} to={`/player/${encodeURIComponent(video.id)}`}>
-                  <img className="video-cover" src={video.cover} alt={video.title} loading="lazy" />
+                  <VideoThumb video={video} className="video-cover" />
                   <div className="video-body">
                     <p className="video-title">{video.title}</p>
                     <div className="chip-row">
