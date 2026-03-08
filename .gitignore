@@ -10,3 +10,4 @@ convert.smaiclub.top/dist/*
 .vscode/*
 player.smaiclub.top/node_modules/*
 player.smaiclub.top/dist/*
+.test/*
