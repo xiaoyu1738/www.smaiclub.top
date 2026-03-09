@@ -39,7 +39,6 @@ export interface CatalogCacheSnapshot {
   updatedAt: number;
 }
 
-const ALIST_HOST = import.meta.env.VITE_CATALOG_HOST ?? 'https://smaiclub-alist-v3.onrender.com';
 const WORKER_HOST = import.meta.env.VITE_WORKER_HOST ?? 'https://hall-worker.xiaoyu1738jw.workers.dev';
 
 /** catalog 数据现统一走 Worker 代理，解决前端直连 AList 的 CORS + 401 问题 */
@@ -99,20 +98,17 @@ function getParentPath(path: string): string {
   return normalizedPath.slice(0, lastSlashIndex);
 }
 
-function encodePath(path: string): string {
-  return path
-    .split('/')
-    .map((segment) => (segment ? encodeURIComponent(segment) : ''))
-    .join('/');
-}
 
 function toAbsoluteAssetUrl(pathOrUrl: string): string {
+  // 已经是完整 URL（外部 CDN 链接等）则直接返回
   if (/^https?:\/\//i.test(pathOrUrl)) {
     return pathOrUrl;
   }
 
+  // 本地路径 → 走 Worker 资源代理端点，Worker 会 302 到云存储直链
   const normalizedPath = pathOrUrl.startsWith('/') ? pathOrUrl : `/${pathOrUrl}`;
-  return `${ALIST_HOST.replace(/\/+$/, '')}${encodePath(normalizedPath)}`;
+  const workerBase = WORKER_HOST.replace(/\/+$/, '');
+  return `${workerBase}/api/music/asset?path=${encodeURIComponent(normalizedPath)}`;
 }
 
 function resolveAssetUrl(basePath: string, asset: string | null, fallback: string): string {

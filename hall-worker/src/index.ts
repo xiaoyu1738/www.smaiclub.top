@@ -19,9 +19,19 @@ const LOCAL_ORIGIN_PATTERN = /^https?:\/\/(?:localhost|127\.0\.0\.1)(?::\d+)?$/;
 
 /**
  * 路径安全：允许的音频文件后缀白名单
- * 只放行真正会被播放器消费的格式
  */
 const ALLOWED_AUDIO_EXTENSIONS = new Set([
+  '.mp3', '.flac', '.wav', '.ogg', '.m4a', '.aac', '.wma', '.opus', '.ape',
+]);
+
+/**
+ * 路径安全：允许的资源文件后缀（图片 + 音频 + JSON）
+ * 用于 /api/music/asset 代理端点
+ */
+const ALLOWED_ASSET_EXTENSIONS = new Set([
+  // 图片
+  '.jpg', '.jpeg', '.png', '.webp', '.gif', '.svg', '.avif', '.bmp',
+  // 音频（asset 端点也可以用于预览）
   '.mp3', '.flac', '.wav', '.ogg', '.m4a', '.aac', '.wma', '.opus', '.ape',
 ]);
 
@@ -91,7 +101,7 @@ function validatePathStructure(path: string): void {
 }
 
 /**
- * 音频路径专用校验：前缀 + 后缀白名单
+ * 音频路径专用校验：前缀 + 音频后缀白名单
  */
 function validateMusicPath(path: string): void {
   validatePathStructure(path);
@@ -107,6 +117,26 @@ function validateMusicPath(path: string): void {
   const ext = path.slice(dotIndex).toLowerCase();
   if (!ALLOWED_AUDIO_EXTENSIONS.has(ext)) {
     throw new HttpError(400, `不允许的文件类型: ${ext}`);
+  }
+}
+
+/**
+ * 资源路径校验：前缀 + 资源后缀白名单（图片 + 音频）
+ */
+function validateAssetPath(path: string): void {
+  validatePathStructure(path);
+
+  if (!path.startsWith(MUSIC_PATH_PREFIX)) {
+    throw new HttpError(403, `路径必须位于 ${MUSIC_PATH_PREFIX} 下`);
+  }
+
+  const dotIndex = path.lastIndexOf('.');
+  if (dotIndex < 0) {
+    throw new HttpError(400, '路径缺少文件扩展名');
+  }
+  const ext = path.slice(dotIndex).toLowerCase();
+  if (!ALLOWED_ASSET_EXTENSIONS.has(ext)) {
+    throw new HttpError(400, `不允许的资源类型: ${ext}`);
   }
 }
 
@@ -261,6 +291,61 @@ async function handleGetMusicLink(
   return jsonResponse(request, env, { code: 200, url: rawUrl, cache: 'origin' });
 }
 
+/**
+ * 路由 3: 资源代理（图片/封面等）
+ * 通过 AList API 拿到 raw_url 后 302 重定向到云存储直链
+ * 浏览器 <img> 跟随 302 自动加载，不耗 Worker 带宽
+ * 同时利用 KV 缓存 raw_url，减少 AList API 调用
+ */
+async function handleGetAsset(
+  request: Request,
+  env: Env,
+  ctx: ExecutionContext
+): Promise<Response> {
+  const url = new URL(request.url);
+  const path = url.searchParams.get('path')?.trim();
+
+  if (!path) {
+    throw new HttpError(400, '缺少必需的 path 查询参数');
+  }
+
+  validateAssetPath(path);
+
+  // KV 缓存 key 加前缀区分音频直链和资源直链
+  const cacheKey = `asset:${path}`;
+
+  // 1. 查 KV 缓存
+  const cached = await env.MUSIC_CACHE.get(cacheKey);
+  if (cached) {
+    return new Response(null, {
+      status: 302,
+      headers: {
+        Location: cached,
+        'Cache-Control': 'public, max-age=3600',
+      },
+    });
+  }
+
+  // 2. 查 AList 源站
+  const rawUrl = await requestAListRawUrl(env, path);
+
+  // 3. 非阻塞回写 KV
+  ctx.waitUntil(
+    env.MUSIC_CACHE.put(cacheKey, rawUrl, { expirationTtl: CACHE_TTL_SECONDS }).catch((err) => {
+      console.error('Asset KV 缓存写入失败', { path, error: err instanceof Error ? err.message : String(err) });
+    })
+  );
+
+  // 302 重定向到云存储直链
+  return new Response(null, {
+    status: 302,
+    headers: {
+      Location: rawUrl,
+      'Cache-Control': 'public, max-age=3600',
+    },
+  });
+}
+
 // --- 导出 Worker 逻辑 ---
 export default {
   async fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
@@ -280,6 +365,9 @@ export default {
       }
       if (url.pathname === '/api/music/get-link') {
         return await handleGetMusicLink(request, env, ctx);
+      }
+      if (url.pathname === '/api/music/asset') {
+        return await handleGetAsset(request, env, ctx);
       }
 
       return jsonResponse(request, env, { code: 404, error: 'Not Found' }, 404);
