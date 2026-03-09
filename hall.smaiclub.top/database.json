@@ -1,0 +1,1485 @@
+{
+  "bands": [
+    {
+      "name": "U2",
+      "banner": "banner.jpg",
+      "albums": [
+        {
+          "title": "The Joshua Tree",
+          "base_path": "/aliyun/music/U2/The Joshua Tree",
+          "cover": "cover.jpg",
+          "tracks": [
+            "A Very Irish Album.mp3",
+            "Bullet the Blue Sky.mp3",
+            "Exit.mp3",
+            "Flood the Engineer.mp3",
+            "I Still Haven’t Found What I’m Looking For.mp3",
+            "Mothers of the Disappeared.mp3",
+            "Running to Stand Still.mp3",
+            "The Edge and the Guitar.mp3",
+            "The Sweetest Thing.mp3",
+            "Where the Streets Have No Name.mp3",
+            "With or Without You.mp3"
+          ]
+        },
+        {
+          "title": "War",
+          "base_path": "/aliyun/music/U2/War",
+          "cover": "cover.jpg",
+          "tracks": [
+            "Drowning Man.mp3",
+            "Like a Song….mp3",
+            "New Year’s Day.mp3",
+            "Red Light.mp3",
+            "Seconds.mp3",
+            "Sunday Bloody Sunday.mp3",
+            "Surrender.mp3",
+            "The Refugee.mp3",
+            "Two Hearts Beat as One.mp3",
+            "“40”.mp3"
+          ]
+        },
+        {
+          "title": "Achtung Baby",
+          "base_path": "/aliyun/music/U2/Achtung Baby",
+          "cover": "cover.jpg",
+          "tracks": [
+            "Acrobat.mp3",
+            "Alex Descends Into Hell for a Bottle of Milk _ Korova 1.mp3",
+            "Babyface.mp3",
+            "Blow Your House Down.mp3",
+            "Can’t Help Falling in Love (Mystery Train dub).mp3",
+            "Can’t Help Falling in Love (Triple Peaks remix).mp3",
+            "Daddy’s Gonna Pay for Your Crashed Car.mp3",
+            "Dirty Day.mp3",
+            "Down All the Days.mp3",
+            "Even Better Than the Real Thing (Apollo 440 Stealth Sonic remix).mp3",
+            "Even Better Than the Real Thing (Fish Out of Water remix).mp3",
+            "Even Better Than the Real Thing (The Perfecto mix).mp3",
+            "Even Better Than the Real Thing (V16 Exit Wound remix).mp3",
+            "Even Better Than the Real Thing (single version).mp3",
+            "Even Better Than the Real Thing (trance mix).mp3",
+            "Even Better Than the Real Thing.mp3",
+            "Everybody Loves a Winner.mp3",
+            "Fortunate Son.mp3",
+            "Heaven and Hell.mp3",
+            "Lady With the Spinning Head (UV1).mp3",
+            "Lady With the Spinning Head (extended dance mix).mp3",
+            "Lemon (Momo’s reprise).mp3",
+            "Lemon (The Perfecto mix).mp3",
+            "Lemon.mp3",
+            "Love Is Blindness (acoustic – from The Sky Down).mp3",
+            "Love Is Blindness.mp3",
+            "Mysterious Ways (Apollo 440 Magic Hour remix).mp3",
+            "Mysterious Ways (Solar Plexus Magic Hour remix).mp3",
+            "Mysterious Ways (Solar Plexus extended club mix).mp3",
+            "Mysterious Ways (Tabla Motown remix).mp3",
+            "Mysterious Ways (The Perfecto mix).mp3",
+            "Mysterious Ways (Ultimatum mix).mp3",
+            "Mysterious Ways.mp3",
+            "Near the Island.mp3",
+            "Night and Day (Steel String remix).mp3",
+            "Numb (Gimme Some More Dignity mix).mp3",
+            "Numb (Soul Assassins mix).mp3",
+            "Numb.mp3",
+            "Oh Berlin.mp3",
+            "One (Apollo 440 Ambient mix).mp3",
+            "One (Apollo 440 remix).mp3",
+            "One.mp3",
+            "Paint It Black.mp3",
+            "Salomé (Zooromancer remix).mp3",
+            "Salomé.mp3",
+            "Satellite of Love.mp3",
+            "So Cruel.mp3",
+            "Some Days Are Better Than Others.mp3",
+            "Stay (Faraway, So Close!).mp3",
+            "The First Time.mp3",
+            "The Fly.mp3",
+            "The Lounge Fly Mix.mp3",
+            "The Wanderer.mp3",
+            "Tryin’ to Throw Your Arms Around the World.mp3",
+            "Ultra Violet (Light My Way).mp3",
+            "Until the End of the World.mp3",
+            "Where Did It All Go Wrong_.mp3",
+            "Who’s Gonna Ride Your Wild Horses (Temple Bar remix).mp3",
+            "Who’s Gonna Ride Your Wild Horses.mp3",
+            "Zoo Station.mp3",
+            "Zooropa.mp3",
+            "“Baby” Acrobat.mp3",
+            "“Baby” Even Better Than the Real Thing.mp3",
+            "“Baby” Love Is Blindness.mp3",
+            "“Baby” Mysterious Ways.mp3",
+            "“Baby” One.mp3",
+            "“Baby” So Cruel.mp3",
+            "“Baby” The Fly.mp3",
+            "“Baby” Tryin’ to Throw Your Arms Around the World.mp3",
+            "“Baby” Ultra Violet (Light My Way).mp3",
+            "“Baby” Until the End of the World.mp3",
+            "“Baby” Who’s Gonna Ride Your Wild Horses.mp3",
+            "“Baby” Zoo Station.mp3"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "The Who",
+      "banner": "banner.jpg",
+      "albums": [
+        {
+          "title": "Quadrophenia",
+          "base_path": "/aliyun/music/The Who/Quadrophenia",
+          "cover": "cover.jpg",
+          "tracks": [
+            "5_15.mp3",
+            "Any More (demo).mp3",
+            "Bell Boy (demo).mp3",
+            "Bell Boy.mp3",
+            "Cut My Hair (demo).mp3",
+            "Cut My Hair.mp3",
+            "Dirty Jobs (demo).mp3",
+            "Doctor Jimmy (demo).mp3",
+            "Drowned (demo).mp3",
+            "Drowned.mp3",
+            "Fill No 1 – Get Out and Stay Out (demo).mp3",
+            "Fill No 2 (demo).mp3",
+            "Finale – The Rock (demo).mp3",
+            "Get Inside (demo).mp3",
+            "Helpless Dancer (demo).mp3",
+            "Helpless Dancer.mp3",
+            "I Am the Sea.mp3",
+            "I'm One (demo).mp3",
+            "Is It Me (demo).mp3",
+            "Is It in My Head (demo).mp3",
+            "Is It in My Head.mp3",
+            "I’m One.mp3",
+            "I’ve Had Enough (demo).mp3",
+            "I’ve Had Enough.mp3",
+            "Joker James (demo).mp3",
+            "Love Reign O’er Me (demo).mp3",
+            "Love Reign O’er Me.mp3",
+            "Quadrophenia – 4 Overtures (demo).mp3",
+            "Quadrophenic Four Faces (demo).mp3",
+            "Sea and Sand (demo).mp3",
+            "Sea and Sand.mp3",
+            "The Dirty Jobs.mp3",
+            "The Punk and the Godfather.mp3",
+            "The Real Me (demo).mp3",
+            "The Real Me.mp3",
+            "The Rock.mp3",
+            "We Close Tonight (demo).mp3",
+            "Wizardry (demo).mp3",
+            "You Came Back (demo).mp3"
+          ]
+        },
+        {
+          "title": "Who's Next",
+          "base_path": "/aliyun/music/The Who/Who's Next",
+          "cover": "cover.jpg",
+          "tracks": [
+            "Baba O’Riley (live at the Civic Auditorium, San Francisco, 1971).mp3",
+            "Behind Blue Eyes (Record Plant, New York Sessions, 1971).mp3",
+            "Getting in Tune.mp3",
+            "Going Mobile.mp3",
+            "Love Ain’t for Keeping (Record Plant, New York Sessions, 1971).mp3",
+            "Mary (Pete Townshend Home studio demo, alternative mix).mp3",
+            "Pure and Easy (Pete Townshend Home studio demo mix).mp3",
+            "Song Is Over.mp3",
+            "Time Is Passing (Pete Townshend Home studio demo).mp3"
+          ]
+        },
+        {
+          "title": "Tommy",
+          "base_path": "/aliyun/music/The Who/Tommy",
+          "cover": "cover.jpg",
+          "tracks": [
+            "1921.mp3",
+            "Amazing Journey.mp3",
+            "Christmas.mp3",
+            "Cousin Kevin.mp3",
+            "Do You Think It’s Alright_.mp3",
+            "Eyesight to the Blind (The Hawker).mp3",
+            "Fiddle About.mp3",
+            "Go to the Mirror.mp3",
+            "It’s a Boy.mp3",
+            "I’m Free.mp3",
+            "Miracle Cure.mp3",
+            "Overture.mp3",
+            "Pinball Wizard.mp3",
+            "Sally Simpson.mp3",
+            "Sensation.mp3",
+            "Smash the Mirror.mp3",
+            "Sparks.mp3",
+            "The Acid Queen.mp3",
+            "There’s a Doctor.mp3",
+            "Tommy Can You Hear Me_.mp3",
+            "Tommy’s Holiday Camp.mp3",
+            "Underture.mp3",
+            "Welcome.mp3",
+            "We’re Not Gonna Take It.mp3"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "The Velvet Underground",
+      "banner": "banner.jpg",
+      "albums": [
+        {
+          "title": "White Light_White Heat",
+          "base_path": "/aliyun/music/The Velvet Underground/White Light_White Heat",
+          "cover": "cover.jpg",
+          "tracks": [
+            "Here She Comes Now.mp3",
+            "White Light_White Heat.mp3"
+          ]
+        },
+        {
+          "title": "The Velvet Underground & Nico",
+          "base_path": "/aliyun/music/The Velvet Underground/The Velvet Underground & Nico",
+          "cover": "cover.jpg",
+          "tracks": [
+            "All Tomorrow’s Parties.mp3",
+            "European Son.mp3",
+            "Femme Fatale.mp3",
+            "Heroin.mp3",
+            "I’m Waiting for the Man.mp3",
+            "Run Run Run.mp3",
+            "Sunday Morning.mp3",
+            "The Black Angel’s Death Song.mp3",
+            "There She Goes Again.mp3",
+            "Venus in Furs.mp3"
+          ]
+        },
+        {
+          "title": "The Velvet Underground",
+          "base_path": "/aliyun/music/The Velvet Underground/The Velvet Underground",
+          "cover": "cover.jpg",
+          "tracks": [
+            "After Hours (live in San Francisco _ 1969).mp3",
+            "After Hours (mono single).mp3",
+            "After Hours.mp3",
+            "Andy’s Chest.mp3",
+            "Beginning to See the Light (alternate closet mix).mp3",
+            "Beginning to See the Light (closet mix).mp3",
+            "Beginning to See the Light (live in San Francisco _ 1969).mp3",
+            "Beginning to See the Light (mono version).mp3",
+            "Beginning to See the Light.mp3",
+            "Candy Says (closet mix).mp3",
+            "Candy Says (mono version).mp3",
+            "Candy Says.mp3",
+            "Coney Island Steeplechase (2014 mix).mp3",
+            "Ferryboat Bill.mp3",
+            "Foggy Notion.mp3",
+            "Heroin (live in San Francisco _ 1969).mp3",
+            "I Can’t Stand It (2014 mix).mp3",
+            "I Can’t Stand It Anymore (live in San Francisco _ 1969).mp3",
+            "I’m Gonna Move Right In.mp3",
+            "I’m Set Free (closet mix).mp3",
+            "I’m Set Free (live in San Francisco _ 1969).mp3",
+            "I’m Set Free (mono version).mp3",
+            "I’m Set Free.mp3",
+            "I’m Sticking With You.mp3",
+            "I’m Waiting for the Man (live in San Francisco _ 1969).mp3",
+            "Jesus (closet mix).mp3",
+            "Jesus (mono single).mp3",
+            "Jesus (mono version).mp3",
+            "Jesus.mp3",
+            "Lisa Says (2014 mix).mp3",
+            "Lisa Says (live in San Francisco _ 1969).mp3",
+            "Ocean.mp3",
+            "One of These Days (2014 mix).mp3",
+            "Over You (live in San Francisco _ 1969).mp3",
+            "Pale Blue Eyes (closet mix).mp3",
+            "Pale Blue Eyes (live in San Francisco _ 1969).mp3",
+            "Pale Blue Eyes (mono version).mp3",
+            "Pale Blue Eyes.mp3",
+            "Ride Into the Sun (2014 mix).mp3",
+            "Rock and Roll (live in San Francisco _ 1969).mp3",
+            "Rock and Roll.mp3",
+            "She’s My Best Friend.mp3",
+            "Sister Ray (live in San Francisco _ 1969).mp3",
+            "Some Kinda Love (closet mix).mp3",
+            "Some Kinda Love (live in San Francisco _ 1969).mp3",
+            "Some Kinda Love (mono version).mp3",
+            "Some Kinda Love.mp3",
+            "Sweet Jane (live in San Francisco _ 1969).mp3",
+            "That’s the Story of My Life (closet mix).mp3",
+            "That’s the Story of My Life (mono version).mp3",
+            "That’s the Story of My Life.mp3",
+            "The Murder Mystery (closet mix).mp3",
+            "The Murder Mystery (mono version).mp3",
+            "The Murder Mystery.mp3",
+            "There She Goes Again (live in San Francisco _ 1969).mp3",
+            "Venus in Furs (live in San Francisco _ 1969).mp3",
+            "We’re Gonna Have a Real Good Time Together (2014 mix).mp3",
+            "What Goes On (closet mix).mp3",
+            "What Goes On (live in San Francisco _ 1969).mp3",
+            "What Goes On (mono single).mp3",
+            "What Goes On (mono version).mp3",
+            "What Goes On.mp3",
+            "White Light_White Heat (live in San Francisco _ 1969).mp3"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "The Rolling Stones",
+      "banner": "banner.jpg",
+      "albums": [
+        {
+          "title": "Sticky Fingers",
+          "base_path": "/aliyun/music/The Rolling Stones/Sticky Fingers",
+          "cover": "cover.jpg",
+          "tracks": [
+            "Brown Sugar.mp3",
+            "Can’t You Hear Me Knocking.mp3",
+            "I Got the Blues.mp3",
+            "Moonlight Mile.mp3",
+            "Sister Morphine.mp3",
+            "Sway.mp3",
+            "Wild Horses.mp3",
+            "You Gotta Move.mp3"
+          ]
+        },
+        {
+          "title": "Beggars Banquet",
+          "base_path": "/aliyun/music/The Rolling Stones/Beggars Banquet",
+          "cover": "cover.jpg",
+          "tracks": [
+            "Dear Doctor.mp3",
+            "Factory Girl.mp3",
+            "Jigsaw Puzzle.mp3",
+            "No Expectations.mp3",
+            "Parachute Woman.mp3",
+            "Prodigal Son.mp3",
+            "Salt of the Earth.mp3",
+            "Stray Cat Blues.mp3",
+            "Street Fighting Man.mp3",
+            "Sympathy for the Devil.mp3"
+          ]
+        },
+        {
+          "title": "Let It Bleed",
+          "base_path": "/aliyun/music/The Rolling Stones/Let It Bleed",
+          "cover": "cover.jpg",
+          "tracks": [
+            "Country Honk.mp3",
+            "Gimme Shelter.mp3",
+            "Let It Bleed.mp3",
+            "Live With Me.mp3",
+            "Love in Vain.mp3",
+            "Midnight Rambler.mp3",
+            "Monkey Man.mp3",
+            "You Can’t Always Get What You Want.mp3",
+            "You Got the Silver.mp3"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "The Doors",
+      "banner": "banner.jpg",
+      "albums": [
+        {
+          "title": "L.A. Woman",
+          "base_path": "/aliyun/music/The Doors/L.A. Woman",
+          "cover": "cover.jpg",
+          "tracks": [
+            "Been Down So Long.mp3",
+            "Cars Hiss by My Window.mp3",
+            "Hyacinth House.mp3",
+            "L.A. Woman.mp3",
+            "Love Her Madly.mp3",
+            "L’America.mp3",
+            "Riders on the Storm.mp3",
+            "The Changeling.mp3",
+            "The WASP (Texas Radio and the Big Beat).mp3"
+          ]
+        },
+        {
+          "title": "The Doors",
+          "base_path": "/aliyun/music/The Doors/The Doors",
+          "cover": "cover.jpg",
+          "tracks": [
+            "Light My Fire.mp3",
+            "Little Red Rooster.mp3",
+            "Moonlight Drive A Horse Latitudes.mp3",
+            "Spanish Caravan.mp3",
+            "Unknown Soldier.mp3",
+            "You Make Me Real.mp3"
+          ]
+        },
+        {
+          "title": "Strange Days",
+          "base_path": "/aliyun/music/The Doors/Strange Days",
+          "cover": "cover.jpg",
+          "tracks": [
+            "Horse Latitudes.mp3",
+            "I Can’t See Your Face in My Mind.mp3",
+            "Love Me Two Times.mp3",
+            "Moonlight Drive.mp3",
+            "My Eyes Have Seen You.mp3",
+            "People Are Strange.mp3",
+            "Strange Days.mp3",
+            "Unhappy Girl.mp3",
+            "When the Music’s Over.mp3",
+            "You’re Lost Little Girl.mp3"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "The Beatles",
+      "banner": "banner.jpg",
+      "albums": [
+        {
+          "title": "Revolver",
+          "base_path": "/aliyun/music/The Beatles/Revolver",
+          "cover": "cover.jpg",
+          "tracks": [
+            "And Your Bird Can Sing.mp3",
+            "Doctor Robert.mp3",
+            "Eleanor Rigby.mp3",
+            "For No One.mp3",
+            "Good Day Sunshine.mp3",
+            "Got to Get You Into My Life.mp3",
+            "Here, There and Everywhere.mp3",
+            "I Want to Tell You.mp3",
+            "I’m Only Sleeping.mp3",
+            "Love You To.mp3",
+            "She Said She Said.mp3",
+            "Taxman.mp3",
+            "Tomorrow Never Knows.mp3",
+            "Yellow Submarine.mp3"
+          ]
+        },
+        {
+          "title": "Abbey Road",
+          "base_path": "/aliyun/music/The Beatles/Abbey Road",
+          "cover": "cover.jpg",
+          "tracks": [
+            "Because.mp3",
+            "Carry That Weight.mp3",
+            "Come Together.mp3",
+            "Golden Slumbers.mp3",
+            "Her Majesty.mp3",
+            "Here Comes the Sun.mp3",
+            "I Want You (She’s So Heavy).mp3",
+            "Maxwell’s Silver Hammer.mp3",
+            "Mean Mr. Mustard.mp3",
+            "Octopus’s Garden.mp3",
+            "Oh! Darling.mp3",
+            "Polythene Pam.mp3",
+            "She Came In Through the Bathroom Window.mp3",
+            "Something.mp3",
+            "Sun King.mp3",
+            "The End.mp3",
+            "You Never Give Me Your Money.mp3"
+          ]
+        },
+        {
+          "title": "Sgt. Pepper's Lonely Hearts Club Band",
+          "base_path": "/aliyun/music/The Beatles/Sgt. Pepper's Lonely Hearts Club Band",
+          "cover": "cover.jpg",
+          "tracks": [
+            "A Day in the Life.mp3",
+            "Being for the Benefit of Mr. Kite!.mp3",
+            "Fixing a Hole.mp3",
+            "Getting Better.mp3",
+            "Good Morning Good Morning.mp3",
+            "Lovely Rita.mp3",
+            "Lucy in the Sky With Diamonds.mp3",
+            "Sgt. Pepper’s Lonely Hearts Club Band (Reprise).mp3",
+            "Sgt. Pepper’s Lonely Hearts Club Band.mp3",
+            "She’s Leaving Home.mp3",
+            "When I’m Sixty‐Four.mp3",
+            "With a Little Help From My Friends.mp3",
+            "Within You Without You.mp3"
+          ]
+        },
+        {
+          "title": "Help!",
+          "base_path": "/aliyun/music/The Beatles/Help!",
+          "cover": "cover.jpg",
+          "tracks": [
+            "Act Naturally.mp3",
+            "Another Girl.mp3",
+            "Dizzy Miss Lizzy.mp3",
+            "Help!.mp3",
+            "I Need You.mp3",
+            "I've Just Seen a Face.mp3",
+            "It's Only Love.mp3",
+            "Tell Me What You See.mp3",
+            "The Night Before.mp3",
+            "Ticket to Ride.mp3",
+            "Yesterday.mp3",
+            "You Like Me Too Much.mp3",
+            "You're Going to Lose That Girl.mp3",
+            "You've Got to Hide Your Love Away.mp3"
+          ]
+        },
+        {
+          "title": "Rubber Soul",
+          "base_path": "/aliyun/music/The Beatles/Rubber Soul",
+          "cover": "cover.jpg",
+          "tracks": [
+            "Drive My Car.mp3",
+            "Girl.mp3",
+            "I'm Looking Through You.mp3",
+            "If I Needed Someone.mp3",
+            "In My Life.mp3",
+            "Michelle.mp3",
+            "Norwegian Wood (This Bird Has Flown).mp3",
+            "Nowhere Man.mp3",
+            "Run for Your Life.mp3",
+            "The Word.mp3",
+            "Think for Yourself.mp3",
+            "Wait.mp3",
+            "What Goes On.mp3",
+            "You Won't See Me.mp3"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Radiohead",
+      "banner": "banner.jpg",
+      "albums": [
+        {
+          "title": "The Bends",
+          "base_path": "/aliyun/music/Radiohead/The Bends",
+          "cover": "cover.jpg",
+          "tracks": [
+            "(Nice Dream).mp3",
+            "Black Star.mp3",
+            "Bones.mp3",
+            "Bullet Proof... I Wish I Was.mp3",
+            "Fake Plastic Trees.mp3",
+            "High and Dry.mp3",
+            "Just.mp3",
+            "My Iron Lung.mp3",
+            "Planet Telex.mp3",
+            "Street Spirit (Fade Out).mp3",
+            "Sulk.mp3",
+            "The Bends.mp3"
+          ]
+        },
+        {
+          "title": "OK Computer",
+          "base_path": "/aliyun/music/Radiohead/OK Computer",
+          "cover": "cover.jpg",
+          "tracks": [
+            "Airbag.mp3",
+            "Climbing Up the Walls.mp3",
+            "Electioneering.mp3",
+            "Exit Music (for a Film).mp3",
+            "Fitter Happier.mp3",
+            "Karma Police.mp3",
+            "Let Down.mp3",
+            "Lucky.mp3",
+            "No Surprises.mp3",
+            "Paranoid Android.mp3",
+            "Subterranean Homesick Alien.mp3",
+            "The Tourist.mp3"
+          ]
+        },
+        {
+          "title": "In Rainbows",
+          "base_path": "/aliyun/music/Radiohead/In Rainbows",
+          "cover": "cover.jpg",
+          "tracks": [
+            "15 Step.mp3",
+            "All I Need.mp3",
+            "Bodysnatchers.mp3",
+            "Faust Arp.mp3",
+            "House of Cards.mp3",
+            "Jigsaw Falling Into Place.mp3",
+            "Nude.mp3",
+            "Reckoner.mp3",
+            "Videotape.mp3",
+            "Weird Fishes_Arpeggi.mp3"
+          ]
+        },
+        {
+          "title": "Kid A",
+          "base_path": "/aliyun/music/Radiohead/Kid A",
+          "cover": "cover.jpg",
+          "tracks": [
+            "Everything in Its Right Place.mp3",
+            "How to Disappear Completely.mp3",
+            "Idioteque.mp3",
+            "In Limbo.mp3",
+            "Kid A.mp3",
+            "Morning Bell.mp3",
+            "Motion Picture Soundtrack.mp3",
+            "Optimistic.mp3",
+            "The National Anthem.mp3",
+            "Treefingers.mp3"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Queen",
+      "banner": "banner.jpg",
+      "albums": [
+        {
+          "title": "News of the World",
+          "base_path": "/aliyun/music/Queen/News of the World",
+          "cover": "cover.jpg",
+          "tracks": [
+            "All Dead, All Dead.mp3",
+            "Fight From the Inside.mp3",
+            "Get Down, Make Love.mp3",
+            "It’s Late.mp3",
+            "My Melancholy Blues.mp3",
+            "Sheer Heart Attack.mp3",
+            "Sleeping on the Sidewalk.mp3",
+            "Spread Your Wings.mp3",
+            "We Are the Champions.mp3",
+            "We Will Rock You.mp3",
+            "Who Needs You.mp3"
+          ]
+        },
+        {
+          "title": "A Night at the Opera",
+          "base_path": "/aliyun/music/Queen/A Night at the Opera",
+          "cover": "cover.jpg",
+          "tracks": [
+            "Bohemian Rhapsody.mp3",
+            "Death on Two Legs (Dedicated to…).mp3",
+            "God Save the Queen.mp3",
+            "Good Company.mp3",
+            "I’m in Love With My Car.mp3",
+            "Lazing on a Sunday Afternoon.mp3",
+            "Love of My Life.mp3",
+            "Seaside Rendezvous.mp3",
+            "Sweet Lady.mp3",
+            "The Prophet’s Song.mp3",
+            "You’re My Best Friend.mp3",
+            "’39.mp3"
+          ]
+        },
+        {
+          "title": "Sheer Heart Attack",
+          "base_path": "/aliyun/music/Queen/Sheer Heart Attack",
+          "cover": "cover.jpg",
+          "tracks": [
+            "Brighton Rock.mp3",
+            "Bring Back That Leroy Brown.mp3",
+            "Dear Friends.mp3",
+            "Flick of the Wrist.mp3",
+            "In the Lap of the Gods.mp3",
+            "In the Lap of the Gods… Revisited.mp3",
+            "Killer Queen.mp3",
+            "Lily of the Valley.mp3",
+            "Misfire.mp3",
+            "Now I’m Here.mp3",
+            "She Makes Me (Stormtrooper in Stilettos).mp3",
+            "Stone Cold Crazy.mp3",
+            "Tenement Funster.mp3"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Pink Floyd",
+      "banner": "banner.jpg",
+      "albums": [
+        {
+          "title": "Animals",
+          "base_path": "/aliyun/music/Pink Floyd/Animals",
+          "cover": "cover.jpg",
+          "tracks": [
+            "Dogs.mp3",
+            "Pigs (Three Different Ones).mp3",
+            "Pigs on the Wing 1.mp3",
+            "Pigs on the Wing 2.mp3",
+            "Sheep.mp3"
+          ]
+        },
+        {
+          "title": "The Dark Side of the Moon",
+          "base_path": "/aliyun/music/Pink Floyd/The Dark Side of the Moon",
+          "cover": "cover.jpg",
+          "tracks": [
+            "Any Colour You Like.mp3",
+            "Brain Damage.mp3",
+            "Breathe.mp3",
+            "Eclipse.mp3",
+            "Money.mp3",
+            "On the Run.mp3",
+            "Speak to Me.mp3",
+            "The Great Gig in the Sky.mp3",
+            "Time.mp3",
+            "Us and Them.mp3"
+          ]
+        },
+        {
+          "title": "The Wall",
+          "base_path": "/aliyun/music/Pink Floyd/The Wall",
+          "cover": "cover.jpg",
+          "tracks": [
+            "Another Brick in the Wall, Part 2.mp3",
+            "Another Brick in the Wall, Part 3.mp3",
+            "Bring the Boys Back Home.mp3",
+            "Comfortably Numb.mp3",
+            "Don’t Leave Me Now.mp3",
+            "Empty Spaces.mp3",
+            "Goodbye Blue Sky.mp3",
+            "Goodbye Cruel World.mp3",
+            "Hey You.mp3",
+            "In the Flesh.mp3",
+            "In the Flesh_.mp3",
+            "Is There Anybody Out There_.mp3",
+            "Mother.mp3",
+            "Nobody Home.mp3",
+            "One of My Turns.mp3",
+            "Outside the Wall.mp3",
+            "Run Like Hell.mp3",
+            "Stop.mp3",
+            "The Happiest Days of Our Lives.mp3",
+            "The Show Must Go On.mp3",
+            "The Trial.mp3",
+            "Vera.mp3",
+            "Waiting for the Worms.mp3",
+            "Young Lust.mp3"
+          ]
+        },
+        {
+          "title": "Wish You Were Here",
+          "base_path": "/aliyun/music/Pink Floyd/Wish You Were Here",
+          "cover": "cover.jpg",
+          "tracks": [
+            "Have a Cigar (alternative version).mp3",
+            "Raving and Drooling (live at Wembley 1974) (2011 mix).mp3",
+            "Shine On You Crazy Diamond, Pts. 1–6 (live at Wembley 1974) (2011 mix).mp3",
+            "Wine Glasses (from ‘Household Objects’ project).mp3",
+            "Wish You Were Here.mp3",
+            "You’ve Got to Be Crazy (live at Wembley 1974) (2011 mix).mp3"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Nirvana",
+      "banner": "banner.jpg",
+      "albums": [
+        {
+          "title": "Nevermind",
+          "base_path": "/aliyun/music/Nirvana/Nevermind",
+          "cover": "cover.jpg",
+          "tracks": [
+            "Breed.mp3",
+            "Come as You Are.mp3",
+            "Drain You.mp3",
+            "In Bloom.mp3",
+            "Lithium.mp3",
+            "Lounge Act.mp3",
+            "On a Plain.mp3",
+            "Polly.mp3",
+            "Smells Like Teen Spirit.mp3",
+            "Something in the Way.mp3",
+            "Stay Away.mp3",
+            "Territorial Pissings.mp3"
+          ]
+        },
+        {
+          "title": "Bleach",
+          "base_path": "/aliyun/music/Nirvana/Bleach",
+          "cover": "cover.jpg",
+          "tracks": [
+            "About a Girl (live at Pine Street Theatre).mp3",
+            "About a Girl.mp3",
+            "Been a Son (live at Pine Street Theatre).mp3",
+            "Big Cheese.mp3",
+            "Blew (live at Pine Street Theatre).mp3",
+            "Blew.mp3",
+            "Dive (live at Pine Street Theatre).mp3",
+            "Downer.mp3",
+            "Floyd the Barber (live at Pine Street Theatre).mp3",
+            "Floyd the Barber.mp3",
+            "Intro (live at Pine Street Theatre).mp3",
+            "Love Buzz (live at Pine Street Theatre).mp3",
+            "Love Buzz.mp3",
+            "Molly’s Lips (live at Pine Street Theatre).mp3",
+            "Mr. Moustache.mp3",
+            "Negative Creep.mp3",
+            "Paper Cuts.mp3",
+            "Sappy (live at Pine Street Theatre).mp3",
+            "School (live at Pine Street Theatre).mp3",
+            "School.mp3",
+            "Scoff (live at Pine Street Theatre).mp3",
+            "Scoff.mp3",
+            "Sifting.mp3",
+            "Spank Thru (live at Pine Street Theatre).mp3",
+            "Swap Meet.mp3"
+          ]
+        },
+        {
+          "title": "In Utero",
+          "base_path": "/aliyun/music/Nirvana/In Utero",
+          "cover": "cover.jpg",
+          "tracks": [
+            "All Apologies _ Gallons of Rubbing Alcohol Flow Through the Strip.mp3",
+            "Dumb.mp3",
+            "Frances Farmer Will Have Her Revenge on Seattle.mp3",
+            "Heart‐Shaped Box.mp3",
+            "Milk It.mp3",
+            "Pennyroyal Tea.mp3",
+            "Radio Friendly Unit Shifter.mp3",
+            "Rape Me.mp3",
+            "Scentless Apprentice.mp3",
+            "Serve the Servants.mp3",
+            "Tourette’s.mp3",
+            "Very Ape.mp3"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Metallica",
+      "banner": "banner.jpg",
+      "albums": [
+        {
+          "title": "Metallica",
+          "base_path": "/aliyun/music/Metallica/Metallica",
+          "cover": "cover.jpg",
+          "tracks": [
+            "Breadfan.mp3",
+            "Creeping Death.mp3",
+            "Enter Sandman.mp3",
+            "Fade to Black.mp3",
+            "For Whom the Bell Tolls.mp3",
+            "Harvester of Sorrow.mp3",
+            "Master of Puppets.mp3",
+            "Nothing Else Matters.mp3",
+            "One.mp3",
+            "Sad But True.mp3",
+            "Seek & Destroy.mp3",
+            "So What.mp3",
+            "Stone Cold Crazy.mp3",
+            "The Unforgiven.mp3",
+            "Welcome Home (Sanitarium).mp3",
+            "Wherever I May Roam.mp3",
+            "Whiplash.mp3"
+          ]
+        },
+        {
+          "title": "Ride the Lightning",
+          "base_path": "/aliyun/music/Metallica/Ride the Lightning",
+          "cover": "cover.jpg",
+          "tracks": [
+            "Creeping Death.mp3",
+            "Escape.mp3",
+            "Fade to Black.mp3",
+            "Fight Fire With Fire.mp3",
+            "For Whom the Bell Tolls.mp3",
+            "Ride the Lightning.mp3",
+            "The Call of Ktulu.mp3",
+            "Trapped Under Ice.mp3"
+          ]
+        },
+        {
+          "title": "Master of Puppets",
+          "base_path": "/aliyun/music/Metallica/Master of Puppets",
+          "cover": "cover.jpg",
+          "tracks": [
+            "Master of Puppets.mp3",
+            "Welcome Home (Sanitarium).mp3"
+          ]
+        },
+        {
+          "title": "...And Justice for All",
+          "base_path": "/aliyun/music/Metallica/...And Justice for All",
+          "cover": "cover.jpg",
+          "tracks": [
+            "...And Justice for All.mp3",
+            "Blackened.mp3",
+            "Dyers Eve.mp3",
+            "Eye of the Beholder.mp3",
+            "Harvester of Sorrow.mp3",
+            "One.mp3",
+            "The Frayed Ends of Sanity.mp3",
+            "The Shortest Straw.mp3",
+            "To Live Is to Die.mp3"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Led Zeppelin",
+      "banner": "banner.jpg",
+      "albums": [
+        {
+          "title": "Led Zeppelin IV",
+          "base_path": "/aliyun/music/Led Zeppelin/Led Zeppelin IV",
+          "cover": "cover.jpg",
+          "tracks": [
+            "Black Dog.mp3",
+            "Four Sticks.mp3",
+            "Going to California.mp3",
+            "Misty Mountain Hop.mp3",
+            "Rock and Roll.mp3",
+            "Stairway to Heaven.mp3",
+            "The Battle of Evermore.mp3",
+            "When the Levee Breaks.mp3"
+          ]
+        },
+        {
+          "title": "Led Zeppelin",
+          "base_path": "/aliyun/music/Led Zeppelin/Led Zeppelin",
+          "cover": "cover.jpg",
+          "tracks": [
+            "Babe I'm Gonna Leave You.mp3",
+            "Black Mountain Side.mp3",
+            "Communication Breakdown.mp3",
+            "Dazed and Confused.mp3",
+            "Good Times Bad Times.mp3",
+            "How Many More Times.mp3",
+            "I Can't Quit You Baby.mp3",
+            "You Shook Me.mp3",
+            "Your Time Is Gonna Come.mp3"
+          ]
+        },
+        {
+          "title": "Physical Graffiti",
+          "base_path": "/aliyun/music/Led Zeppelin/Physical Graffiti",
+          "cover": "cover.jpg",
+          "tracks": [
+            "Black Country Woman.mp3",
+            "Boogie With Stu.mp3",
+            "Bron-Yr-Aur.mp3",
+            "Custard Pie.mp3",
+            "Down by the Seaside.mp3",
+            "Houses of the Holy.mp3",
+            "In My Time of Dying.mp3",
+            "In the Light.mp3",
+            "Kashmir.mp3",
+            "Night Flight.mp3",
+            "Sick Again.mp3",
+            "Ten Years Gone.mp3",
+            "The Rover.mp3",
+            "The Wanton Song.mp3",
+            "Trampled Under Foot.mp3"
+          ]
+        },
+        {
+          "title": "Led Zeppelin II",
+          "base_path": "/aliyun/music/Led Zeppelin/Led Zeppelin II",
+          "cover": "cover.jpg",
+          "tracks": [
+            "Bring It On Home.mp3",
+            "Heartbreaker.mp3",
+            "Living Loving Maid (She’s Just a Woman).mp3",
+            "Moby Dick.mp3",
+            "Ramble On.mp3",
+            "Thank You.mp3",
+            "The Lemon Song.mp3",
+            "What Is and What Should Never Be.mp3",
+            "Whole Lotta Love.mp3"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "King Crimson",
+      "banner": "banner.jpg",
+      "albums": [
+        {
+          "title": "In the Court of the Crimson King",
+          "base_path": "/aliyun/music/King Crimson/In the Court of the Crimson King",
+          "cover": "cover.jpg",
+          "tracks": [
+            "21st Century Schizoid Man.mp3",
+            "Epitaph.mp3",
+            "I Talk to the Wind.mp3",
+            "Moonchild.mp3",
+            "The Court of the Crimson King.mp3"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Jimi Hendrix",
+      "banner": "banner.jpg",
+      "albums": [
+        {
+          "title": "Electric Ladyland",
+          "base_path": "/aliyun/music/Jimi Hendrix/Electric Ladyland",
+          "cover": "cover.jpg",
+          "tracks": [
+            "1983... (A Merman I Should Turn to Be).mp3",
+            "Ain't Nothing Wrong With That.mp3",
+            "All Along the Watchtower.mp3",
+            "Angel (demo version).mp3",
+            "Cat Talkin' to Me (alternate take).mp3",
+            "Cat Talkin' to Me (backing track).mp3",
+            "Come On, Part 1.mp3",
+            "Freedom (rehearsal).mp3",
+            "Gypsy Eyes (rehearsal).mp3",
+            "Gypsy Eyes (rough mix).mp3",
+            "House Burning Down (rough mix).mp3",
+            "Room Full of Mirrors.mp3",
+            "Taking Care of No Business.mp3",
+            "Valleys of Neptune... Arising.mp3",
+            "Voodoo Child (slight return).mp3"
+          ]
+        },
+        {
+          "title": "Axis_ Bold as Love",
+          "base_path": "/aliyun/music/Jimi Hendrix/Axis_ Bold as Love",
+          "cover": "cover.jpg",
+          "tracks": [
+            "Ain’t No Telling.mp3",
+            "Bold as Love.mp3",
+            "Castles Made of Sand.mp3",
+            "EXP.mp3",
+            "If 6 Was 9.mp3",
+            "Little Miss Lover.mp3",
+            "Little Wing.mp3",
+            "One Rainy Wish.mp3",
+            "She’s So Fine.mp3",
+            "Spanish Castle Magic.mp3",
+            "Up From the Skies.mp3",
+            "Wait Until Tomorrow.mp3",
+            "You Got Me Floatin’.mp3"
+          ]
+        },
+        {
+          "title": "Are You Experienced",
+          "base_path": "/aliyun/music/Jimi Hendrix/Are You Experienced",
+          "cover": "cover.jpg",
+          "tracks": [
+            "Are You Experienced_.mp3",
+            "Fire.mp3"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Guns N' Roses",
+      "banner": "banner.jpg",
+      "albums": [
+        {
+          "title": "Use Your Illusion I",
+          "base_path": "/aliyun/music/Guns N' Roses/Use Your Illusion I",
+          "cover": "cover.jpg",
+          "tracks": [
+            "Back Off Bitch.mp3",
+            "Bad Apples.mp3",
+            "Bad Obsession.mp3",
+            "Coma.mp3",
+            "Dead Horse.mp3",
+            "Don’t Cry (original).mp3",
+            "Don’t Damn Me.mp3",
+            "Double Talkin’ Jive.mp3",
+            "Dust n’ Bones.mp3",
+            "Garden of Eden.mp3",
+            "Live and Let Die.mp3",
+            "November Rain (2022 version).mp3",
+            "Perfect Crime.mp3",
+            "Right Next Door to Hell.mp3",
+            "The Garden.mp3",
+            "You Ain’t the First.mp3"
+          ]
+        },
+        {
+          "title": "Appetite for Destruction",
+          "base_path": "/aliyun/music/Guns N' Roses/Appetite for Destruction",
+          "cover": "cover.jpg",
+          "tracks": [
+            "Anything Goes.mp3",
+            "It’s So Easy.mp3",
+            "Mr. Brownstone.mp3",
+            "My Michelle.mp3",
+            "Nightrain.mp3",
+            "Out ta Get Me.mp3",
+            "Paradise City.mp3",
+            "Rocket Queen.mp3",
+            "Sweet Child o’ Mine.mp3",
+            "Think About You.mp3",
+            "Welcome to the Jungle.mp3",
+            "You’re Crazy.mp3"
+          ]
+        },
+        {
+          "title": "Use Your Illusion II",
+          "base_path": "/aliyun/music/Guns N' Roses/Use Your Illusion II",
+          "cover": "cover.jpg",
+          "tracks": [
+            "14 Years.mp3",
+            "Breakdown.mp3",
+            "Civil War.mp3",
+            "Don't Cry (alternate lyrics).mp3",
+            "Estranged.mp3",
+            "Get in the Ring.mp3",
+            "Knockin' on Heaven's Door.mp3",
+            "Locomotive.mp3",
+            "My World.mp3",
+            "Pretty Tied Up (The Perils of Rock N' Roll Decadence).mp3",
+            "Shotgun Blues.mp3",
+            "So Fine.mp3",
+            "Yesterdays.mp3",
+            "You Could Be Mine.mp3"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Elvis Presley",
+      "banner": "banner.jpg",
+      "albums": [
+        {
+          "title": "Elvis Is Back!",
+          "base_path": "/aliyun/music/Elvis Presley/Elvis Is Back!",
+          "cover": "cover.jpg",
+          "tracks": [
+            "Dirty, Dirty Feeling.mp3",
+            "Fever.mp3",
+            "I Will Be Home Again.mp3",
+            "It Feels So Right.mp3",
+            "Like a Baby.mp3",
+            "Make Me Know It.mp3",
+            "Reconsider Baby.mp3",
+            "Soldier Boy.mp3",
+            "Such a Night.mp3",
+            "The Girl Next Door Went A'Walking.mp3",
+            "The Girl of My Best Friend.mp3",
+            "Thrill of Your Love.mp3"
+          ]
+        },
+        {
+          "title": "Elvis Presley",
+          "base_path": "/aliyun/music/Elvis Presley/Elvis Presley",
+          "cover": "cover.jpg",
+          "tracks": [
+            "Baby Let’s Play House.mp3",
+            "Blue Suede Shoes.mp3",
+            "Good Rockin’ Tonight.mp3",
+            "Got a Woman.mp3",
+            "Heartbreak Hotel.mp3",
+            "Hound Dog.mp3",
+            "I Was the One.mp3",
+            "Interview.mp3",
+            "Long Tall Sally.mp3",
+            "Maybellene.mp3",
+            "Money Honey.mp3",
+            "That’s Alright Mama.mp3",
+            "Tweedle Dee.mp3"
+          ]
+        },
+        {
+          "title": "From Elvis in Memphis",
+          "base_path": "/aliyun/music/Elvis Presley/From Elvis in Memphis",
+          "cover": "cover.jpg",
+          "tracks": [
+            "After Loving You.mp3",
+            "Any Day Now.mp3",
+            "Gentle on My Mind.mp3",
+            "In the Ghetto.mp3",
+            "It Keeps Right on A-Hurtin’.mp3",
+            "I’ll Hold You in My Heart (Till I Can Hold You in My Arms).mp3",
+            "I’m Movin’ On.mp3",
+            "Long Black Limousine.mp3",
+            "Only the Strong Survive.mp3",
+            "Power of My Love.mp3",
+            "True Love Travels on a Gravel Road.mp3",
+            "Wearin’ That Loved on Look.mp3"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "David Bowie",
+      "banner": "banner.jpg",
+      "albums": [
+        {
+          "title": "Low",
+          "base_path": "/aliyun/music/David Bowie/Low",
+          "cover": "cover.jpg",
+          "tracks": [
+            "A New Career in a New Town.mp3",
+            "Always Crashing in the Same Car.mp3",
+            "Art Decade.mp3",
+            "Be My Wife.mp3",
+            "Breaking Glass.mp3",
+            "Sound and Vision.mp3",
+            "Speed of Life.mp3",
+            "Subterraneans.mp3",
+            "Warszawa.mp3",
+            "Weeping Wall.mp3",
+            "What in the World.mp3"
+          ]
+        },
+        {
+          "title": "_Heroes_",
+          "base_path": "/aliyun/music/David Bowie/_Heroes_",
+          "cover": "cover.jpg",
+          "tracks": [
+            "Beauty and the Beast.mp3",
+            "Blackout.mp3",
+            "Joe the Lion.mp3",
+            "Moss Garden.mp3",
+            "Neuköln.mp3",
+            "Sense of Doubt.mp3",
+            "Sons of the Silent Age.mp3",
+            "The Secret Life of Arabia.mp3",
+            "V‐2 Schneider.mp3",
+            "“Heroes”.mp3"
+          ]
+        },
+        {
+          "title": "The Rise and Fall of Ziggy Stardust and the Spiders from Mars",
+          "base_path": "/aliyun/music/David Bowie/The Rise and Fall of Ziggy Stardust and the Spiders from Mars",
+          "cover": "cover.jpg",
+          "tracks": [
+            "Five Years.mp3",
+            "Hang On to Yourself.mp3",
+            "It Ain’t Easy.mp3",
+            "Lady Stardust.mp3",
+            "Moonage Daydream.mp3",
+            "Rock ’n’ Roll Suicide.mp3",
+            "Soul Love.mp3",
+            "Star.mp3",
+            "Starman.mp3",
+            "Suffragette City.mp3",
+            "Ziggy Stardust.mp3"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Chuck Berry",
+      "banner": "banner.jpg",
+      "albums": [
+        {
+          "title": "Berry Is on Top",
+          "base_path": "/aliyun/music/Chuck Berry/Berry Is on Top",
+          "cover": "cover.jpg",
+          "tracks": [
+            "Almost Grown.mp3",
+            "Anthony Boy.mp3",
+            "Around and Around.mp3",
+            "Blues for Hawaiians.mp3",
+            "Carol.mp3",
+            "Hey Pedro.mp3",
+            "Johnny B. Goode.mp3",
+            "Little Queenie.mp3",
+            "Maybellene.mp3",
+            "Roll Over Beethoven.mp3",
+            "Sweet Little Rock ’n’ Roller.mp3"
+          ]
+        },
+        {
+          "title": "After School Session",
+          "base_path": "/aliyun/music/Chuck Berry/After School Session",
+          "cover": "cover.jpg",
+          "tracks": [
+            "Berry Pickin’.mp3",
+            "Brown Eyed Handsome Man.mp3",
+            "Deep Feeling.mp3",
+            "Down Bound Train.mp3",
+            "Drifting Heart.mp3",
+            "Havana Moon.mp3",
+            "Maybellene.mp3",
+            "No Money Down.mp3",
+            "Roly Poly (aka Rolli Polli).mp3",
+            "Thirty Days.mp3",
+            "Together (We’ll Always Be).mp3",
+            "Too Much Monkey Business.mp3",
+            "Wee Wee Hours.mp3",
+            "You Can’t Catch Me.mp3"
+          ]
+        },
+        {
+          "title": "One Dozen Berrys",
+          "base_path": "/aliyun/music/Chuck Berry/One Dozen Berrys",
+          "cover": "cover.jpg",
+          "tracks": [
+            "Blue Feeling.mp3",
+            "Guitar Boogie.mp3",
+            "How You’ve Changed.mp3",
+            "Ingo.mp3",
+            "It Don’t Take but a Few Minutes.mp3",
+            "Lajaunda (española).mp3",
+            "Low Feeling.mp3",
+            "Oh Baby Doll.mp3",
+            "Reelin and Rockin.mp3",
+            "Rock & Roll Music.mp3",
+            "Rockin at the Philharmonic.mp3",
+            "Sweet Little Sixteen.mp3"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Bob Dylan",
+      "banner": "banner.jpg",
+      "albums": [
+        {
+          "title": "Blood on the Tracks",
+          "base_path": "/aliyun/music/Bob Dylan/Blood on the Tracks",
+          "cover": "cover.jpg",
+          "tracks": [
+            "Buckets of Rain.mp3",
+            "Idiot Wind.mp3",
+            "If You See Her, Say Hello.mp3",
+            "Lily, Rosemary and the Jack of Hearts.mp3",
+            "Meet Me in the Morning.mp3",
+            "Simple Twist of Fate.mp3",
+            "Tangled Up in Blue.mp3",
+            "You’re Gonna Make Me Lonesome When You Go.mp3",
+            "You’re a Big Girl Now.mp3"
+          ]
+        },
+        {
+          "title": "Highway 61 Revisited",
+          "base_path": "/aliyun/music/Bob Dylan/Highway 61 Revisited",
+          "cover": "cover.jpg",
+          "tracks": [
+            "Ballad of a Thin Man.mp3",
+            "Desolation Row.mp3",
+            "From a Buick 6.mp3",
+            "Highway 61 Revisited.mp3",
+            "It Takes a Lot to Laugh, It Takes a Train to Cry.mp3",
+            "Just Like Tom Thumb’s Blues.mp3",
+            "Like a Rolling Stone.mp3",
+            "Queen Jane Approximately.mp3",
+            "Tombstone Blues.mp3"
+          ]
+        },
+        {
+          "title": "Blonde on Blonde",
+          "base_path": "/aliyun/music/Bob Dylan/Blonde on Blonde",
+          "cover": "cover.jpg",
+          "tracks": [
+            "4th Time Around.mp3",
+            "Absolutely Sweet Marie.mp3",
+            "I Want You.mp3",
+            "Just Like a Woman.mp3",
+            "Leopard‐Skin Pill‐Box Hat.mp3",
+            "Most Likely You Go Your Way and I’ll Go Mine.mp3",
+            "Obviously Five Believers.mp3",
+            "One of Us Must Know (Sooner or Later).mp3",
+            "Pledging My Time.mp3",
+            "Rainy Day Women #12 & 35.mp3",
+            "Sad‐Eyed Lady of the Lowlands.mp3",
+            "Stuck Inside of Mobile With the Memphis Blues Again.mp3",
+            "Temporary Like Achilles.mp3",
+            "Visions of Johanna.mp3"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Black Sabbath",
+      "banner": "banner.jpg",
+      "albums": [
+        {
+          "title": "Paranoid",
+          "base_path": "/aliyun/music/Black Sabbath/Paranoid",
+          "cover": "cover.jpg",
+          "tracks": [
+            "Paranoid.mp3",
+            "Psycho Man (Danny Saber remix edit).mp3",
+            "Psycho Man (radio edit).mp3"
+          ]
+        },
+        {
+          "title": "Black Sabbath",
+          "base_path": "/aliyun/music/Black Sabbath/Black Sabbath",
+          "cover": "cover.jpg",
+          "tracks": [
+            "Black Sabbath.mp3",
+            "Evil Woman, Don’t Play Your Games With Me.mp3",
+            "Iron Man.mp3",
+            "Paranoid.mp3",
+            "Rat Salad.mp3",
+            "Sleeping Village.mp3",
+            "War Pigs.mp3"
+          ]
+        },
+        {
+          "title": "Master of Reality",
+          "base_path": "/aliyun/music/Black Sabbath/Master of Reality",
+          "cover": "cover.jpg",
+          "tracks": [
+            "After Forever.mp3",
+            "Children of the Grave.mp3",
+            "Embryo.mp3",
+            "Into the Void.mp3",
+            "Lord of This World.mp3",
+            "Orchid.mp3",
+            "Solitude.mp3",
+            "Sweet Leaf.mp3"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "AC_DC",
+      "banner": "banner.jpg",
+      "albums": [
+        {
+          "title": "Let There Be Rock",
+          "base_path": "/aliyun/music/AC_DC/Let There Be Rock",
+          "cover": "cover.jpg",
+          "tracks": [
+            "Bad Boy Boogie.mp3",
+            "Girls Got Rhythm.mp3",
+            "Hell Ain't a Bad Place to Be.mp3",
+            "High Voltage.mp3",
+            "Highway to Hell.mp3",
+            "Let There Be Rock.mp3",
+            "Live Wire.mp3",
+            "Rocker.mp3",
+            "Shot Down in Flames.mp3",
+            "Sin City.mp3",
+            "The Jack.mp3",
+            "Walk Over You.mp3",
+            "Whole Lotta Rosie.mp3"
+          ]
+        },
+        {
+          "title": "Back in Black",
+          "base_path": "/aliyun/music/AC_DC/Back in Black",
+          "cover": "cover.jpg",
+          "tracks": [
+            "Back in Black.mp3",
+            "You Shook Me All Night Long.mp3"
+          ]
+        },
+        {
+          "title": "Highway to Hell",
+          "base_path": "/aliyun/music/AC_DC/Highway to Hell",
+          "cover": "cover.jpg",
+          "tracks": [
+            "Hells Bells (live).mp3",
+            "Highway to Hell (live).mp3",
+            "The Jack (live).mp3"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Slint",
+      "banner": "banner.jpg",
+      "albums": [
+        {
+          "title": "Spiderland",
+          "base_path": "/aliyun/music/Slint/Spiderland",
+          "cover": "cover.jpg",
+          "tracks": [
+            "Breadcrumb Trail.mp3",
+            "Don, Aman.mp3",
+            "For Dinner....mp3",
+            "Good Morning, Captain.mp3",
+            "Nosferatu Man.mp3",
+            "Washer.mp3"
+          ]
+        }
+      ]
+    }
+  ]
+}

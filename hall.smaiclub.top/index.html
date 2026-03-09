@@ -1,0 +1,50 @@
+<!doctype html>
+<html class="dark" lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>SMAICLUB Hall</title>
+    <script src="https://login.smaiclub.top/common-auth.js" defer></script>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <script>
+      tailwind.config = {
+        darkMode: 'class',
+        theme: {
+          extend: {
+            colors: {
+              primary: '#ec1337',
+              'background-light': '#f8f6f6',
+              'background-dark': '#221013',
+              'surface-light': '#ffffff',
+              'surface-dark': '#39282b',
+              'neutral-light': '#e4d8da',
+              'neutral-dark': '#452229',
+              'text-light': '#1f1416',
+              'text-dark': '#ffffff',
+              'subtext-light': '#5c2b34',
+              'subtext-dark': '#d1b3b8',
+              'text-muted-dark': '#b99da1'
+            },
+            fontFamily: {
+              display: ['Space Grotesk', 'sans-serif']
+            },
+            borderRadius: {
+              DEFAULT: '0.25rem',
+              lg: '0.5rem',
+              xl: '0.75rem',
+              full: '9999px'
+            }
+          }
+        }
+      };
+    </script>
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Noto+Serif+SC:wght@600;700;900&family=Space+Grotesk:wght@300;400;500;600;700;900&display=swap"
+    />
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

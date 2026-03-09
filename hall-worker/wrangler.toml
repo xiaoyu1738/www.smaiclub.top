@@ -1,0 +1,19 @@
+name = "hall-worker"
+main = "src/index.ts"
+compatibility_date = "2025-12-14"
+
+# 生产环境建议绑定到 hall.smaiclub.top
+# routes = [
+#   { pattern = "hall.smaiclub.top/api/*", zone_name = "smaiclub.top" }
+# ]
+
+# Cloudflare KV:
+# 1. 建议 Namespace 名称: hall-worker-music-cache
+# 2. 创建后把 id / preview_id 填进下面
+[[kv_namespaces]]
+binding = "MUSIC_CACHE"
+id = "a81607e030fd41efa9118f7a389cc1f3"
+preview_id = "a81607e030fd41efa9118f7a389cc1f3"
+
+[vars]
+ALIST_HOST = "https://smaiclub-alist-v3.onrender.com"

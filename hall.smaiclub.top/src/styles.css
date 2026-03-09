@@ -1,0 +1,484 @@
+:root {
+  --red-deep: #6e0d1f;
+  --red-main: #a91a2f;
+  --gold-main: #f0c56a;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  min-height: 100%;
+  margin: 0;
+}
+
+html {
+  overflow-y: auto;
+  scrollbar-gutter: stable;
+}
+
+body {
+  font-family: 'Space Grotesk', 'Manrope', 'Segoe UI', sans-serif;
+  color: #fdfafb;
+  background: #221013;
+}
+
+a,
+button,
+input {
+  font: inherit;
+}
+
+.app-shell {
+  min-height: 100vh;
+  background: #221013;
+}
+
+.page-body {
+  padding-top: 88px;
+}
+
+@keyframes navSlideDown {
+  from {
+    transform: translateX(-50%) translateY(-24px);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(-50%) translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes fadeUp {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.45s ease-out both;
+}
+
+.animate-fade-up {
+  animation: fadeUp 0.55s ease-out both;
+}
+
+.smai-player-page {
+  transition: transform 0.23s ease, opacity 0.23s ease;
+  transform-origin: bottom center;
+}
+
+.smai-player-page.is-minimizing {
+  transform: scale(0.965) translateY(24px);
+  opacity: 0.3;
+  pointer-events: none;
+}
+
+@keyframes miniDockIn {
+  from {
+    transform: translateY(22px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.smai-mini-player {
+  position: fixed;
+  left: 16px;
+  right: 16px;
+  bottom: 16px;
+  z-index: 1200;
+  border: 1px solid rgba(240, 197, 106, 0.28);
+  border-radius: 16px;
+  background: rgba(31, 20, 24, 0.94);
+  box-shadow: 0 14px 36px rgba(18, 7, 10, 0.52);
+  padding: 10px 12px;
+  color: #fff;
+  display: grid;
+  grid-template-columns: auto auto 1fr auto;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  animation: miniDockIn 0.26s ease-out both;
+}
+
+.smai-mini-player-trigger {
+  width: 26px;
+  height: 26px;
+  border-radius: 99px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #f4cf81;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.smai-mini-player-cover {
+  width: 42px;
+  height: 42px;
+  border-radius: 8px;
+  object-fit: cover;
+}
+
+.smai-mini-player-meta {
+  min-width: 0;
+  display: inline-flex;
+  flex-direction: column;
+  gap: 2px;
+  text-align: left;
+}
+
+.smai-mini-player-title {
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.smai-mini-player-artist {
+  font-size: 12px;
+  color: #d1b3b8;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.smai-mini-player-time {
+  font-size: 12px;
+  color: #d1b3b8;
+  font-weight: 700;
+}
+
+.smai-navbar {
+  position: fixed;
+  top: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(1360px, calc(100% - 32px));
+  height: 58px;
+  border-radius: 999px;
+  border: 1px solid rgba(243, 201, 110, 0.45);
+  background: rgba(126, 15, 34, 0.44);
+  backdrop-filter: saturate(180%) blur(18px);
+  box-shadow: 0 8px 28px rgba(71, 8, 18, 0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  animation: navSlideDown 0.45s ease-out both;
+}
+
+.smai-logo {
+  position: absolute;
+  left: 28px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  text-decoration: none;
+  color: #fff8ea;
+  font-family: 'Noto Serif SC', serif;
+  font-weight: 900;
+  letter-spacing: 0.6px;
+}
+
+.smai-logo-icon {
+  width: 22px;
+  height: 22px;
+  color: #f0c56a;
+  stroke-width: 2.2;
+}
+
+.smai-logo-badge {
+  width: 14px;
+  height: 14px;
+  color: #df8f2c;
+  opacity: 0.9;
+}
+
+.smai-nav-links {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  transition: opacity 0.2s ease;
+}
+
+.smai-nav-links.is-covered {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.smai-link {
+  color: #fff8ea;
+  text-decoration: none;
+  font-size: 14px;
+  font-weight: 700;
+  padding: 6px 12px;
+  border-radius: 999px;
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  transition: color 0.24s ease;
+}
+
+.smai-link::after {
+  content: '';
+  position: absolute;
+  left: 12px;
+  right: 12px;
+  bottom: 2px;
+  height: 2px;
+  border-radius: 99px;
+  background: linear-gradient(90deg, #f0c56a 0%, #df8f2c 100%);
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 0.28s ease-in-out;
+}
+
+.smai-link:hover,
+.smai-link:focus-visible {
+  color: var(--gold-main);
+  outline: none;
+}
+
+.smai-link:hover::after,
+.smai-link:focus-visible::after {
+  transform: scaleX(1);
+}
+
+.smai-right-zone {
+  position: absolute;
+  right: 18px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  z-index: 6;
+}
+
+.smai-search-toggle {
+  position: relative;
+  height: 46px;
+  width: 44px;
+  border: 0;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff8ea;
+  background: linear-gradient(120deg, #7f1028 0%, #aa1f38 100%);
+  cursor: pointer;
+  transition: background-color 0.25s ease;
+  overflow: visible;
+}
+
+.smai-search-toggle:hover {
+  background: linear-gradient(120deg, #961630 0%, #be2b45 100%);
+}
+
+.smai-search-toggle svg {
+  color: #fff8ea;
+  flex-shrink: 0;
+}
+
+.smai-search-toggle::before {
+  content: '';
+  position: absolute;
+  inset: 2px;
+  border-radius: 50%;
+  border: 1.5px solid #df8f2c;
+  opacity: 0;
+  transform: scale(1);
+  transition: transform 0.36s ease-out, opacity 0.36s ease-out;
+}
+
+.smai-search-toggle:hover::before {
+  opacity: 1;
+  transform: scale(1.08);
+}
+
+.smai-search-layer {
+  position: absolute;
+  top: 7px;
+  bottom: 7px;
+  left: clamp(180px, 20vw, 260px);
+  right: 208px;
+  border-radius: 999px;
+  background: rgba(248, 237, 220, 0.96);
+  border: 1px solid rgba(113, 18, 35, 0.35);
+  box-shadow: 0 8px 18px rgba(31, 8, 13, 0.24);
+  display: flex;
+  align-items: center;
+  padding: 0 14px;
+  gap: 10px;
+  opacity: 0;
+  pointer-events: none;
+  clip-path: inset(0 0 0 100% round 999px);
+  transition: clip-path 0.3s ease, opacity 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+  z-index: 5;
+}
+
+.smai-search-layer.is-open {
+  opacity: 1;
+  pointer-events: auto;
+  clip-path: inset(0 0 0 0 round 999px);
+}
+
+.smai-search-layer.is-focused {
+  border-color: rgba(143, 22, 48, 0.78);
+  box-shadow: 0 8px 24px rgba(31, 8, 13, 0.26);
+}
+
+.smai-search-icon {
+  color: var(--red-main);
+  width: 16px;
+  height: 16px;
+  stroke-width: 2.2;
+  flex-shrink: 0;
+}
+
+.smai-search-field {
+  position: relative;
+  width: 100%;
+  padding-bottom: 4px;
+}
+
+.smai-search-input {
+  width: 100%;
+  border: 0;
+  background: transparent;
+  color: #2f1715;
+  outline: none !important;
+  box-shadow: none !important;
+  appearance: none;
+  -webkit-appearance: none;
+}
+
+.smai-search-input::-webkit-search-decoration,
+.smai-search-input::-webkit-search-cancel-button,
+.smai-search-input::-webkit-search-results-button,
+.smai-search-input::-webkit-search-results-decoration {
+  -webkit-appearance: none;
+}
+
+.smai-search-input:focus,
+.smai-search-input:focus-visible {
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+.smai-search-line {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 3px;
+  border-radius: 99px;
+  background-color: #ff6600;
+  transform: scaleX(0);
+  transform-origin: center;
+  transition: transform 0.4s ease-out;
+}
+
+.smai-search-input:focus + .smai-search-line {
+  transform: scaleX(1);
+}
+
+.auth-container {
+  min-width: 152px;
+  display: inline-flex;
+  justify-content: flex-end;
+}
+
+.blur-backdrop {
+  backdrop-filter: blur(40px);
+  -webkit-backdrop-filter: blur(40px);
+}
+
+.hide-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.hide-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+@media (max-width: 920px) {
+  .smai-navbar {
+    height: 54px;
+  }
+
+  .smai-logo {
+    left: 16px;
+    font-size: 0.94rem;
+  }
+
+  .smai-logo-icon {
+    width: 22px;
+    height: 22px;
+  }
+
+  .smai-logo-badge {
+    display: none;
+  }
+
+  .smai-nav-links {
+    display: none;
+  }
+
+  .smai-search-layer {
+    left: 112px;
+    right: 188px;
+  }
+}
+
+@media (max-width: 680px) {
+  .page-body {
+    padding-top: 82px;
+  }
+
+  .auth-container {
+    min-width: 118px;
+  }
+
+  .smai-search-layer {
+    left: 12px;
+    right: 145px;
+  }
+
+  .smai-mini-player {
+    left: 10px;
+    right: 10px;
+    bottom: 10px;
+    border-radius: 14px;
+    padding: 9px 10px;
+  }
+}
