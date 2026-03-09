@@ -41,7 +41,7 @@ export interface CatalogCacheSnapshot {
 
 const DEFAULT_ALIST_HOST = import.meta.env.VITE_CATALOG_HOST ?? 'https://smaiclub-alist-v3.onrender.com';
 export const CATALOG_REMOTE_URL =
-  import.meta.env.VITE_CATALOG_URL ?? `${DEFAULT_ALIST_HOST.replace(/\/+$/, '')}/aliyun/database.json`;
+  import.meta.env.VITE_CATALOG_URL ?? `${DEFAULT_ALIST_HOST.replace(/\/+$/, '')}/aliyun/music/database.json`;
 export const CATALOG_CACHE_STORAGE_KEY = 'hall.catalog.v1';
 
 function canUseLocalStorage(): boolean {
