@@ -193,41 +193,34 @@ async function handleGetCatalog(request: Request, env: Env): Promise<Response> {
   const dbPath = '/aliyun/music/database.json';
   const rawUrl = await requestAListRawUrl(env, dbPath);
 
-  // 拉取实际文件内容
-  const upstream = await fetch(rawUrl);
+  const response = await fetch(rawUrl);
 
-  if (!upstream.ok) {
-    throw new HttpError(
-      502,
-      `目录文件拉取失败，上游返回 HTTP ${upstream.status}`
-    );
+  // 1. 只看状态码，200 说明文件拿到了
+  if (!response.ok) {
+    throw new HttpError(502, `无法读取 database.json: HTTP ${response.status}`);
   }
 
-  // 校验 Content-Type，防止拿到 HTML 错页
-  const ct = upstream.headers.get('Content-Type') || '';
-  if (!ct.includes('json') && !ct.includes('text/plain')) {
-    throw new HttpError(
-      502,
-      `目录文件响应不是 JSON (Content-Type: ${ct})，链接可能已过期`
-    );
-  }
+  // 2. Content-Type 仅用于诊断，不做拦截（对象存储可能返回 octet-stream）
+  const contentType = response.headers.get('Content-Type') || '';
 
-  // 安全解析 JSON
-  const body = await upstream.text();
-  let data: unknown;
   try {
-    data = JSON.parse(body);
-  } catch {
-    throw new HttpError(502, '目录文件内容不是合法 JSON');
-  }
+    // 3. 直接尝试解析，只要内容是 JSON 字符串就能成功
+    const data = await response.json();
 
-  return new Response(JSON.stringify(data), {
-    headers: {
-      'Content-Type': 'application/json; charset=utf-8',
-      ...buildCorsHeaders(request, env),
-      'Cache-Control': 'public, max-age=3600',
-    },
-  });
+    return new Response(JSON.stringify(data), {
+      headers: {
+        'Content-Type': 'application/json; charset=utf-8',
+        ...buildCorsHeaders(request, env),
+        'Cache-Control': 'public, max-age=3600',
+      },
+    });
+  } catch {
+    // 4. 解析失败才报错，带上实际 Content-Type 辅助排查
+    throw new HttpError(
+      502,
+      `文件内容解析 JSON 失败 (实际类型: ${contentType})，请确认 AList 里的文件内容是否损坏`
+    );
+  }
 }
 
 /**
