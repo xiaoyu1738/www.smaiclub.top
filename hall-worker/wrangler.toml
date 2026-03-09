@@ -13,7 +13,7 @@ compatibility_date = "2025-12-14"
 [[kv_namespaces]]
 binding = "MUSIC_CACHE"
 id = "a81607e030fd41efa9118f7a389cc1f3"
-preview_id = "a81607e030fd41efa9118f7a389cc1f3"
 
 [vars]
 ALIST_HOST = "https://smaiclub-alist-v3.onrender.com"
+PRODUCTION_ORIGIN = "https://hall.smaiclub.top"

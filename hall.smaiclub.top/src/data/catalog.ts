@@ -39,9 +39,12 @@ export interface CatalogCacheSnapshot {
   updatedAt: number;
 }
 
-const DEFAULT_ALIST_HOST = import.meta.env.VITE_CATALOG_HOST ?? 'https://smaiclub-alist-v3.onrender.com';
+const ALIST_HOST = import.meta.env.VITE_CATALOG_HOST ?? 'https://smaiclub-alist-v3.onrender.com';
+const WORKER_HOST = import.meta.env.VITE_WORKER_HOST ?? 'https://hall-worker.xiaoyu1738jw.workers.dev';
+
+/** catalog 数据现统一走 Worker 代理，解决前端直连 AList 的 CORS + 401 问题 */
 export const CATALOG_REMOTE_URL =
-  import.meta.env.VITE_CATALOG_URL ?? `${DEFAULT_ALIST_HOST.replace(/\/+$/, '')}/aliyun/music/database.json`;
+  import.meta.env.VITE_CATALOG_URL ?? `${WORKER_HOST.replace(/\/+$/, '')}/api/music/catalog`;
 export const CATALOG_CACHE_STORAGE_KEY = 'hall.catalog.v1';
 
 function canUseLocalStorage(): boolean {
@@ -109,7 +112,7 @@ function toAbsoluteAssetUrl(pathOrUrl: string): string {
   }
 
   const normalizedPath = pathOrUrl.startsWith('/') ? pathOrUrl : `/${pathOrUrl}`;
-  return `${DEFAULT_ALIST_HOST.replace(/\/+$/, '')}${encodePath(normalizedPath)}`;
+  return `${ALIST_HOST.replace(/\/+$/, '')}${encodePath(normalizedPath)}`;
 }
 
 function resolveAssetUrl(basePath: string, asset: string | null, fallback: string): string {
@@ -156,9 +159,9 @@ function normalizeTrack(
     typeof trackValue === 'string'
       ? readString(trackValue)
       : readString(trackRecord?.file) ??
-        readString(trackRecord?.filename) ??
-        readString(trackRecord?.name) ??
-        readString(trackRecord?.source);
+      readString(trackRecord?.filename) ??
+      readString(trackRecord?.name) ??
+      readString(trackRecord?.source);
   const path = resolveTrackPath(trackRecord, album.basePath, fallbackFileName);
 
   if (!path) {

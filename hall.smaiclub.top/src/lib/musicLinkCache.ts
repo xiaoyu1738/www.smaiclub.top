@@ -22,8 +22,9 @@ interface MusicLinkApiError {
 const MUSIC_LINK_STORAGE_KEY_PREFIX = 'hall.musicLinkCache.v1:';
 const MUSIC_LINK_TTL_MS = 7_200_000;
 const EARLY_EXPIRY_MS = 5 * 60 * 1000;
+const WORKER_HOST = import.meta.env.VITE_WORKER_HOST ?? 'https://hall-worker.xiaoyu1738jw.workers.dev';
 const MUSIC_LINK_API_URL =
-  import.meta.env.VITE_MUSIC_LINK_API_URL ?? 'https://hall-worker.xiaoyu1738jw.workers.dev/api/music/get-link';
+  import.meta.env.VITE_MUSIC_LINK_API_URL ?? `${WORKER_HOST.replace(/\/+$/, '')}/api/music/get-link`;
 
 const inflightRequests = new Map<string, Promise<MusicLinkResolution>>();
 
