@@ -55,7 +55,7 @@ export function ArtistsPage({ searchText }: ArtistsPageProps) {
       <div className="mx-auto flex w-full max-w-[960px] flex-col px-4 py-6 md:px-6">
         <div className="mt-4 flex min-w-72 flex-col gap-3 px-2">
           <h1 className="text-4xl font-black leading-tight tracking-[-0.033em]">全部艺人</h1>
-          <p className="text-base font-normal leading-normal text-subtext-dark">基于 bands → albums → tracks 的目录索引进行搜索和过滤。</p>
+          <p className="text-base font-normal leading-normal text-subtext-dark">发现更多摇滚乐队和歌手</p>
         </div>
 
         {error ? (

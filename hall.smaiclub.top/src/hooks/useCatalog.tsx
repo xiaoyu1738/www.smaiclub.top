@@ -32,6 +32,9 @@ const CatalogContext = createContext<CatalogContextValue | null>(null);
 
 function getCatalogErrorMessage(error: unknown): string {
   if (error instanceof Error && error.message) {
+    if (error.message.includes('Unexpected token')) {
+      return '目录源返回的不是有效 JSON，请检查 AList 上的 database.json 是否可直接访问。';
+    }
     return error.message;
   }
 
@@ -41,14 +44,24 @@ function getCatalogErrorMessage(error: unknown): string {
 async function fetchRemoteCatalog(): Promise<CatalogCacheSnapshot> {
   const response = await fetch(CATALOG_REMOTE_URL, {
     method: 'GET',
-    cache: 'no-store'
+    cache: 'no-store',
+    headers: {
+      Accept: 'application/json'
+    }
   });
 
   if (!response.ok) {
     throw new Error(`database.json 请求失败，HTTP ${response.status}`);
   }
 
-  const payload = (await response.json()) as unknown;
+  const responseText = await response.text();
+  let payload: unknown;
+  try {
+    payload = JSON.parse(responseText) as unknown;
+  } catch {
+    throw new Error('Unexpected token in database.json response');
+  }
+
   return {
     artists: normalizeCatalogPayload(payload),
     updatedAt: Date.now()

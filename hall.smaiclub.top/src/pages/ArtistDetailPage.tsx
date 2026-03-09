@@ -41,9 +41,6 @@ export function ArtistDetailPage() {
             <div className="absolute inset-0 bg-cover bg-center" style={{ backgroundImage: `url('${artist.hero || artist.avatar}')` }} />
             <div className="absolute inset-0 bg-gradient-to-t from-background-dark via-background-dark/50 to-transparent" />
             <div className="absolute bottom-0 left-0 w-full p-8">
-              <span className="mb-3 inline-block rounded-full bg-primary/20 px-3 py-1 text-xs font-bold uppercase tracking-wider text-primary">
-                动态目录
-              </span>
               <div className="mb-2 flex flex-wrap items-center gap-4">
                 <h1 className="text-4xl font-bold text-white md:text-5xl">{artist.name}</h1>
                 <div className="flex gap-2">

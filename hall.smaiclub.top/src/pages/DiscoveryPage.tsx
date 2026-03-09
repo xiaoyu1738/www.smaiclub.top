@@ -24,9 +24,9 @@ export function DiscoveryPage({ searchText }: DiscoveryPageProps) {
         >
           <h1 className="text-5xl font-black uppercase tracking-tighter text-white md:text-6xl">寻找你的节奏</h1>
           <p className="max-w-2xl text-lg font-medium tracking-wide text-slate-300 md:text-xl">
-            先读本地目录，再后台刷新 `database.json`，让歌手、专辑和曲目随源站同步。
+            在 SMAI CLUB 发现最棒的摇滚乐队、传奇艺术家和纯粹的能量。
           </p>
-          {isRefreshing ? <span className="text-xs uppercase tracking-[0.3em] text-primary">Syncing Catalog</span> : null}
+          {isRefreshing ? <span className="sr-only">目录刷新中</span> : null}
         </div>
 
         {error ? (
