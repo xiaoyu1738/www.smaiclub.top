@@ -23,7 +23,7 @@ const MUSIC_LINK_STORAGE_KEY_PREFIX = 'hall.musicLinkCache.v1:';
 const MUSIC_LINK_TTL_MS = 7_200_000;
 const EARLY_EXPIRY_MS = 5 * 60 * 1000;
 const MUSIC_LINK_API_URL =
-  import.meta.env.VITE_MUSIC_LINK_API_URL ?? 'https://hall.smaiclub.top/api/music/get-link';
+  import.meta.env.VITE_MUSIC_LINK_API_URL ?? 'https://hall-worker.xiaoyu1738jw.workers.dev/api/music/get-link';
 
 const inflightRequests = new Map<string, Promise<MusicLinkResolution>>();
 
@@ -118,6 +118,14 @@ function isMusicLinkApiSuccess(payload: unknown): payload is MusicLinkApiSuccess
   return candidate.code === 200 && typeof candidate.url === 'string';
 }
 
+function getApiErrorMessage(payload: MusicLinkApiSuccess | MusicLinkApiError | null): string | null {
+  if (!payload || payload.code === 200) {
+    return null;
+  }
+
+  return payload.error?.trim() || null;
+}
+
 async function fetchMusicLink(path: string): Promise<MusicLinkResolution> {
   const endpoint = new URL(MUSIC_LINK_API_URL);
   endpoint.searchParams.set('path', path);
@@ -134,7 +142,7 @@ async function fetchMusicLink(path: string): Promise<MusicLinkResolution> {
   }
 
   if (!response.ok || !isMusicLinkApiSuccess(payload)) {
-    const message = payload?.error?.trim();
+    const message = getApiErrorMessage(payload);
     throw new Error(message || `直链接口请求失败，HTTP ${response.status}`);
   }
 
