@@ -76,9 +76,8 @@ export function ArtistsPage({ searchText }: ArtistsPageProps) {
               <button
                 key={item}
                 type="button"
-                className={`flex h-8 items-center justify-center rounded-lg px-4 text-sm font-medium ${
-                  region === item ? 'bg-primary text-text-dark' : 'bg-surface-dark/80'
-                }`}
+                className={`flex h-8 items-center justify-center rounded-lg px-4 text-sm font-medium ${region === item ? 'bg-primary text-text-dark' : 'bg-surface-dark/80'
+                  }`}
                 onClick={() => setRegion(item)}
               >
                 {item}
@@ -94,9 +93,8 @@ export function ArtistsPage({ searchText }: ArtistsPageProps) {
               <button
                 key={item}
                 type="button"
-                className={`flex h-8 items-center justify-center rounded-lg px-4 text-sm font-medium ${
-                  genre === item ? 'bg-primary text-text-dark' : 'bg-surface-dark/80'
-                }`}
+                className={`flex h-8 items-center justify-center rounded-lg px-4 text-sm font-medium ${genre === item ? 'bg-primary text-text-dark' : 'bg-surface-dark/80'
+                  }`}
                 onClick={() => setGenre(item)}
               >
                 {item}
@@ -104,14 +102,13 @@ export function ArtistsPage({ searchText }: ArtistsPageProps) {
             ))}
           </div>
 
-          <div className="flex flex-wrap gap-2 px-2">
+          <div className="hide-scrollbar flex gap-2 overflow-x-auto px-2 md:flex-wrap">
             {LETTERS.map((item) => (
               <button
                 key={item}
                 type="button"
-                className={`flex h-8 w-8 items-center justify-center rounded-lg text-sm font-medium ${
-                  letter === item ? 'bg-primary text-text-dark' : 'bg-surface-dark/80'
-                }`}
+                className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-sm font-medium ${letter === item ? 'bg-primary text-text-dark' : 'bg-surface-dark/80'
+                  }`}
                 onClick={() => setLetter(item)}
               >
                 {item}

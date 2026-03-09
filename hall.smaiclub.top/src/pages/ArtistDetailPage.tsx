@@ -35,7 +35,7 @@ export function ArtistDetailPage() {
 
   return (
     <section className="bg-background-dark text-slate-100 min-h-[calc(100vh-88px)] font-display animate-fade-in">
-      <main className="mx-auto flex w-full max-w-[1200px] gap-8 px-4 py-8 md:px-6">
+      <main className="mx-auto flex w-full max-w-[1200px] flex-col gap-8 px-4 py-8 md:px-6 lg:flex-row">
         <div className="flex flex-1 flex-col gap-8">
           <div className="relative h-80 w-full overflow-hidden rounded-xl shadow-2xl">
             <div className="absolute inset-0 bg-cover bg-center" style={{ backgroundImage: `url('${artist.hero || artist.avatar}')` }} />
@@ -110,7 +110,7 @@ export function ArtistDetailPage() {
           </div>
         </div>
 
-        <aside className="hidden w-80 flex-col gap-8 lg:flex">
+        <aside className="flex w-full flex-col gap-8 lg:w-80">
           <div className="rounded-xl border border-primary/20 bg-black/20 p-6">
             <h3 className="mb-4 flex items-center gap-2 text-lg font-bold">
               <Info size={18} className="text-primary" aria-hidden="true" />

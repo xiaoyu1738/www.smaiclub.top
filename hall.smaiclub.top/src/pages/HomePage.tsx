@@ -131,9 +131,8 @@ export function HomePage() {
 
   return (
     <section
-      className={`smai-player-page relative h-[calc(100vh-88px)] overflow-hidden bg-background-dark text-text-dark animate-fade-in ${
-        isMinimizing ? 'is-minimizing' : ''
-      }`}
+      className={`smai-player-page relative min-h-[calc(100vh-88px)] bg-background-dark text-text-dark animate-fade-in md:h-[calc(100vh-88px)] md:overflow-hidden ${isMinimizing ? 'is-minimizing' : ''
+        }`}
     >
       <div
         className="pointer-events-none absolute inset-0 z-0 scale-110 bg-cover bg-center opacity-25 blur-3xl"
@@ -141,7 +140,7 @@ export function HomePage() {
       />
       <div className="pointer-events-none absolute inset-0 z-0 bg-gradient-to-b from-transparent to-background-dark" />
 
-      <div className="relative z-10 mx-auto grid h-full max-w-7xl grid-rows-[1fr_auto] gap-4 px-4 pb-4 md:px-8">
+      <div className="relative z-10 mx-auto flex h-full max-w-7xl flex-col gap-4 px-4 pb-4 md:grid md:grid-rows-[1fr_auto] md:px-8">
         <audio
           ref={audioRef}
           src={audioUrl ?? undefined}
@@ -186,7 +185,7 @@ export function HomePage() {
             setPlaybackError('音频资源加载失败，请刷新直链后重试。');
           }}
         />
-        <main className="grid min-h-0 grid-cols-1 gap-8 pt-4 md:grid-cols-2 md:gap-10 md:pt-6">
+        <main className="flex min-h-0 flex-1 flex-col gap-6 pt-4 md:grid md:grid-cols-2 md:gap-10 md:pt-6">
           <div className="flex min-h-0 flex-col items-center justify-center">
             <button
               type="button"
@@ -208,7 +207,7 @@ export function HomePage() {
             >
               <ChevronDown size={18} aria-hidden="true" />
             </button>
-            <div className="relative aspect-square w-full max-w-md overflow-hidden rounded-2xl shadow-2xl shadow-black/60 animate-fade-up">
+            <div className="relative aspect-square w-full max-w-[280px] overflow-hidden rounded-2xl shadow-2xl shadow-black/60 animate-fade-up md:max-w-md">
               <img alt="Rock Anthem Album Cover" className="h-full w-full object-cover" src={track.cover} />
             </div>
             <div className="mt-5 w-full max-w-md text-center">
@@ -218,7 +217,7 @@ export function HomePage() {
             </div>
           </div>
 
-          <div className="relative min-h-0 overflow-hidden rounded-2xl bg-black/20">
+          <div className="relative hidden min-h-0 overflow-hidden rounded-2xl bg-black/20 md:block">
             <div className="pointer-events-none absolute left-0 right-0 top-0 z-10 h-16 bg-gradient-to-b from-background-dark to-transparent" />
             <div className="pointer-events-none absolute bottom-0 left-0 right-0 z-10 h-20 bg-gradient-to-t from-background-dark to-transparent" />
             <div className="hide-scrollbar h-full overflow-y-auto px-6 py-20">
@@ -235,7 +234,7 @@ export function HomePage() {
           </div>
         </main>
 
-        <footer className="rounded-2xl border border-white/10 bg-black/35 px-4 py-3 blur-backdrop">
+        <footer className="mt-auto shrink-0 rounded-2xl border border-white/10 bg-black/35 px-4 py-3 blur-backdrop">
           <div className="mb-3 flex items-center justify-between gap-3 text-xs text-subtext-dark">
             <span className="truncate">{statusText}</span>
             {(linkError || playbackError) && track.path ? (
@@ -251,8 +250,45 @@ export function HomePage() {
               </button>
             ) : null}
           </div>
-          <div className="grid grid-cols-[auto_1fr] items-center gap-4">
-            <div className="flex min-w-[200px] items-center gap-3">
+
+          {/* 移动端：曲目信息 + 播放按钮一行，进度条单独一行 */}
+          <div className="flex flex-col gap-3 md:hidden">
+            <div className="flex items-center gap-3">
+              <img className="h-10 w-10 shrink-0 rounded-md object-cover" src={track.cover} alt="小封面" />
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-sm font-bold">{track.title}</p>
+                <p className="truncate text-xs text-subtext-dark">{track.artist}</p>
+              </div>
+              <button
+                type="button"
+                className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-white/15 bg-white/5 text-white transition hover:border-primary hover:text-primary disabled:cursor-not-allowed disabled:opacity-50"
+                onClick={() => { void togglePlayback(); }}
+                disabled={!audioUrl || isLinkLoading}
+                aria-label={isPlaying ? '暂停播放' : '开始播放'}
+              >
+                {isPlaying ? <Pause size={16} aria-hidden="true" /> : <Play size={16} aria-hidden="true" />}
+              </button>
+            </div>
+            <div className="flex items-center gap-3">
+              <span className="min-w-[36px] text-xs text-subtext-dark">{formatTime(safeCurrentTime)}</span>
+              <input
+                type="range"
+                min={0}
+                max={totalDuration}
+                value={safeCurrentTime}
+                onChange={(event) => handleSeek(Number(event.target.value))}
+                className="h-2 w-full cursor-pointer accent-primary"
+                aria-label="播放进度"
+                style={{ background: `linear-gradient(to right, #ec1337 ${ratio}, #452229 ${ratio})` }}
+                disabled={!audioUrl || isLinkLoading}
+              />
+              <span className="min-w-[36px] text-right text-xs text-subtext-dark">{formatTime(totalDuration)}</span>
+            </div>
+          </div>
+
+          {/* 桌面端：原有水平布局 */}
+          <div className="hidden items-center gap-4 md:grid md:grid-cols-[auto_1fr]">
+            <div className="flex items-center gap-3">
               <img className="h-12 w-12 rounded-md object-cover" src={track.cover} alt="小封面" />
               <div className="truncate">
                 <p className="truncate text-sm font-bold">{track.title}</p>
@@ -264,9 +300,7 @@ export function HomePage() {
               <button
                 type="button"
                 className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-white/15 bg-white/5 text-white transition hover:border-primary hover:text-primary disabled:cursor-not-allowed disabled:opacity-50"
-                onClick={() => {
-                  void togglePlayback();
-                }}
+                onClick={() => { void togglePlayback(); }}
                 disabled={!audioUrl || isLinkLoading}
                 aria-label={isPlaying ? '暂停播放' : '开始播放'}
               >
