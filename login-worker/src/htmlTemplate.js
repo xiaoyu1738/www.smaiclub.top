@@ -244,7 +244,10 @@ export function htmlTemplate() {
             if (redirect) {
                 try {
                     const url = new URL(redirect);
-                    if (url.hostname.endsWith('smaiclub.top')) return redirect;
+                    const host = url.hostname.toLowerCase();
+                    if ((host === 'smaiclub.top' || host.endsWith('.smaiclub.top')) && ['https:', 'http:'].includes(url.protocol)) {
+                        return url.toString();
+                    }
                 } catch(e) {}
             }
             return 'https://www.smaiclub.top';

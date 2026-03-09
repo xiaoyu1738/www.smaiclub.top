@@ -7,14 +7,25 @@ export { ChatRoom };
 export default {
     async fetch(request, env, ctx) {
         const url = new URL(request.url);
+        const origin = request.headers.get("Origin");
 
         // CORS Headers
         const corsHeaders = {
-            "Access-Control-Allow-Origin": request.headers.get("Origin") || "*",
+            "Access-Control-Allow-Origin": "https://www.smaiclub.top",
             "Access-Control-Allow-Methods": "GET, POST, OPTIONS, DELETE",
             "Access-Control-Allow-Headers": "Content-Type, Authorization, Cookie, Room-Key",
             "Access-Control-Allow-Credentials": "true",
         };
+        if (origin && isAllowedOrigin(origin)) {
+            corsHeaders["Access-Control-Allow-Origin"] = origin;
+        }
+
+        if (origin && !isAllowedOrigin(origin)) {
+            return new Response(JSON.stringify({ error: "Forbidden origin" }), {
+                status: 403,
+                headers: { ...corsHeaders, "Content-Type": "application/json" }
+            });
+        }
 
         if (request.method === "OPTIONS") {
             return new Response(null, { headers: corsHeaders });
@@ -333,15 +344,17 @@ export default {
         // Called by Login Worker before user deletion
         if (request.method === "POST" && url.pathname === "/api/internal/transfer-ownership") {
             try {
-                // Simple Secret Auth (In production, use a shared secret env var)
-                // For this demo, we assume the request is trusted or add a check if env.INTERNAL_SECRET exists
-                // const auth = request.headers.get("Authorization");
-                // if (auth !== `Bearer ${env.INTERNAL_SECRET}`) return new Response("Unauthorized", { status: 401 });
-
                 const body = await request.json();
                 const oldOwner = body.username;
 
                 if (!oldOwner) return new Response("Missing username", { status: 400 });
+                const actor = await getUserFromRequest(request, env);
+                if (!actor) {
+                    return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+                }
+                if (!isAdminOrOwner(actor.role) && actor.username !== oldOwner) {
+                    return new Response(JSON.stringify({ error: "Forbidden", message: "权限不足" }), { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+                }
 
                 // 1. Find all rooms owned by this user
                 const { results: rooms } = await env.CHAT_DB.prepare(
@@ -447,6 +460,13 @@ export default {
         // --- 4.5 Internal Handle Ban (POST /api/internal/handle-ban) ---
         if (request.method === "POST" && url.pathname === "/api/internal/handle-ban") {
              try {
+                 const actor = await getUserFromRequest(request, env);
+                 if (!actor) {
+                     return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+                 }
+                 if (!isAdminOrOwner(actor.role)) {
+                     return new Response(JSON.stringify({ error: "Forbidden", message: "仅管理员可操作" }), { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+                 }
                  const { username, banUntil } = await request.json();
                  
                  // If banning (banUntil > now), transfer rooms
@@ -511,6 +531,13 @@ export default {
              try {
                 const body = await request.json();
                 const { event_type, user_id, details, ip_address, created_at } = body;
+                const actor = await getUserFromRequest(request, env);
+                if (!actor) {
+                    return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+                }
+                if (!isAdminOrOwner(actor.role) && actor.username !== user_id) {
+                    return new Response(JSON.stringify({ error: "Forbidden", message: "日志写入权限不足" }), { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+                }
 
                 // Encrypt details if provided
                 let encryptedDetails = null;
@@ -653,3 +680,25 @@ export default {
         // 2. Routine Message Cleanup (Moved to Durable Object Alarms)
     }
 };
+
+function isAllowedHostname(hostname) {
+    if (!hostname || typeof hostname !== "string") return false;
+    const normalized = hostname.toLowerCase();
+    return normalized === "smaiclub.top" || normalized.endsWith(".smaiclub.top");
+}
+
+function isAllowedOrigin(origin) {
+    if (!origin) return false;
+    try {
+        const parsed = new URL(origin);
+        if (!["http:", "https:"].includes(parsed.protocol)) return false;
+        return isAllowedHostname(parsed.hostname);
+    } catch {
+        return false;
+    }
+}
+
+function isAdminOrOwner(role) {
+    const normalized = typeof role === "string" ? role.toLowerCase() : "";
+    return normalized === "admin" || normalized === "owner";
+}

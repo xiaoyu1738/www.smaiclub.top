@@ -11,3 +11,6 @@ convert.smaiclub.top/dist/*
 player.smaiclub.top/node_modules/*
 player.smaiclub.top/dist/*
 .test/*
+hall.smaiclub.top/dist/*
+hall.smaiclub.top/node_modules/*
+hall-worker/node_modules/*

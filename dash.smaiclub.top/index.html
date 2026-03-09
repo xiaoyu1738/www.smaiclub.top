@@ -663,6 +663,27 @@
                 } catch(e) { alert("Error"); }
             };
 
+            const handleDeleteUser = async (username) => {
+                if (!confirm(`确定直接删除用户 ${username}？此操作不可恢复。`)) return;
+                try {
+                    const res = await fetch('https://login.smaiclub.top/api/admin/delete-user', {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        credentials: 'include',
+                        body: JSON.stringify({ username })
+                    });
+                    if (res.ok) {
+                        alert("删除成功");
+                        fetchUsers();
+                    } else {
+                        const d = await res.json();
+                        alert(d.error || "删除失败");
+                    }
+                } catch (e) {
+                    alert("网络错误");
+                }
+            };
+
             const handleQuickSetAdmin = async () => {
                 if (!quickAdminUser) return;
                 if (!confirm(`确定将用户 ${quickAdminUser} 提升为管理员 (admin)?`)) return;
@@ -799,6 +820,11 @@
                                                 ) : (
                                                     <button onClick={() => setBanningUser(u)} className="p-2 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition" title="封禁">
                                                         <i className="fas fa-gavel"></i>
+                                                    </button>
+                                                )}
+                                                {['admin', 'owner'].includes(user.role) && user.username !== u.username && (
+                                                    <button onClick={() => handleDeleteUser(u.username)} className="p-2 text-gray-500 hover:text-red-700 hover:bg-red-100 rounded-lg transition" title="删除用户">
+                                                        <i className="fas fa-trash"></i>
                                                     </button>
                                                 )}
                                             </div>

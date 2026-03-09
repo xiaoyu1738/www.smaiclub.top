@@ -2,6 +2,7 @@ import { htmlTemplate } from './htmlTemplate.js';
 
 // 密码强度校验正则：至少8位，包含字母和数字，允许特殊字符
 const PASSWORD_REGEX = /^(?=.*[A-Za-z])(?=.*\d).{8,}$/;
+const ROLE_LEVELS = { user: 0, vip: 1, svip1: 2, svip2: 3, admin: 10, owner: 100, banned: -1 };
 
 // 通用头部，允许跨域访问
 const corsHeaders = {
@@ -15,11 +16,15 @@ export default {
     async fetch(request, env, ctx) {
         const url = new URL(request.url);
         const origin = request.headers.get("Origin");
+        const allowedOrigin = origin ? isAllowedOrigin(origin) : false;
 
         // 动态处理 CORS Origin
         let responseHeaders = { ...corsHeaders };
-        if (origin && origin.endsWith("smaiclub.top")) {
+        if (allowedOrigin) {
             responseHeaders["Access-Control-Allow-Origin"] = origin;
+        }
+        if (origin && !allowedOrigin) {
+            return jsonResp({ error: "Forbidden origin" }, 403, responseHeaders);
         }
 
         if (request.method === "OPTIONS") {
@@ -148,7 +153,7 @@ export default {
                 }
 
                 // Log Registration
-                ctx.waitUntil(sendLog(env, 'register', username, { action: 'register' }, request.headers.get("CF-Connecting-IP")));
+                ctx.waitUntil(sendLog(env, 'register', username, { action: 'register' }, request.headers.get("CF-Connecting-IP"), request.headers.get("Cookie")));
 
                 return jsonResp({ success: true }, 200, responseHeaders);
             }
@@ -162,8 +167,8 @@ export default {
                 if (redirectParam) {
                     try {
                         const redirectUrl = new URL(redirectParam);
-                        if (redirectUrl.hostname.endsWith('smaiclub.top') && ['https:', 'http:'].includes(redirectUrl.protocol)) {
-                            safeRedirect = redirectParam;
+                        if (isAllowedHostname(redirectUrl.hostname) && ['https:', 'http:'].includes(redirectUrl.protocol)) {
+                            safeRedirect = redirectUrl.toString();
                         }
                     } catch (e) {
                         // 无效 URL，使用默认
@@ -177,6 +182,8 @@ export default {
 
                 // 应用过期逻辑
                 applyExpiration(user);
+                const normalizedRole = normalizeRole(user.role);
+                user.role = normalizedRole;
 
                 const decryptedPassword = await decryptData(user.password, env.SECRET_KEY, user.salt);
                 if (password !== decryptedPassword) return jsonResp({ error: "密码错误" }, 401, responseHeaders);
@@ -185,7 +192,7 @@ export default {
                     return jsonResp({ error: "WEAK_PASSWORD", message: "您的密码过于简单，为了安全请立即修改" }, 403, responseHeaders);
                 }
 
-                let sessionRole = user.role;
+                let sessionRole = normalizedRole;
                 let warning = null;
 
                 // Enforce Role Migration on Login
@@ -198,8 +205,10 @@ export default {
                 }
 
                 // VIP 验证逻辑
-                if (['vip', 'svip1', 'svip2'].includes(user.role)) {
-                    if (!licenseKey) {
+                const requiresVipLicense = isVipRole(user.role) || isVipRole(sessionRole);
+                const providedLicense = typeof licenseKey === 'string' ? licenseKey.trim() : '';
+                if (requiresVipLicense) {
+                    if (!providedLicense) {
                         return jsonResp({ error: "LICENSE_REQUIRED", message: "请输入会员许可证以继续" }, 403, responseHeaders);
                     }
 
@@ -208,12 +217,17 @@ export default {
                     }
 
                     const decryptedLicense = await decryptData(user.licenseKey, env.SECRET_KEY, user.salt);
-                    if (licenseKey !== decryptedLicense) {
+                    if (providedLicense !== decryptedLicense) {
                         return jsonResp({ error: "LICENSE_INVALID", message: "许可证错误" }, 403, responseHeaders);
                     }
                 }
 
-                const sessionData = JSON.stringify({ username, role: sessionRole, loginTime: Date.now() });
+                const sessionData = JSON.stringify({
+                    username,
+                    role: sessionRole,
+                    loginTime: Date.now(),
+                    licenseVerified: requiresVipLicense
+                });
                 const sessionToken = await encryptData(sessionData, env.SECRET_KEY, "SESSION_SALT");
                 const cookie = `auth_token=${sessionToken}; Path=/; Domain=.smaiclub.top; Secure; SameSite=None; Max-Age=86400`;
 
@@ -251,7 +265,7 @@ export default {
                 await env.DB.prepare('UPDATE users SET password = ? WHERE username = ?').bind(newEncrypted, username).run();
 
                 // Log Password Change
-                ctx.waitUntil(sendLog(env, 'change_password', username, { action: 'change_password' }, request.headers.get("CF-Connecting-IP")));
+                ctx.waitUntil(sendLog(env, 'change_password', username, { action: 'change_password' }, request.headers.get("CF-Connecting-IP"), request.headers.get("Cookie")));
 
                 return jsonResp({ success: true }, 200, responseHeaders);
             }
@@ -275,9 +289,8 @@ export default {
                 }
 
                 // 防止降级逻辑
-                const roleLevels = { 'user': 0, 'vip': 1, 'svip1': 2, 'svip2': 3, 'admin': 10, 'owner': 100 };
-                const currentLevel = roleLevels[user.role] || 0;
-                const newLevel = roleLevels[tier] || 0;
+                const currentLevel = ROLE_LEVELS[normalizeRole(user.role)] || 0;
+                const newLevel = ROLE_LEVELS[normalizeRole(tier)] || 0;
 
                 if (newLevel <= currentLevel) {
                     return jsonResp({ error: "cannot_downgrade", message: "您当前已拥有同级或更高级别的会员权益，无需重复购买或降级。" }, 400, responseHeaders);
@@ -301,7 +314,7 @@ export default {
                     action: 'buy',
                     tier: tier,
                     price_info: tier === 'svip2' ? '$50,000' : tier === 'svip1' ? '$15,000' : '$5,000'
-                }, request.headers.get("CF-Connecting-IP")));
+                }, request.headers.get("CF-Connecting-IP"), request.headers.get("Cookie")));
 
                 return jsonResp({ success: true, message: "购买成功" }, 200, responseHeaders);
             }
@@ -337,7 +350,7 @@ export default {
                 if (!licenseKey || licenseKey.length < 4) return jsonResp({ error: "许可证太短" }, 400, responseHeaders);
 
                 // 检查是否是 VIP
-                if (!['vip', 'svip1', 'svip2'].includes(user.role)) {
+                if (!isVipRole(user.role)) {
                     return jsonResp({ error: "仅会员可修改许可证" }, 403, responseHeaders);
                 }
 
@@ -363,7 +376,7 @@ export default {
                 const cookie = `auth_token=; Path=/; Domain=.smaiclub.top; Max-Age=0; Secure; SameSite=None`;
 
                 // Log License Update
-                ctx.waitUntil(sendLog(env, 'update_license', user.username, { action: 'update_license' }, request.headers.get("CF-Connecting-IP")));
+                ctx.waitUntil(sendLog(env, 'update_license', user.username, { action: 'update_license' }, request.headers.get("CF-Connecting-IP"), request.headers.get("Cookie")));
 
                 return new Response(JSON.stringify({ success: true, message: "修改成功，请重新登录" }), {
                     headers: { "Content-Type": "application/json", "Set-Cookie": cookie, ...responseHeaders }
@@ -448,7 +461,7 @@ export default {
                 if (password !== decryptedPassword) return jsonResp({ error: "密码错误" }, 401, responseHeaders);
 
                 // If user is VIP/SVIP, require license key
-                if (['vip', 'svip1', 'svip2'].includes(user.role)) {
+                if (isVipRole(user.role)) {
                     if (!licenseKey) return jsonResp({ error: "请输入许可证密钥以确认注销" }, 400, responseHeaders);
 
                     if (user.licenseKey) {
@@ -465,7 +478,7 @@ export default {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',
-                            'Authorization': `Bearer ${env.SECRET_KEY}` // Simple internal auth
+                            'Cookie': request.headers.get("Cookie") || ''
                         },
                         body: JSON.stringify({ username: user.username })
                     });
@@ -478,7 +491,7 @@ export default {
                 await env.DB.prepare('DELETE FROM users WHERE username = ?').bind(user.username).run();
 
                 // Log Account Deletion
-                ctx.waitUntil(sendLog(env, 'delete_account', user.username, { action: 'delete_account' }, request.headers.get("CF-Connecting-IP")));
+                ctx.waitUntil(sendLog(env, 'delete_account', user.username, { action: 'delete_account' }, request.headers.get("CF-Connecting-IP"), request.headers.get("Cookie")));
 
                 const cookie = `auth_token=; Path=/; Domain=.smaiclub.top; Max-Age=0; Secure; SameSite=None`;
                 return new Response(JSON.stringify({ success: true, message: "账号已注销" }), {
@@ -518,8 +531,7 @@ export default {
                 if (!targetUser) return jsonResp({ error: "User not found" }, 404, responseHeaders);
 
                 // Prevent banning higher or equal roles
-                const roleLevels = { 'user': 0, 'vip': 1, 'svip1': 2, 'svip2': 3, 'admin': 10, 'owner': 100, 'banned': -1 };
-                if (roleLevels[targetUser.role] >= roleLevels[user.role]) {
+                if ((ROLE_LEVELS[normalizeRole(targetUser.role)] || 0) >= (ROLE_LEVELS[normalizeRole(user.role)] || 0)) {
                     return jsonResp({ error: "Cannot ban user with equal or higher role" }, 403, responseHeaders);
                 }
 
@@ -572,7 +584,10 @@ export default {
                 // Notify Chat Worker to handle ban side effects (transfer rooms, etc.)
                 ctx.waitUntil(fetch('https://chat.smaiclub.top/api/internal/handle-ban', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Cookie': request.headers.get("Cookie") || ''
+                    },
                     body: JSON.stringify({ username, banUntil })
                 }));
 
@@ -583,7 +598,7 @@ export default {
                     unit,
                     reason,
                     admin: user.username
-                }, request.headers.get("CF-Connecting-IP")));
+                }, request.headers.get("CF-Connecting-IP"), request.headers.get("Cookie")));
 
                 return jsonResp({ success: true }, 200, responseHeaders);
             }
@@ -600,11 +615,61 @@ export default {
                 // Notify Chat Worker
                 ctx.waitUntil(fetch('https://chat.smaiclub.top/api/internal/handle-ban', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Cookie': request.headers.get("Cookie") || ''
+                    },
                     body: JSON.stringify({ username, banUntil: 0 }) // 0 means unban
                 }));
 
-                ctx.waitUntil(sendLog(env, 'unban_user', username, { action: 'unban', admin: user.username }, request.headers.get("CF-Connecting-IP")));
+                ctx.waitUntil(sendLog(env, 'unban_user', username, { action: 'unban', admin: user.username }, request.headers.get("CF-Connecting-IP"), request.headers.get("Cookie")));
+
+                return jsonResp({ success: true }, 200, responseHeaders);
+            }
+
+            // --- Admin: Delete User ---
+            if (url.pathname === "/api/admin/delete-user") {
+                const user = await getUserFromCookie(request, env);
+                if (!user || !['admin', 'owner'].includes(user.role)) {
+                    return jsonResp({ error: "Forbidden" }, 403, responseHeaders);
+                }
+
+                const { username } = body;
+                if (!username || typeof username !== 'string') {
+                    return jsonResp({ error: "Missing username" }, 400, responseHeaders);
+                }
+                if (username === user.username) {
+                    return jsonResp({ error: "不能删除当前登录账号，请使用注销流程" }, 400, responseHeaders);
+                }
+
+                const targetUser = await env.DB.prepare("SELECT * FROM users WHERE username = ?").bind(username).first();
+                if (!targetUser) {
+                    return jsonResp({ error: "User not found" }, 404, responseHeaders);
+                }
+
+                if ((ROLE_LEVELS[normalizeRole(targetUser.role)] || 0) >= (ROLE_LEVELS[normalizeRole(user.role)] || 0)) {
+                    return jsonResp({ error: "Cannot delete user with equal or higher role" }, 403, responseHeaders);
+                }
+
+                try {
+                    await fetch('https://chat.smaiclub.top/api/internal/transfer-ownership', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Cookie': request.headers.get("Cookie") || ''
+                        },
+                        body: JSON.stringify({ username })
+                    });
+                } catch (e) {
+                    console.error("Failed to trigger ownership transfer for admin delete", e);
+                }
+
+                await env.DB.prepare('DELETE FROM users WHERE username = ?').bind(username).run();
+
+                ctx.waitUntil(sendLog(env, 'admin_delete_user', username, {
+                    action: 'admin_delete_user',
+                    admin: user.username
+                }, request.headers.get("CF-Connecting-IP"), request.headers.get("Cookie")));
 
                 return jsonResp({ success: true }, 200, responseHeaders);
             }
@@ -618,7 +683,8 @@ export default {
 
 // 检查并应用过期逻辑 (1年有效期)
 function applyExpiration(user) {
-    if (['vip', 'svip1', 'svip2'].includes(user.role) && user.lastPurchase) {
+    user.role = normalizeRole(user.role);
+    if (isVipRole(user.role) && user.lastPurchase) {
         const ONE_YEAR = 365 * 24 * 60 * 60 * 1000;
         const expireTime = user.lastPurchase + ONE_YEAR;
         if (Date.now() > expireTime) {
@@ -652,10 +718,16 @@ async function getUserFromCookie(request, env) {
         // 应用过期逻辑
         applyExpiration(user);
 
-        user.sessionRole = session.role;
+        user.sessionRole = normalizeRole(session.role);
         // 如果已过期，确保 sessionRole 也降级，防止 cookie 中旧的高级权限生效
         if (user.isExpired) {
             user.sessionRole = 'user';
+        }
+        const requiresVipLicense = isVipRole(user.role) || isVipRole(user.sessionRole);
+        if (requiresVipLicense) {
+            if (!user.licenseKey || session.licenseVerified !== true) {
+                return null;
+            }
         }
 
         // 自动解析 JSON 字段 (虽然 SQL 返回的是 TEXT/NULL，需要手动解析吗？
@@ -707,13 +779,17 @@ async function decryptData(encryptedText, secretKey, salt) {
 }
 
 // --- 生成 common-auth.js ---
-async function sendLog(env, eventType, userId, details, ip) {
+async function sendLog(env, eventType, userId, details, ip, cookieHeader) {
     try {
+        // 仅允许绑定到当前登录会话的日志写入，避免无认证跨服务伪造日志
+        if (!cookieHeader) {
+            return;
+        }
         await fetch('https://chat.smaiclub.top/api/internal/log', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                // 'Authorization': `Bearer ${env.INTERNAL_SECRET}` // If needed later
+                'Cookie': cookieHeader
             },
             body: JSON.stringify({
                 event_type: eventType,
@@ -725,6 +801,33 @@ async function sendLog(env, eventType, userId, details, ip) {
         });
     } catch (e) {
         console.error("Failed to send log", e);
+    }
+}
+
+function normalizeRole(role) {
+    if (typeof role !== "string") return "user";
+    const normalized = role.trim().toLowerCase();
+    return normalized || "user";
+}
+
+function isVipRole(role) {
+    const normalized = normalizeRole(role);
+    return normalized === "vip" || normalized === "svip1" || normalized === "svip2";
+}
+
+function isAllowedHostname(hostname) {
+    if (!hostname || typeof hostname !== "string") return false;
+    const normalized = hostname.toLowerCase();
+    return normalized === "smaiclub.top" || normalized.endsWith(".smaiclub.top");
+}
+
+function isAllowedOrigin(origin) {
+    try {
+        const originUrl = new URL(origin);
+        if (!["http:", "https:"].includes(originUrl.protocol)) return false;
+        return isAllowedHostname(originUrl.hostname);
+    } catch {
+        return false;
     }
 }
 
@@ -1199,4 +1302,3 @@ async function generateCommonScript() {
 })();
     `;
 }
-
