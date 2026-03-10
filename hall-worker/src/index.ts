@@ -419,8 +419,12 @@ function copyStreamRequestHeaders(request: Request): Headers {
 }
 
 async function fetchMusicStreamFromRawUrl(request: Request, rawUrl: string): Promise<Response> {
+  // Some signed object-storage URLs reject HEAD while allowing GET/Range.
+  // Probe upstream with GET and strip the body on the Worker response instead.
+  const upstreamMethod = request.method === 'HEAD' ? 'GET' : request.method;
+
   return fetchWithTimeout(rawUrl, {
-    method: request.method,
+    method: upstreamMethod,
     headers: copyStreamRequestHeaders(request),
   });
 }
