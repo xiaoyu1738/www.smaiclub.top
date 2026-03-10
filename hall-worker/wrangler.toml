@@ -17,3 +17,9 @@ id = "a81607e030fd41efa9118f7a389cc1f3"
 [vars]
 ALIST_HOST = "https://smaiclub-alist-v3.onrender.com"
 PRODUCTION_ORIGIN = "https://hall.smaiclub.top"
+
+# 推荐在生产环境里额外配置以下 secrets 二选一，避免 ALIST_TOKEN 过期后需要手动更新：
+# wrangler secret put ALIST_USERNAME
+# wrangler secret put ALIST_PASSWORD_HASH
+# 或
+# wrangler secret put ALIST_PASSWORD

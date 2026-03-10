@@ -1,49 +1,54 @@
 interface Env {
   ALIST_HOST: string;
-  ALIST_TOKEN: string;
+  ALIST_TOKEN?: string;
+  ALIST_USERNAME?: string;
+  ALIST_PASSWORD?: string;
+  ALIST_PASSWORD_HASH?: string;
   PRODUCTION_ORIGIN: string;
   MUSIC_CACHE: KVNamespace;
 }
 
-// --- 类型定义 ---
-interface AListFsGetResponse {
+interface AListEnvelope<T> {
   code: number;
   message?: string;
-  data?: { raw_url?: string };
+  data?: T;
 }
 
-// --- 常量配置 ---
+type AListFsGetResponse = AListEnvelope<{ raw_url?: string }>;
+type AListLoginResponse = AListEnvelope<{ token?: string }>;
+
 const CACHE_TTL_SECONDS = 7_200;
 const REQUEST_TIMEOUT_MS = 30_000;
 const LOCAL_ORIGIN_PATTERN = /^https?:\/\/(?:localhost|127\.0\.0\.1)(?::\d+)?$/;
+const MUSIC_PATH_PREFIX = '/aliyun/music/';
+const STREAM_REQUEST_HEADERS = ['range', 'if-range', 'if-none-match', 'if-modified-since'] as const;
+const STREAM_RESPONSE_HEADERS = [
+  'accept-ranges',
+  'cache-control',
+  'content-disposition',
+  'content-length',
+  'content-range',
+  'content-type',
+  'etag',
+  'last-modified',
+  'content-encoding',
+] as const;
 
-/**
- * 路径安全：允许的音频文件后缀白名单
- */
 const ALLOWED_AUDIO_EXTENSIONS = new Set([
   '.mp3', '.flac', '.wav', '.ogg', '.m4a', '.aac', '.wma', '.opus', '.ape',
 ]);
 
-/**
- * 路径安全：允许的资源文件后缀（图片 + 音频 + JSON）
- * 用于 /api/music/asset 代理端点
- */
 const ALLOWED_ASSET_EXTENSIONS = new Set([
-  // 图片
   '.jpg', '.jpeg', '.png', '.webp', '.gif', '.svg', '.avif', '.bmp',
-  // 音频（asset 端点也可以用于预览）
   '.mp3', '.flac', '.wav', '.ogg', '.m4a', '.aac', '.wma', '.opus', '.ape',
 ]);
 
-/**
- * 路径安全：音频文件必须落在此前缀下
- * 防止任意路径遍历 AList 上的非音乐资源
- */
-const MUSIC_PATH_PREFIX = '/aliyun/music/';
+let runtimeAListToken: string | null = null;
+let runtimeLoginPromise: Promise<string> | null = null;
 
-// --- 自定义错误，携带 HTTP 状态码 ---
 class HttpError extends Error {
   readonly status: number;
+
   constructor(status: number, message: string) {
     super(message);
     this.name = 'HttpError';
@@ -51,7 +56,10 @@ class HttpError extends Error {
   }
 }
 
-// --- 工具函数 ---
+function normalizeAListHost(env: Env): string {
+  return env.ALIST_HOST.replace(/\/+$/, '');
+}
+
 function buildCorsHeaders(request: Request, env: Env): Record<string, string> {
   const origin = request.headers.get('Origin');
   const allowedOrigin =
@@ -61,8 +69,9 @@ function buildCorsHeaders(request: Request, env: Env): Record<string, string> {
 
   return {
     'Access-Control-Allow-Origin': allowedOrigin,
-    'Access-Control-Allow-Methods': 'GET, OPTIONS',
-    'Access-Control-Allow-Headers': 'Content-Type',
+    'Access-Control-Allow-Methods': 'GET, HEAD, OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type, Range, If-Range, If-None-Match, If-Modified-Since',
+    'Access-Control-Expose-Headers': 'Accept-Ranges, Content-Length, Content-Range, Content-Type, ETag',
     Vary: 'Origin',
   };
 }
@@ -84,10 +93,6 @@ function jsonResponse(
   });
 }
 
-/**
- * 路径校验：拒绝路径遍历、空段、重复斜杠、非法字符
- * 不做前缀和后缀检查，由调用方视场景决定
- */
 function validatePathStructure(path: string): void {
   if (!path.startsWith('/')) {
     throw new HttpError(400, '路径必须以 "/" 开头');
@@ -100,9 +105,6 @@ function validatePathStructure(path: string): void {
   }
 }
 
-/**
- * 音频路径专用校验：前缀 + 音频后缀白名单
- */
 function validateMusicPath(path: string): void {
   validatePathStructure(path);
 
@@ -114,15 +116,13 @@ function validateMusicPath(path: string): void {
   if (dotIndex < 0) {
     throw new HttpError(400, '路径缺少文件扩展名');
   }
+
   const ext = path.slice(dotIndex).toLowerCase();
   if (!ALLOWED_AUDIO_EXTENSIONS.has(ext)) {
     throw new HttpError(400, `不允许的文件类型: ${ext}`);
   }
 }
 
-/**
- * 资源路径校验：前缀 + 资源后缀白名单（图片 + 音频）
- */
 function validateAssetPath(path: string): void {
   validatePathStructure(path);
 
@@ -134,75 +134,215 @@ function validateAssetPath(path: string): void {
   if (dotIndex < 0) {
     throw new HttpError(400, '路径缺少文件扩展名');
   }
+
   const ext = path.slice(dotIndex).toLowerCase();
   if (!ALLOWED_ASSET_EXTENSIONS.has(ext)) {
     throw new HttpError(400, `不允许的资源类型: ${ext}`);
   }
 }
 
-/**
- * 核心：带 Admin Token 请求 AList /api/fs/get
- * 区分 HTTP 层失败、JSON 解析失败、业务层拒绝三种情况
- */
-async function requestAListRawUrl(env: Env, path: string): Promise<string> {
-  const upstreamUrl = `${env.ALIST_HOST.replace(/\/+$/, '')}/api/fs/get`;
-
+async function fetchWithTimeout(
+  input: string | URL | Request,
+  init?: RequestInit,
+  timeoutMs = REQUEST_TIMEOUT_MS
+): Promise<Response> {
   const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
 
-  let response: Response;
   try {
-    response = await fetch(upstreamUrl, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: env.ALIST_TOKEN,
-        Accept: 'application/json',
-      },
-      body: JSON.stringify({ path, password: '' }),
-      signal: controller.signal,
-    });
+    return await fetch(input, { ...init, signal: controller.signal });
   } catch (error) {
-    // 网络层 / 超时
     if (error instanceof DOMException && error.name === 'AbortError') {
-      throw new HttpError(504, 'AList 请求超时（30s）');
+      throw new HttpError(504, `上游请求超时（${Math.round(timeoutMs / 1000)}s）`);
     }
     throw new HttpError(
       502,
-      `无法连接 AList 上游: ${error instanceof Error ? error.message : String(error)}`
+      `无法连接上游服务: ${error instanceof Error ? error.message : String(error)}`
     );
   } finally {
     clearTimeout(timeoutId);
   }
+}
 
-  // HTTP 层检查：先看状态码，再看 Content-Type
+function parseJsonEnvelope<T>(payload: unknown): AListEnvelope<T> {
+  if (!payload || typeof payload !== 'object') {
+    throw new HttpError(502, 'AList 返回了不可解析的 JSON 响应');
+  }
+
+  const candidate = payload as Partial<AListEnvelope<T>>;
+  if (typeof candidate.code !== 'number') {
+    throw new HttpError(502, 'AList JSON 响应缺少 code 字段');
+  }
+
+  return candidate as AListEnvelope<T>;
+}
+
+function mapAListBusinessError(payload: AListEnvelope<unknown>): HttpError {
+  const message = payload.message?.trim() || 'AList 业务层拒绝请求';
+  const normalizedMessage = message.toLowerCase();
+  const status =
+    payload.code === 401 || payload.code === 403 ? 403 :
+      payload.code === 404 || normalizedMessage.includes('not found') ? 404 :
+        502;
+
+  return new HttpError(status, message);
+}
+
+function hasAListLoginCredentials(env: Env): boolean {
+  const username = env.ALIST_USERNAME?.trim();
+  const secret = env.ALIST_PASSWORD_HASH?.trim() || env.ALIST_PASSWORD?.trim();
+  return Boolean(username && secret);
+}
+
+function clearRuntimeAListToken(): void {
+  runtimeAListToken = null;
+}
+
+async function performAListRequest<T>(
+  env: Env,
+  path: string,
+  body: Record<string, unknown>,
+  token: string
+): Promise<AListEnvelope<T>> {
+  const response = await fetchWithTimeout(`${normalizeAListHost(env)}${path}`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Accept: 'application/json',
+      Authorization: token,
+    },
+    body: JSON.stringify(body),
+  });
+
   if (!response.ok) {
     throw new HttpError(502, `AList 上游返回 HTTP ${response.status}`);
   }
 
   const contentType = response.headers.get('Content-Type') || '';
   if (!contentType.includes('application/json')) {
-    // AList 返回了 HTML 错页或其他非 JSON 响应
     throw new HttpError(502, `AList 返回了非 JSON 响应 (Content-Type: ${contentType})`);
   }
 
-  // JSON 解析
-  let payload: AListFsGetResponse;
+  let payload: unknown;
   try {
-    payload = (await response.json()) as AListFsGetResponse;
+    payload = await response.json();
   } catch {
     throw new HttpError(502, 'AList 响应 JSON 解析失败');
   }
 
-  // 业务层检查：AList 自身的错误码
+  return parseJsonEnvelope<T>(payload);
+}
+
+async function loginToAList(env: Env): Promise<string> {
+  if (runtimeLoginPromise) {
+    return runtimeLoginPromise;
+  }
+
+  const username = env.ALIST_USERNAME?.trim();
+  const passwordHash = env.ALIST_PASSWORD_HASH?.trim();
+  const password = env.ALIST_PASSWORD?.trim();
+
+  if (!username || (!passwordHash && !password)) {
+    throw new HttpError(500, 'AList Token 已失效，且未配置自动登录凭证');
+  }
+
+  runtimeLoginPromise = (async () => {
+    const loginPath = passwordHash ? '/api/auth/login/hash' : '/api/auth/login';
+    const loginBody = passwordHash
+      ? { username, password: passwordHash }
+      : { username, password };
+
+    const response = await fetchWithTimeout(`${normalizeAListHost(env)}${loginPath}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Accept: 'application/json',
+      },
+      body: JSON.stringify(loginBody),
+    });
+
+    if (!response.ok) {
+      throw new HttpError(502, `AList 登录接口返回 HTTP ${response.status}`);
+    }
+
+    const contentType = response.headers.get('Content-Type') || '';
+    if (!contentType.includes('application/json')) {
+      throw new HttpError(502, `AList 登录接口返回了非 JSON 响应 (Content-Type: ${contentType})`);
+    }
+
+    let payload: unknown;
+    try {
+      payload = await response.json();
+    } catch {
+      throw new HttpError(502, 'AList 登录响应 JSON 解析失败');
+    }
+
+    const loginPayload = parseJsonEnvelope<AListLoginResponse['data']>(payload);
+    if (loginPayload.code !== 200) {
+      throw mapAListBusinessError(loginPayload);
+    }
+
+    const nextToken = loginPayload.data?.token?.trim();
+    if (!nextToken) {
+      throw new HttpError(502, 'AList 登录成功但没有返回 token');
+    }
+
+    runtimeAListToken = nextToken;
+    return nextToken;
+  })();
+
+  try {
+    return await runtimeLoginPromise;
+  } finally {
+    runtimeLoginPromise = null;
+  }
+}
+
+async function getAListAccessToken(env: Env, forceRefresh = false): Promise<string> {
+  if (!forceRefresh && runtimeAListToken) {
+    return runtimeAListToken;
+  }
+
+  if (!forceRefresh) {
+    const staticToken = env.ALIST_TOKEN?.trim();
+    if (staticToken) {
+      return staticToken;
+    }
+  }
+
+  if (hasAListLoginCredentials(env)) {
+    return loginToAList(env);
+  }
+
+  const fallbackToken = env.ALIST_TOKEN?.trim();
+  if (fallbackToken) {
+    return fallbackToken;
+  }
+
+  throw new HttpError(500, '未配置 ALIST_TOKEN，也未配置自动登录凭证');
+}
+
+async function requestAListRawUrl(env: Env, path: string): Promise<string> {
+  const firstToken = await getAListAccessToken(env);
+  let payload = await performAListRequest<{ raw_url?: string }>(env, '/api/fs/get', { path, password: '' }, firstToken);
+
+  if ((payload.code === 401 || payload.code === 403) && hasAListLoginCredentials(env)) {
+    clearRuntimeAListToken();
+    const refreshedToken = await getAListAccessToken(env, true);
+    payload = await performAListRequest<{ raw_url?: string }>(
+      env,
+      '/api/fs/get',
+      { path, password: '' },
+      refreshedToken
+    );
+  }
+
   if (payload.code !== 200) {
-    const msg = payload.message?.trim() || 'AList 业务层拒绝请求';
-    // 将 AList 的常见错误码映射到恰当的 HTTP 状态
-    const status =
-      payload.code === 401 || payload.code === 403 ? 403 :
-        payload.code === 404 || msg.includes('not found') ? 404 :
-          502;
-    throw new HttpError(status, msg);
+    const error = mapAListBusinessError(payload);
+    if (error.status === 403 && !hasAListLoginCredentials(env)) {
+      throw new HttpError(403, `${error.message}。请更新 ALIST_TOKEN 或配置自动登录凭证`);
+    }
+    throw error;
   }
 
   const rawUrl = payload.data?.raw_url?.trim();
@@ -213,28 +353,109 @@ async function requestAListRawUrl(env: Env, path: string): Promise<string> {
   return rawUrl;
 }
 
-// --- 路由处理器 ---
+async function readCachedRawUrl(env: Env, cacheKey: string): Promise<string | null> {
+  const cached = await env.MUSIC_CACHE.get(cacheKey);
+  return cached?.trim() || null;
+}
 
-/**
- * 路由 1: 获取音乐库索引 database.json
- * 通过 Worker 代理，解决前端直连 AList 的 CORS + 401 问题
- */
+function writeCachedRawUrl(env: Env, ctx: ExecutionContext, cacheKey: string, rawUrl: string, label: string): void {
+  ctx.waitUntil(
+    env.MUSIC_CACHE.put(cacheKey, rawUrl, { expirationTtl: CACHE_TTL_SECONDS }).catch((err) => {
+      console.error(`${label} KV 缓存写入失败`, {
+        cacheKey,
+        error: err instanceof Error ? err.message : String(err),
+      });
+    })
+  );
+}
+
+function deleteCachedRawUrl(env: Env, ctx: ExecutionContext, cacheKey: string, label: string): void {
+  ctx.waitUntil(
+    env.MUSIC_CACHE.delete(cacheKey).catch((err) => {
+      console.error(`${label} KV 缓存删除失败`, {
+        cacheKey,
+        error: err instanceof Error ? err.message : String(err),
+      });
+    })
+  );
+}
+
+async function getOrCreateRawUrl(
+  env: Env,
+  ctx: ExecutionContext,
+  cacheKey: string,
+  path: string,
+  label: string
+): Promise<{ rawUrl: string; cache: 'kv' | 'origin' }> {
+  const cached = await readCachedRawUrl(env, cacheKey);
+  if (cached) {
+    return { rawUrl: cached, cache: 'kv' };
+  }
+
+  const rawUrl = await requestAListRawUrl(env, path);
+  writeCachedRawUrl(env, ctx, cacheKey, rawUrl, label);
+  return { rawUrl, cache: 'origin' };
+}
+
+function buildMusicStreamUrl(request: Request, path: string): string {
+  const streamUrl = new URL(request.url);
+  streamUrl.pathname = '/api/music/stream';
+  streamUrl.search = '';
+  streamUrl.searchParams.set('path', path);
+  return streamUrl.toString();
+}
+
+function copyStreamRequestHeaders(request: Request): Headers {
+  const headers = new Headers();
+
+  for (const headerName of STREAM_REQUEST_HEADERS) {
+    const value = request.headers.get(headerName);
+    if (value) {
+      headers.set(headerName, value);
+    }
+  }
+
+  return headers;
+}
+
+async function fetchMusicStreamFromRawUrl(request: Request, rawUrl: string): Promise<Response> {
+  return fetchWithTimeout(rawUrl, {
+    method: request.method,
+    headers: copyStreamRequestHeaders(request),
+  });
+}
+
+function createStreamResponse(request: Request, env: Env, upstream: Response): Response {
+  const headers = new Headers(buildCorsHeaders(request, env));
+
+  for (const headerName of STREAM_RESPONSE_HEADERS) {
+    const value = upstream.headers.get(headerName);
+    if (value) {
+      headers.set(headerName, value);
+    }
+  }
+
+  headers.set('Cache-Control', 'private, no-store');
+
+  return new Response(request.method === 'HEAD' ? null : upstream.body, {
+    status: upstream.status,
+    statusText: upstream.statusText,
+    headers,
+  });
+}
+
 async function handleGetCatalog(request: Request, env: Env): Promise<Response> {
   const dbPath = '/aliyun/music/database.json';
   const rawUrl = await requestAListRawUrl(env, dbPath);
+  const response = await fetchWithTimeout(rawUrl, { method: 'GET' });
 
-  const response = await fetch(rawUrl);
-
-  // 1. 只看状态码，200 说明文件拿到了
   if (!response.ok) {
     throw new HttpError(502, `无法读取 database.json: HTTP ${response.status}`);
   }
 
-  // 2. Content-Type 仅用于诊断，不做拦截（对象存储可能返回 octet-stream）
   const contentType = response.headers.get('Content-Type') || '';
 
   try {
-    // 3. 直接尝试解析，只要内容是 JSON 字符串就能成功
     const data = await response.json();
 
     return new Response(JSON.stringify(data), {
@@ -245,7 +466,6 @@ async function handleGetCatalog(request: Request, env: Env): Promise<Response> {
       },
     });
   } catch {
-    // 4. 解析失败才报错，带上实际 Content-Type 辅助排查
     throw new HttpError(
       502,
       `文件内容解析 JSON 失败 (实际类型: ${contentType})，请确认 AList 里的文件内容是否损坏`
@@ -253,10 +473,6 @@ async function handleGetCatalog(request: Request, env: Env): Promise<Response> {
   }
 }
 
-/**
- * 路由 2: 获取音频直链 (含 KV 缓存)
- * ctx 用于 best-effort KV 回写，不阻塞响应
- */
 async function handleGetMusicLink(
   request: Request,
   env: Env,
@@ -269,34 +485,55 @@ async function handleGetMusicLink(
     throw new HttpError(400, '缺少必需的 path 查询参数');
   }
 
-  // 路径安全校验：前缀 + 后缀 + 遍历检查
   validateMusicPath(path);
 
-  // 1. 查 KV 缓存 (L2)
-  const cached = await env.MUSIC_CACHE.get(path);
-  if (cached) {
-    return jsonResponse(request, env, { code: 200, url: cached, cache: 'kv' });
-  }
+  const { cache } = await getOrCreateRawUrl(env, ctx, path, path, 'Music');
 
-  // 2. 查 AList 源站 (L3)
-  const rawUrl = await requestAListRawUrl(env, path);
-
-  // 3. 非阻塞回写 KV —— 不 await，用 ctx.waitUntil 确保写入完成
-  ctx.waitUntil(
-    env.MUSIC_CACHE.put(path, rawUrl, { expirationTtl: CACHE_TTL_SECONDS }).catch((err) => {
-      console.error('KV 缓存写入失败', { path, error: err instanceof Error ? err.message : String(err) });
-    })
-  );
-
-  return jsonResponse(request, env, { code: 200, url: rawUrl, cache: 'origin' });
+  return jsonResponse(request, env, {
+    code: 200,
+    url: buildMusicStreamUrl(request, path),
+    cache,
+  });
 }
 
-/**
- * 路由 3: 资源代理（图片/封面等）
- * 通过 AList API 拿到 raw_url 后 302 重定向到云存储直链
- * 浏览器 <img> 跟随 302 自动加载，不耗 Worker 带宽
- * 同时利用 KV 缓存 raw_url，减少 AList API 调用
- */
+async function handleStreamMusic(
+  request: Request,
+  env: Env,
+  ctx: ExecutionContext
+): Promise<Response> {
+  const url = new URL(request.url);
+  const path = url.searchParams.get('path')?.trim();
+
+  if (!path) {
+    throw new HttpError(400, '缺少必需的 path 查询参数');
+  }
+
+  validateMusicPath(path);
+
+  const cacheKey = path;
+  const firstAttempt = await getOrCreateRawUrl(env, ctx, cacheKey, path, 'Music');
+  let upstream = await fetchMusicStreamFromRawUrl(request, firstAttempt.rawUrl);
+
+  if (upstream.status === 401 || upstream.status === 403) {
+    deleteCachedRawUrl(env, ctx, cacheKey, 'Music');
+    const freshRawUrl = await requestAListRawUrl(env, path);
+    writeCachedRawUrl(env, ctx, cacheKey, freshRawUrl, 'Music');
+    upstream = await fetchMusicStreamFromRawUrl(request, freshRawUrl);
+  }
+
+  if (!upstream.ok && upstream.status !== 206 && upstream.status !== 304) {
+    if (upstream.status === 404) {
+      throw new HttpError(404, '上游音频资源不存在');
+    }
+    if (upstream.status === 403) {
+      throw new HttpError(403, '上游音频资源拒绝访问，通常是直链签名或 Referer 限制导致');
+    }
+    throw new HttpError(502, `上游音频流返回 HTTP ${upstream.status}`);
+  }
+
+  return createStreamResponse(request, env, upstream);
+}
+
 async function handleGetAsset(
   request: Request,
   env: Env,
@@ -311,11 +548,8 @@ async function handleGetAsset(
 
   validateAssetPath(path);
 
-  // KV 缓存 key 加前缀区分音频直链和资源直链
   const cacheKey = `asset:${path}`;
-
-  // 1. 查 KV 缓存
-  const cached = await env.MUSIC_CACHE.get(cacheKey);
+  const cached = await readCachedRawUrl(env, cacheKey);
   if (cached) {
     return new Response(null, {
       status: 302,
@@ -326,17 +560,9 @@ async function handleGetAsset(
     });
   }
 
-  // 2. 查 AList 源站
   const rawUrl = await requestAListRawUrl(env, path);
+  writeCachedRawUrl(env, ctx, cacheKey, rawUrl, 'Asset');
 
-  // 3. 非阻塞回写 KV
-  ctx.waitUntil(
-    env.MUSIC_CACHE.put(cacheKey, rawUrl, { expirationTtl: CACHE_TTL_SECONDS }).catch((err) => {
-      console.error('Asset KV 缓存写入失败', { path, error: err instanceof Error ? err.message : String(err) });
-    })
-  );
-
-  // 302 重定向到云存储直链
   return new Response(null, {
     status: 302,
     headers: {
@@ -346,7 +572,6 @@ async function handleGetAsset(
   });
 }
 
-// --- 导出 Worker 逻辑 ---
 export default {
   async fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
     const url = new URL(request.url);
@@ -355,7 +580,7 @@ export default {
       return new Response(null, { status: 204, headers: buildCorsHeaders(request, env) });
     }
 
-    if (request.method !== 'GET') {
+    if (!['GET', 'HEAD'].includes(request.method)) {
       return jsonResponse(request, env, { code: 405, error: 'Method Not Allowed' }, 405);
     }
 
@@ -366,33 +591,32 @@ export default {
       if (url.pathname === '/api/music/get-link') {
         return await handleGetMusicLink(request, env, ctx);
       }
+      if (url.pathname === '/api/music/stream') {
+        return await handleStreamMusic(request, env, ctx);
+      }
       if (url.pathname === '/api/music/asset') {
         return await handleGetAsset(request, env, ctx);
       }
 
       return jsonResponse(request, env, { code: 404, error: 'Not Found' }, 404);
-    } catch (e) {
-      // HttpError 携带了准确的状态码，直接映射
-      const status = e instanceof HttpError ? e.status : 500;
-      const message = e instanceof Error ? e.message : 'Internal Server Error';
+    } catch (error) {
+      const status = error instanceof HttpError ? error.status : 500;
+      const message = error instanceof Error ? error.message : 'Internal Server Error';
 
       if (status >= 500) {
-        console.error('Worker 错误', { pathname: url.pathname, status, message, error: e });
+        console.error('Worker 错误', { pathname: url.pathname, status, message, error });
       }
 
       return jsonResponse(request, env, { code: status, error: message }, status);
     }
   },
 
-  /**
-   * 自动保活任务 (每 10 分钟执行一次)
-   */
   async scheduled(_event: ScheduledEvent, env: Env, ctx: ExecutionContext) {
-    const keepaliveUrl = `${env.ALIST_HOST}/api/public/settings?t=${Date.now()}`;
+    const keepaliveUrl = `${normalizeAListHost(env)}/api/public/settings?t=${Date.now()}`;
     ctx.waitUntil(
       fetch(keepaliveUrl, { headers: { 'User-Agent': 'SmaiClub-KeepAlive' } })
-        .then((res) => console.log(`Wake up Render: ${res.status}`))
-        .catch((err) => console.error('Keepalive failed', err))
+        .then((response) => console.log(`Wake up Render: ${response.status}`))
+        .catch((error) => console.error('Keepalive failed', error))
     );
   },
 };
