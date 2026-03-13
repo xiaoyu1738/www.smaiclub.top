@@ -15,7 +15,7 @@ binding = "MUSIC_CACHE"
 id = "a81607e030fd41efa9118f7a389cc1f3"
 
 [vars]
-ALIST_HOST = "https://smaiclub-alist-v3.onrender.com"
+ALIST_HOST = "https://smaiclub-alist-v3.onrender.com/assets/music"
 PRODUCTION_ORIGIN = "https://hall.smaiclub.top"
 
 # 推荐在生产环境里额外配置以下 secrets 二选一，避免 ALIST_TOKEN 过期后需要手动更新：
