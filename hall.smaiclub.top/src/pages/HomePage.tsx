@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { ChevronDown, Pause, Play } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { useMusicLink } from '../hooks/useMusicLink';
 import {
   DEFAULT_DURATION_SECONDS,
   PLAYER_RETURN_PATH_KEY,
@@ -15,10 +14,22 @@ import {
 
 const BACKDROP =
   'https://lh3.googleusercontent.com/aida-public/AB6AXuAWb2BxLjMsm3zIhJc2l4khH4TZfsDXC65fkjafn8dNXPBqViHJqvS8X0Dbc2qQrrmQPSyqEWg583mk8ai-4s7qAPd65PPnmY9RW0EuM7TT-tSGtBpavUchjyGymnOE0CA1m_d9W8bSLJwbibkhbgyaRugc0c5qxzSRLH_B9H6Pw98D7z1sfhBIkzp0-X-sXzrlcF-23vhPG8xGNGLr2SOGSv0H3OBCAP6wgnd_JP1G6gPRGZOUbKFG_NWtYeddhXqNjOag_bUzNMo';
+const WORKER_HOST = import.meta.env.VITE_WORKER_HOST ?? 'https://hall-worker.xiaoyu1738jw.workers.dev';
 
 type PlayerLocationState = {
   fromPath?: string;
 };
+
+function buildMusicStreamUrl(path: string | null | undefined): string | null {
+  const normalizedPath = path?.trim();
+  if (!normalizedPath) {
+    return null;
+  }
+
+  const endpoint = new URL(`${WORKER_HOST.replace(/\/+$/, '')}/api/music/stream`);
+  endpoint.searchParams.set('path', normalizedPath);
+  return endpoint.toString();
+}
 
 export function HomePage() {
   const [track, setTrack] = useState(() => readTrack());
@@ -31,13 +42,7 @@ export function HomePage() {
   const location = useLocation();
   const navigate = useNavigate();
   const minimizeTimerRef = useRef<number | null>(null);
-  const {
-    url: audioUrl,
-    error: linkError,
-    isLoading: isLinkLoading,
-    source: linkSource,
-    refresh: refreshAudioUrl
-  } = useMusicLink(track.path, { enabled: Boolean(track.path) });
+  const audioUrl = useMemo(() => buildMusicStreamUrl(track.path), [track.path]);
 
   const fromPath = (location.state as PlayerLocationState | null)?.fromPath;
 
@@ -89,15 +94,7 @@ export function HomePage() {
   const totalDuration = duration > 0 ? duration : DEFAULT_DURATION_SECONDS;
   const safeCurrentTime = Math.min(currentTime, totalDuration);
   const ratio = `${(safeCurrentTime / totalDuration) * 100}%`;
-  const statusText = linkError
-    ? linkError
-    : playbackError
-      ? playbackError
-      : isLinkLoading
-        ? '正在解析音频直链...'
-        : linkSource === 'local'
-          ? '已命中浏览器缓存'
-          : '直链已就绪';
+  const statusText = playbackError ? playbackError : '正在通过 Worker 代理播放';
 
   async function togglePlayback(): Promise<void> {
     const audio = audioRef.current;
@@ -182,7 +179,7 @@ export function HomePage() {
           }}
           onError={() => {
             setIsPlaying(false);
-            setPlaybackError('音频资源加载失败，请刷新直链后重试。');
+            setPlaybackError('音频资源加载失败，请重试。');
           }}
         />
         <main className="flex min-h-0 flex-1 flex-col gap-6 pt-4 md:grid md:grid-cols-2 md:gap-10 md:pt-6">
@@ -237,13 +234,13 @@ export function HomePage() {
         <footer className="mt-auto shrink-0 rounded-2xl border border-white/10 bg-black/35 px-4 py-3 blur-backdrop">
           <div className="mb-3 flex items-center justify-between gap-3 text-xs text-subtext-dark">
             <span className="truncate">{statusText}</span>
-            {(linkError || playbackError) && track.path ? (
+            {playbackError && audioUrl ? (
               <button
                 type="button"
                 className="shrink-0 rounded-full border border-white/15 px-3 py-1 text-white transition hover:border-primary hover:text-primary"
                 onClick={() => {
                   setPlaybackError(null);
-                  refreshAudioUrl();
+                  audioRef.current?.load();
                 }}
               >
                 重试
@@ -263,7 +260,7 @@ export function HomePage() {
                 type="button"
                 className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-white/15 bg-white/5 text-white transition hover:border-primary hover:text-primary disabled:cursor-not-allowed disabled:opacity-50"
                 onClick={() => { void togglePlayback(); }}
-                disabled={!audioUrl || isLinkLoading}
+                disabled={!audioUrl}
                 aria-label={isPlaying ? '暂停播放' : '开始播放'}
               >
                 {isPlaying ? <Pause size={16} aria-hidden="true" /> : <Play size={16} aria-hidden="true" />}
@@ -280,7 +277,7 @@ export function HomePage() {
                 className="h-2 w-full cursor-pointer accent-primary"
                 aria-label="播放进度"
                 style={{ background: `linear-gradient(to right, #ec1337 ${ratio}, #452229 ${ratio})` }}
-                disabled={!audioUrl || isLinkLoading}
+                disabled={!audioUrl}
               />
               <span className="min-w-[36px] text-right text-xs text-subtext-dark">{formatTime(totalDuration)}</span>
             </div>
@@ -301,7 +298,7 @@ export function HomePage() {
                 type="button"
                 className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-white/15 bg-white/5 text-white transition hover:border-primary hover:text-primary disabled:cursor-not-allowed disabled:opacity-50"
                 onClick={() => { void togglePlayback(); }}
-                disabled={!audioUrl || isLinkLoading}
+                disabled={!audioUrl}
                 aria-label={isPlaying ? '暂停播放' : '开始播放'}
               >
                 {isPlaying ? <Pause size={16} aria-hidden="true" /> : <Play size={16} aria-hidden="true" />}
@@ -315,7 +312,7 @@ export function HomePage() {
                 className="h-2 w-full cursor-pointer accent-primary"
                 aria-label="播放进度"
                 style={{ background: `linear-gradient(to right, #ec1337 ${ratio}, #452229 ${ratio})` }}
-                disabled={!audioUrl || isLinkLoading}
+                disabled={!audioUrl}
               />
               <span className="min-w-[52px] text-xs text-subtext-dark">{formatTime(totalDuration)}</span>
             </div>

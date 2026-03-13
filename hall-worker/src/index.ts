@@ -56,8 +56,19 @@ class HttpError extends Error {
   }
 }
 
-function normalizeAListHost(env: Env): string {
-  return env.ALIST_HOST.replace(/\/+$/, '');
+function normalizeAListApiHost(env: Env): string {
+  const rawHost = env.ALIST_HOST.trim();
+
+  let parsed: URL;
+  try {
+    parsed = new URL(rawHost);
+  } catch {
+    throw new HttpError(500, `ALIST_HOST 配置无效: ${rawHost}`);
+  }
+
+  // 兼容 ALIST_HOST 被配置成带路径的地址（例如 /assets/music），
+  // AList API 仍应请求到站点根域名下的 /api/*。
+  return parsed.origin;
 }
 
 function buildCorsHeaders(request: Request, env: Env): Record<string, string> {
@@ -204,7 +215,7 @@ async function performAListRequest<T>(
   body: Record<string, unknown>,
   token: string
 ): Promise<AListEnvelope<T>> {
-  const response = await fetchWithTimeout(`${normalizeAListHost(env)}${path}`, {
+  const response = await fetchWithTimeout(`${normalizeAListApiHost(env)}${path}`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -252,7 +263,7 @@ async function loginToAList(env: Env): Promise<string> {
       ? { username, password: passwordHash }
       : { username, password };
 
-    const response = await fetchWithTimeout(`${normalizeAListHost(env)}${loginPath}`, {
+    const response = await fetchWithTimeout(`${normalizeAListApiHost(env)}${loginPath}`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -397,14 +408,6 @@ async function getOrCreateRawUrl(
   return { rawUrl, cache: 'origin' };
 }
 
-function buildMusicStreamUrl(request: Request, path: string): string {
-  const streamUrl = new URL(request.url);
-  streamUrl.pathname = '/api/music/stream';
-  streamUrl.search = '';
-  streamUrl.searchParams.set('path', path);
-  return streamUrl.toString();
-}
-
 function copyStreamRequestHeaders(request: Request): Headers {
   const headers = new Headers();
 
@@ -416,6 +419,14 @@ function copyStreamRequestHeaders(request: Request): Headers {
   }
 
   return headers;
+}
+
+function buildMusicStreamUrl(request: Request, path: string): string {
+  const streamUrl = new URL(request.url);
+  streamUrl.pathname = '/api/music/stream';
+  streamUrl.search = '';
+  streamUrl.searchParams.set('path', path);
+  return streamUrl.toString();
 }
 
 async function fetchMusicStreamFromRawUrl(request: Request, rawUrl: string): Promise<Response> {
@@ -500,7 +511,7 @@ async function handleGetMusicLink(
   });
 }
 
-async function handleStreamMusic(
+async function handleMusicStreamProxy(
   request: Request,
   env: Env,
   ctx: ExecutionContext
@@ -596,7 +607,7 @@ export default {
         return await handleGetMusicLink(request, env, ctx);
       }
       if (url.pathname === '/api/music/stream') {
-        return await handleStreamMusic(request, env, ctx);
+        return await handleMusicStreamProxy(request, env, ctx);
       }
       if (url.pathname === '/api/music/asset') {
         return await handleGetAsset(request, env, ctx);
@@ -616,7 +627,7 @@ export default {
   },
 
   async scheduled(_event: ScheduledEvent, env: Env, ctx: ExecutionContext) {
-    const keepaliveUrl = `${normalizeAListHost(env)}/api/public/settings?t=${Date.now()}`;
+    const keepaliveUrl = `${normalizeAListApiHost(env)}/api/public/settings?t=${Date.now()}`;
     ctx.waitUntil(
       fetch(keepaliveUrl, { headers: { 'User-Agent': 'SmaiClub-KeepAlive' } })
         .then((response) => console.log(`Wake up Render: ${response.status}`))
