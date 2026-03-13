@@ -11,6 +11,8 @@ export const PLAYER_RETURN_PATH_KEY = 'hall.player.returnPath';
 export const PLAYER_CURRENT_TIME_KEY = 'hall.player.currentTime';
 export const PLAYER_DURATION_SECONDS_KEY = 'hall.player.durationSeconds';
 const CURRENT_TRACK_STORAGE_KEY = 'hall.currentTrack';
+const LEGACY_MUSIC_PREFIX = '/aliyun/music';
+const MUSIC_PREFIX = '/assets/music';
 
 export const DEFAULT_TRACK: TrackState = {
   title: '摇滚颂歌',
@@ -20,6 +22,12 @@ export const DEFAULT_TRACK: TrackState = {
     'https://lh3.googleusercontent.com/aida-public/AB6AXuBSI0lP4yK2iG13MSDNm_JhyqWpVuxHV2KFcUQxAPHXENUkUyHXB032mTwwfpePGBt63nzg1Yn54pqiZPQBtB2Q_cmrVQQKszzJxn9sl77If1dsYEjnhLIaABAmdC2A7x9kj7OxntkGfPhiSuJKpgDt8iFrxfR77AjBZUbs5o-Fij2k6rFxIgNufUsiZLW4WrwUVTvtJlnpb6TqTcPc0ymP-oB_3JijW_gpIbo8Zf9Y2vYqEd9IF_Jlvf681vsBciEZv27zWU8keYs',
   path: '/assets/music/smai-club/live/rock-anthem.mp3'
 };
+
+function normalizeTrackPath(path: string): string {
+  return path.startsWith(LEGACY_MUSIC_PREFIX)
+    ? `${MUSIC_PREFIX}${path.slice(LEGACY_MUSIC_PREFIX.length)}`
+    : path;
+}
 
 function readJson<T>(storageKey: string): T | null {
   const rawValue = localStorage.getItem(storageKey);
@@ -50,11 +58,20 @@ export function readTrack(): TrackState {
     return DEFAULT_TRACK;
   }
 
-  return savedTrack;
+  return {
+    ...savedTrack,
+    path: normalizeTrackPath(savedTrack.path)
+  };
 }
 
 export function saveTrack(track: TrackState): void {
-  localStorage.setItem(CURRENT_TRACK_STORAGE_KEY, JSON.stringify(track));
+  localStorage.setItem(
+    CURRENT_TRACK_STORAGE_KEY,
+    JSON.stringify({
+      ...track,
+      path: normalizeTrackPath(track.path)
+    })
+  );
 }
 
 export function readCurrentTime(): number {

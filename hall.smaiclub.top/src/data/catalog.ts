@@ -40,11 +40,19 @@ export interface CatalogCacheSnapshot {
 }
 
 const WORKER_HOST = import.meta.env.VITE_WORKER_HOST ?? 'https://hall-worker.xiaoyu1738jw.workers.dev';
+const LEGACY_MUSIC_PREFIX = '/aliyun/music';
+const MUSIC_PREFIX = '/assets/music';
 
 /** catalog 数据现统一走 Worker 代理，解决前端直连 AList 的 CORS + 401 问题 */
 export const CATALOG_REMOTE_URL =
   import.meta.env.VITE_CATALOG_URL ?? `${WORKER_HOST.replace(/\/+$/, '')}/api/music/catalog`;
 export const CATALOG_CACHE_STORAGE_KEY = 'hall.catalog.v1';
+
+function normalizeMusicLibraryPath(path: string): string {
+  return path.startsWith(LEGACY_MUSIC_PREFIX)
+    ? `${MUSIC_PREFIX}${path.slice(LEGACY_MUSIC_PREFIX.length)}`
+    : path;
+}
 
 function canUseLocalStorage(): boolean {
   return typeof window !== 'undefined' && typeof window.localStorage !== 'undefined';
@@ -83,7 +91,7 @@ function stripExtension(fileName: string): string {
 }
 
 function joinPath(basePath: string, fileName: string): string {
-  const normalizedBase = basePath.replace(/\/+$/, '');
+  const normalizedBase = normalizeMusicLibraryPath(basePath).replace(/\/+$/, '');
   const normalizedFile = fileName.replace(/^\/+/, '');
   return normalizedBase ? `${normalizedBase}/${normalizedFile}` : `/${normalizedFile}`;
 }
@@ -106,7 +114,9 @@ function toAbsoluteAssetUrl(pathOrUrl: string): string {
   }
 
   // 本地路径 → 走 Worker 资源代理端点，Worker 会 302 到云存储直链
-  const normalizedPath = pathOrUrl.startsWith('/') ? pathOrUrl : `/${pathOrUrl}`;
+  const normalizedPath = normalizeMusicLibraryPath(
+    pathOrUrl.startsWith('/') ? pathOrUrl : `/${pathOrUrl}`
+  );
   const workerBase = WORKER_HOST.replace(/\/+$/, '');
   return `${workerBase}/api/music/asset?path=${encodeURIComponent(normalizedPath)}`;
 }
@@ -134,7 +144,7 @@ function resolveTrackPath(
 ): string | null {
   const explicitPath = readString(trackRecord?.path);
   if (explicitPath?.startsWith('/')) {
-    return explicitPath;
+    return normalizeMusicLibraryPath(explicitPath);
   }
 
   if (fallbackFileName) {
@@ -199,7 +209,9 @@ function normalizeAlbum(
   }
 
   const title = readString(albumRecord.title) ?? `Untitled Album ${albumIndex + 1}`;
-  const basePath = readString(albumRecord.base_path) ?? readString(albumRecord.basePath) ?? '';
+  const basePath = normalizeMusicLibraryPath(
+    readString(albumRecord.base_path) ?? readString(albumRecord.basePath) ?? ''
+  );
   const slug = createSlug(`${artist.slug}-${title}`, 'album', albumIndex);
   const coverFallback = basePath ? toAbsoluteAssetUrl(joinPath(basePath, 'cover.jpg')) : '';
   const cover = resolveAssetUrl(basePath, readString(albumRecord.cover), coverFallback);
@@ -324,6 +336,29 @@ export function getArtistLetter(name: string): string {
   return /^[A-Z]$/.test(firstLetter) ? firstLetter : '#';
 }
 
+function normalizeCachedArtists(artists: CatalogArtist[]): CatalogArtist[] {
+  return artists.map((artist) => ({
+    ...artist,
+    avatar: artist.avatar ? toAbsoluteAssetUrl(artist.avatar) : artist.avatar,
+    hero: artist.hero ? toAbsoluteAssetUrl(artist.hero) : artist.hero,
+    albums: artist.albums.map((album) => ({
+      ...album,
+      basePath: normalizeMusicLibraryPath(album.basePath),
+      cover: album.cover ? toAbsoluteAssetUrl(album.cover) : album.cover,
+      tracks: album.tracks.map((track) => ({
+        ...track,
+        cover: track.cover ? toAbsoluteAssetUrl(track.cover) : track.cover,
+        path: normalizeMusicLibraryPath(track.path)
+      }))
+    })),
+    tracks: artist.tracks.map((track) => ({
+      ...track,
+      cover: track.cover ? toAbsoluteAssetUrl(track.cover) : track.cover,
+      path: normalizeMusicLibraryPath(track.path)
+    }))
+  }));
+}
+
 export function readCachedCatalogSnapshot(): CatalogCacheSnapshot | null {
   if (!canUseLocalStorage()) {
     return null;
@@ -341,7 +376,7 @@ export function readCachedCatalogSnapshot(): CatalogCacheSnapshot | null {
     }
 
     return {
-      artists: parsed.artists as CatalogArtist[],
+      artists: normalizeCachedArtists(parsed.artists as CatalogArtist[]),
       updatedAt: parsed.updatedAt
     };
   } catch {
