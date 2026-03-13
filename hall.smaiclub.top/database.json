@@ -6,7 +6,7 @@
       "albums": [
         {
           "title": "The Joshua Tree",
-          "base_path": "/aliyun/music/U2/The Joshua Tree",
+          "base_path": "/assets/music/U2/The Joshua Tree",
           "cover": "cover.jpg",
           "tracks": [
             "A Very Irish Album.mp3",
@@ -24,7 +24,7 @@
         },
         {
           "title": "War",
-          "base_path": "/aliyun/music/U2/War",
+          "base_path": "/assets/music/U2/War",
           "cover": "cover.jpg",
           "tracks": [
             "Drowning Man.mp3",
@@ -41,7 +41,7 @@
         },
         {
           "title": "Achtung Baby",
-          "base_path": "/aliyun/music/U2/Achtung Baby",
+          "base_path": "/assets/music/U2/Achtung Baby",
           "cover": "cover.jpg",
           "tracks": [
             "Acrobat.mp3",
@@ -127,7 +127,7 @@
       "albums": [
         {
           "title": "Quadrophenia",
-          "base_path": "/aliyun/music/The Who/Quadrophenia",
+          "base_path": "/assets/music/The Who/Quadrophenia",
           "cover": "cover.jpg",
           "tracks": [
             "5_15.mp3",
@@ -173,7 +173,7 @@
         },
         {
           "title": "Who's Next",
-          "base_path": "/aliyun/music/The Who/Who's Next",
+          "base_path": "/assets/music/The Who/Who's Next",
           "cover": "cover.jpg",
           "tracks": [
             "Baba O’Riley (live at the Civic Auditorium, San Francisco, 1971).mp3",
@@ -189,7 +189,7 @@
         },
         {
           "title": "Tommy",
-          "base_path": "/aliyun/music/The Who/Tommy",
+          "base_path": "/assets/music/The Who/Tommy",
           "cover": "cover.jpg",
           "tracks": [
             "1921.mp3",
@@ -226,7 +226,7 @@
       "albums": [
         {
           "title": "White Light_White Heat",
-          "base_path": "/aliyun/music/The Velvet Underground/White Light_White Heat",
+          "base_path": "/assets/music/The Velvet Underground/White Light_White Heat",
           "cover": "cover.jpg",
           "tracks": [
             "Here She Comes Now.mp3",
@@ -235,7 +235,7 @@
         },
         {
           "title": "The Velvet Underground & Nico",
-          "base_path": "/aliyun/music/The Velvet Underground/The Velvet Underground & Nico",
+          "base_path": "/assets/music/The Velvet Underground/The Velvet Underground & Nico",
           "cover": "cover.jpg",
           "tracks": [
             "All Tomorrow’s Parties.mp3",
@@ -252,7 +252,7 @@
         },
         {
           "title": "The Velvet Underground",
-          "base_path": "/aliyun/music/The Velvet Underground/The Velvet Underground",
+          "base_path": "/assets/music/The Velvet Underground/The Velvet Underground",
           "cover": "cover.jpg",
           "tracks": [
             "After Hours (live in San Francisco _ 1969).mp3",
@@ -328,7 +328,7 @@
       "albums": [
         {
           "title": "Sticky Fingers",
-          "base_path": "/aliyun/music/The Rolling Stones/Sticky Fingers",
+          "base_path": "/assets/music/The Rolling Stones/Sticky Fingers",
           "cover": "cover.jpg",
           "tracks": [
             "Brown Sugar.mp3",
@@ -343,7 +343,7 @@
         },
         {
           "title": "Beggars Banquet",
-          "base_path": "/aliyun/music/The Rolling Stones/Beggars Banquet",
+          "base_path": "/assets/music/The Rolling Stones/Beggars Banquet",
           "cover": "cover.jpg",
           "tracks": [
             "Dear Doctor.mp3",
@@ -360,7 +360,7 @@
         },
         {
           "title": "Let It Bleed",
-          "base_path": "/aliyun/music/The Rolling Stones/Let It Bleed",
+          "base_path": "/assets/music/The Rolling Stones/Let It Bleed",
           "cover": "cover.jpg",
           "tracks": [
             "Country Honk.mp3",
@@ -382,7 +382,7 @@
       "albums": [
         {
           "title": "L.A. Woman",
-          "base_path": "/aliyun/music/The Doors/L.A. Woman",
+          "base_path": "/assets/music/The Doors/L.A. Woman",
           "cover": "cover.jpg",
           "tracks": [
             "Been Down So Long.mp3",
@@ -398,7 +398,7 @@
         },
         {
           "title": "The Doors",
-          "base_path": "/aliyun/music/The Doors/The Doors",
+          "base_path": "/assets/music/The Doors/The Doors",
           "cover": "cover.jpg",
           "tracks": [
             "Light My Fire.mp3",
@@ -411,7 +411,7 @@
         },
         {
           "title": "Strange Days",
-          "base_path": "/aliyun/music/The Doors/Strange Days",
+          "base_path": "/assets/music/The Doors/Strange Days",
           "cover": "cover.jpg",
           "tracks": [
             "Horse Latitudes.mp3",
@@ -434,7 +434,7 @@
       "albums": [
         {
           "title": "Revolver",
-          "base_path": "/aliyun/music/The Beatles/Revolver",
+          "base_path": "/assets/music/The Beatles/Revolver",
           "cover": "cover.jpg",
           "tracks": [
             "And Your Bird Can Sing.mp3",
@@ -455,7 +455,7 @@
         },
         {
           "title": "Abbey Road",
-          "base_path": "/aliyun/music/The Beatles/Abbey Road",
+          "base_path": "/assets/music/The Beatles/Abbey Road",
           "cover": "cover.jpg",
           "tracks": [
             "Because.mp3",
@@ -479,7 +479,7 @@
         },
         {
           "title": "Sgt. Pepper's Lonely Hearts Club Band",
-          "base_path": "/aliyun/music/The Beatles/Sgt. Pepper's Lonely Hearts Club Band",
+          "base_path": "/assets/music/The Beatles/Sgt. Pepper's Lonely Hearts Club Band",
           "cover": "cover.jpg",
           "tracks": [
             "A Day in the Life.mp3",
@@ -499,7 +499,7 @@
         },
         {
           "title": "Help!",
-          "base_path": "/aliyun/music/The Beatles/Help!",
+          "base_path": "/assets/music/The Beatles/Help!",
           "cover": "cover.jpg",
           "tracks": [
             "Act Naturally.mp3",
@@ -520,7 +520,7 @@
         },
         {
           "title": "Rubber Soul",
-          "base_path": "/aliyun/music/The Beatles/Rubber Soul",
+          "base_path": "/assets/music/The Beatles/Rubber Soul",
           "cover": "cover.jpg",
           "tracks": [
             "Drive My Car.mp3",
@@ -547,7 +547,7 @@
       "albums": [
         {
           "title": "The Bends",
-          "base_path": "/aliyun/music/Radiohead/The Bends",
+          "base_path": "/assets/music/Radiohead/The Bends",
           "cover": "cover.jpg",
           "tracks": [
             "(Nice Dream).mp3",
@@ -566,7 +566,7 @@
         },
         {
           "title": "OK Computer",
-          "base_path": "/aliyun/music/Radiohead/OK Computer",
+          "base_path": "/assets/music/Radiohead/OK Computer",
           "cover": "cover.jpg",
           "tracks": [
             "Airbag.mp3",
@@ -585,7 +585,7 @@
         },
         {
           "title": "In Rainbows",
-          "base_path": "/aliyun/music/Radiohead/In Rainbows",
+          "base_path": "/assets/music/Radiohead/In Rainbows",
           "cover": "cover.jpg",
           "tracks": [
             "15 Step.mp3",
@@ -602,7 +602,7 @@
         },
         {
           "title": "Kid A",
-          "base_path": "/aliyun/music/Radiohead/Kid A",
+          "base_path": "/assets/music/Radiohead/Kid A",
           "cover": "cover.jpg",
           "tracks": [
             "Everything in Its Right Place.mp3",
@@ -625,7 +625,7 @@
       "albums": [
         {
           "title": "News of the World",
-          "base_path": "/aliyun/music/Queen/News of the World",
+          "base_path": "/assets/music/Queen/News of the World",
           "cover": "cover.jpg",
           "tracks": [
             "All Dead, All Dead.mp3",
@@ -643,7 +643,7 @@
         },
         {
           "title": "A Night at the Opera",
-          "base_path": "/aliyun/music/Queen/A Night at the Opera",
+          "base_path": "/assets/music/Queen/A Night at the Opera",
           "cover": "cover.jpg",
           "tracks": [
             "Bohemian Rhapsody.mp3",
@@ -662,7 +662,7 @@
         },
         {
           "title": "Sheer Heart Attack",
-          "base_path": "/aliyun/music/Queen/Sheer Heart Attack",
+          "base_path": "/assets/music/Queen/Sheer Heart Attack",
           "cover": "cover.jpg",
           "tracks": [
             "Brighton Rock.mp3",
@@ -688,7 +688,7 @@
       "albums": [
         {
           "title": "Animals",
-          "base_path": "/aliyun/music/Pink Floyd/Animals",
+          "base_path": "/assets/music/Pink Floyd/Animals",
           "cover": "cover.jpg",
           "tracks": [
             "Dogs.mp3",
@@ -700,7 +700,7 @@
         },
         {
           "title": "The Dark Side of the Moon",
-          "base_path": "/aliyun/music/Pink Floyd/The Dark Side of the Moon",
+          "base_path": "/assets/music/Pink Floyd/The Dark Side of the Moon",
           "cover": "cover.jpg",
           "tracks": [
             "Any Colour You Like.mp3",
@@ -717,7 +717,7 @@
         },
         {
           "title": "The Wall",
-          "base_path": "/aliyun/music/Pink Floyd/The Wall",
+          "base_path": "/assets/music/Pink Floyd/The Wall",
           "cover": "cover.jpg",
           "tracks": [
             "Another Brick in the Wall, Part 2.mp3",
@@ -748,7 +748,7 @@
         },
         {
           "title": "Wish You Were Here",
-          "base_path": "/aliyun/music/Pink Floyd/Wish You Were Here",
+          "base_path": "/assets/music/Pink Floyd/Wish You Were Here",
           "cover": "cover.jpg",
           "tracks": [
             "Have a Cigar (alternative version).mp3",
@@ -767,7 +767,7 @@
       "albums": [
         {
           "title": "Nevermind",
-          "base_path": "/aliyun/music/Nirvana/Nevermind",
+          "base_path": "/assets/music/Nirvana/Nevermind",
           "cover": "cover.jpg",
           "tracks": [
             "Breed.mp3",
@@ -786,7 +786,7 @@
         },
         {
           "title": "Bleach",
-          "base_path": "/aliyun/music/Nirvana/Bleach",
+          "base_path": "/assets/music/Nirvana/Bleach",
           "cover": "cover.jpg",
           "tracks": [
             "About a Girl (live at Pine Street Theatre).mp3",
@@ -818,7 +818,7 @@
         },
         {
           "title": "In Utero",
-          "base_path": "/aliyun/music/Nirvana/In Utero",
+          "base_path": "/assets/music/Nirvana/In Utero",
           "cover": "cover.jpg",
           "tracks": [
             "All Apologies _ Gallons of Rubbing Alcohol Flow Through the Strip.mp3",
@@ -843,7 +843,7 @@
       "albums": [
         {
           "title": "Metallica",
-          "base_path": "/aliyun/music/Metallica/Metallica",
+          "base_path": "/assets/music/Metallica/Metallica",
           "cover": "cover.jpg",
           "tracks": [
             "Breadfan.mp3",
@@ -867,7 +867,7 @@
         },
         {
           "title": "Ride the Lightning",
-          "base_path": "/aliyun/music/Metallica/Ride the Lightning",
+          "base_path": "/assets/music/Metallica/Ride the Lightning",
           "cover": "cover.jpg",
           "tracks": [
             "Creeping Death.mp3",
@@ -882,7 +882,7 @@
         },
         {
           "title": "Master of Puppets",
-          "base_path": "/aliyun/music/Metallica/Master of Puppets",
+          "base_path": "/assets/music/Metallica/Master of Puppets",
           "cover": "cover.jpg",
           "tracks": [
             "Master of Puppets.mp3",
@@ -891,7 +891,7 @@
         },
         {
           "title": "...And Justice for All",
-          "base_path": "/aliyun/music/Metallica/...And Justice for All",
+          "base_path": "/assets/music/Metallica/...And Justice for All",
           "cover": "cover.jpg",
           "tracks": [
             "...And Justice for All.mp3",
@@ -913,7 +913,7 @@
       "albums": [
         {
           "title": "Led Zeppelin IV",
-          "base_path": "/aliyun/music/Led Zeppelin/Led Zeppelin IV",
+          "base_path": "/assets/music/Led Zeppelin/Led Zeppelin IV",
           "cover": "cover.jpg",
           "tracks": [
             "Black Dog.mp3",
@@ -928,7 +928,7 @@
         },
         {
           "title": "Led Zeppelin",
-          "base_path": "/aliyun/music/Led Zeppelin/Led Zeppelin",
+          "base_path": "/assets/music/Led Zeppelin/Led Zeppelin",
           "cover": "cover.jpg",
           "tracks": [
             "Babe I'm Gonna Leave You.mp3",
@@ -944,7 +944,7 @@
         },
         {
           "title": "Physical Graffiti",
-          "base_path": "/aliyun/music/Led Zeppelin/Physical Graffiti",
+          "base_path": "/assets/music/Led Zeppelin/Physical Graffiti",
           "cover": "cover.jpg",
           "tracks": [
             "Black Country Woman.mp3",
@@ -966,7 +966,7 @@
         },
         {
           "title": "Led Zeppelin II",
-          "base_path": "/aliyun/music/Led Zeppelin/Led Zeppelin II",
+          "base_path": "/assets/music/Led Zeppelin/Led Zeppelin II",
           "cover": "cover.jpg",
           "tracks": [
             "Bring It On Home.mp3",
@@ -988,7 +988,7 @@
       "albums": [
         {
           "title": "In the Court of the Crimson King",
-          "base_path": "/aliyun/music/King Crimson/In the Court of the Crimson King",
+          "base_path": "/assets/music/King Crimson/In the Court of the Crimson King",
           "cover": "cover.jpg",
           "tracks": [
             "21st Century Schizoid Man.mp3",
@@ -1006,7 +1006,7 @@
       "albums": [
         {
           "title": "Electric Ladyland",
-          "base_path": "/aliyun/music/Jimi Hendrix/Electric Ladyland",
+          "base_path": "/assets/music/Jimi Hendrix/Electric Ladyland",
           "cover": "cover.jpg",
           "tracks": [
             "1983... (A Merman I Should Turn to Be).mp3",
@@ -1028,7 +1028,7 @@
         },
         {
           "title": "Axis_ Bold as Love",
-          "base_path": "/aliyun/music/Jimi Hendrix/Axis_ Bold as Love",
+          "base_path": "/assets/music/Jimi Hendrix/Axis_ Bold as Love",
           "cover": "cover.jpg",
           "tracks": [
             "Ain’t No Telling.mp3",
@@ -1048,7 +1048,7 @@
         },
         {
           "title": "Are You Experienced",
-          "base_path": "/aliyun/music/Jimi Hendrix/Are You Experienced",
+          "base_path": "/assets/music/Jimi Hendrix/Are You Experienced",
           "cover": "cover.jpg",
           "tracks": [
             "Are You Experienced_.mp3",
@@ -1063,7 +1063,7 @@
       "albums": [
         {
           "title": "Use Your Illusion I",
-          "base_path": "/aliyun/music/Guns N' Roses/Use Your Illusion I",
+          "base_path": "/assets/music/Guns N' Roses/Use Your Illusion I",
           "cover": "cover.jpg",
           "tracks": [
             "Back Off Bitch.mp3",
@@ -1086,7 +1086,7 @@
         },
         {
           "title": "Appetite for Destruction",
-          "base_path": "/aliyun/music/Guns N' Roses/Appetite for Destruction",
+          "base_path": "/assets/music/Guns N' Roses/Appetite for Destruction",
           "cover": "cover.jpg",
           "tracks": [
             "Anything Goes.mp3",
@@ -1105,7 +1105,7 @@
         },
         {
           "title": "Use Your Illusion II",
-          "base_path": "/aliyun/music/Guns N' Roses/Use Your Illusion II",
+          "base_path": "/assets/music/Guns N' Roses/Use Your Illusion II",
           "cover": "cover.jpg",
           "tracks": [
             "14 Years.mp3",
@@ -1132,7 +1132,7 @@
       "albums": [
         {
           "title": "Elvis Is Back!",
-          "base_path": "/aliyun/music/Elvis Presley/Elvis Is Back!",
+          "base_path": "/assets/music/Elvis Presley/Elvis Is Back!",
           "cover": "cover.jpg",
           "tracks": [
             "Dirty, Dirty Feeling.mp3",
@@ -1151,7 +1151,7 @@
         },
         {
           "title": "Elvis Presley",
-          "base_path": "/aliyun/music/Elvis Presley/Elvis Presley",
+          "base_path": "/assets/music/Elvis Presley/Elvis Presley",
           "cover": "cover.jpg",
           "tracks": [
             "Baby Let’s Play House.mp3",
@@ -1171,7 +1171,7 @@
         },
         {
           "title": "From Elvis in Memphis",
-          "base_path": "/aliyun/music/Elvis Presley/From Elvis in Memphis",
+          "base_path": "/assets/music/Elvis Presley/From Elvis in Memphis",
           "cover": "cover.jpg",
           "tracks": [
             "After Loving You.mp3",
@@ -1196,7 +1196,7 @@
       "albums": [
         {
           "title": "Low",
-          "base_path": "/aliyun/music/David Bowie/Low",
+          "base_path": "/assets/music/David Bowie/Low",
           "cover": "cover.jpg",
           "tracks": [
             "A New Career in a New Town.mp3",
@@ -1214,7 +1214,7 @@
         },
         {
           "title": "_Heroes_",
-          "base_path": "/aliyun/music/David Bowie/_Heroes_",
+          "base_path": "/assets/music/David Bowie/_Heroes_",
           "cover": "cover.jpg",
           "tracks": [
             "Beauty and the Beast.mp3",
@@ -1231,7 +1231,7 @@
         },
         {
           "title": "The Rise and Fall of Ziggy Stardust and the Spiders from Mars",
-          "base_path": "/aliyun/music/David Bowie/The Rise and Fall of Ziggy Stardust and the Spiders from Mars",
+          "base_path": "/assets/music/David Bowie/The Rise and Fall of Ziggy Stardust and the Spiders from Mars",
           "cover": "cover.jpg",
           "tracks": [
             "Five Years.mp3",
@@ -1255,7 +1255,7 @@
       "albums": [
         {
           "title": "Berry Is on Top",
-          "base_path": "/aliyun/music/Chuck Berry/Berry Is on Top",
+          "base_path": "/assets/music/Chuck Berry/Berry Is on Top",
           "cover": "cover.jpg",
           "tracks": [
             "Almost Grown.mp3",
@@ -1273,7 +1273,7 @@
         },
         {
           "title": "After School Session",
-          "base_path": "/aliyun/music/Chuck Berry/After School Session",
+          "base_path": "/assets/music/Chuck Berry/After School Session",
           "cover": "cover.jpg",
           "tracks": [
             "Berry Pickin’.mp3",
@@ -1294,7 +1294,7 @@
         },
         {
           "title": "One Dozen Berrys",
-          "base_path": "/aliyun/music/Chuck Berry/One Dozen Berrys",
+          "base_path": "/assets/music/Chuck Berry/One Dozen Berrys",
           "cover": "cover.jpg",
           "tracks": [
             "Blue Feeling.mp3",
@@ -1319,7 +1319,7 @@
       "albums": [
         {
           "title": "Blood on the Tracks",
-          "base_path": "/aliyun/music/Bob Dylan/Blood on the Tracks",
+          "base_path": "/assets/music/Bob Dylan/Blood on the Tracks",
           "cover": "cover.jpg",
           "tracks": [
             "Buckets of Rain.mp3",
@@ -1335,7 +1335,7 @@
         },
         {
           "title": "Highway 61 Revisited",
-          "base_path": "/aliyun/music/Bob Dylan/Highway 61 Revisited",
+          "base_path": "/assets/music/Bob Dylan/Highway 61 Revisited",
           "cover": "cover.jpg",
           "tracks": [
             "Ballad of a Thin Man.mp3",
@@ -1351,7 +1351,7 @@
         },
         {
           "title": "Blonde on Blonde",
-          "base_path": "/aliyun/music/Bob Dylan/Blonde on Blonde",
+          "base_path": "/assets/music/Bob Dylan/Blonde on Blonde",
           "cover": "cover.jpg",
           "tracks": [
             "4th Time Around.mp3",
@@ -1378,7 +1378,7 @@
       "albums": [
         {
           "title": "Paranoid",
-          "base_path": "/aliyun/music/Black Sabbath/Paranoid",
+          "base_path": "/assets/music/Black Sabbath/Paranoid",
           "cover": "cover.jpg",
           "tracks": [
             "Paranoid.mp3",
@@ -1388,7 +1388,7 @@
         },
         {
           "title": "Black Sabbath",
-          "base_path": "/aliyun/music/Black Sabbath/Black Sabbath",
+          "base_path": "/assets/music/Black Sabbath/Black Sabbath",
           "cover": "cover.jpg",
           "tracks": [
             "Black Sabbath.mp3",
@@ -1402,7 +1402,7 @@
         },
         {
           "title": "Master of Reality",
-          "base_path": "/aliyun/music/Black Sabbath/Master of Reality",
+          "base_path": "/assets/music/Black Sabbath/Master of Reality",
           "cover": "cover.jpg",
           "tracks": [
             "After Forever.mp3",
@@ -1423,7 +1423,7 @@
       "albums": [
         {
           "title": "Let There Be Rock",
-          "base_path": "/aliyun/music/AC_DC/Let There Be Rock",
+          "base_path": "/assets/music/AC_DC/Let There Be Rock",
           "cover": "cover.jpg",
           "tracks": [
             "Bad Boy Boogie.mp3",
@@ -1443,7 +1443,7 @@
         },
         {
           "title": "Back in Black",
-          "base_path": "/aliyun/music/AC_DC/Back in Black",
+          "base_path": "/assets/music/AC_DC/Back in Black",
           "cover": "cover.jpg",
           "tracks": [
             "Back in Black.mp3",
@@ -1452,7 +1452,7 @@
         },
         {
           "title": "Highway to Hell",
-          "base_path": "/aliyun/music/AC_DC/Highway to Hell",
+          "base_path": "/assets/music/AC_DC/Highway to Hell",
           "cover": "cover.jpg",
           "tracks": [
             "Hells Bells (live).mp3",
@@ -1468,7 +1468,7 @@
       "albums": [
         {
           "title": "Spiderland",
-          "base_path": "/aliyun/music/Slint/Spiderland",
+          "base_path": "/assets/music/Slint/Spiderland",
           "cover": "cover.jpg",
           "tracks": [
             "Breadcrumb Trail.mp3",

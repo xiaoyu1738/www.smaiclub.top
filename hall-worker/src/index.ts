@@ -20,7 +20,7 @@ type AListLoginResponse = AListEnvelope<{ token?: string }>;
 const CACHE_TTL_SECONDS = 7_200;
 const REQUEST_TIMEOUT_MS = 30_000;
 const LOCAL_ORIGIN_PATTERN = /^https?:\/\/(?:localhost|127\.0\.0\.1)(?::\d+)?$/;
-const MUSIC_PATH_PREFIX = '/aliyun/music/';
+const MUSIC_PATH_PREFIX = '/assets/music/';
 const STREAM_REQUEST_HEADERS = ['range', 'if-range', 'if-none-match', 'if-modified-since'] as const;
 const STREAM_RESPONSE_HEADERS = [
   'accept-ranges',
@@ -460,7 +460,7 @@ function createStreamResponse(request: Request, env: Env, upstream: Response): R
 }
 
 async function handleGetCatalog(request: Request, env: Env): Promise<Response> {
-  const dbPath = '/aliyun/music/database.json';
+  const dbPath = '/assets/music/database.json';
   const rawUrl = await requestAListRawUrl(env, dbPath);
   const response = await fetchWithTimeout(rawUrl, { method: 'GET' });
 

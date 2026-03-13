@@ -18,7 +18,7 @@ export const DEFAULT_TRACK: TrackState = {
   album: '午夜现场 EP',
   cover:
     'https://lh3.googleusercontent.com/aida-public/AB6AXuBSI0lP4yK2iG13MSDNm_JhyqWpVuxHV2KFcUQxAPHXENUkUyHXB032mTwwfpePGBt63nzg1Yn54pqiZPQBtB2Q_cmrVQQKszzJxn9sl77If1dsYEjnhLIaABAmdC2A7x9kj7OxntkGfPhiSuJKpgDt8iFrxfR77AjBZUbs5o-Fij2k6rFxIgNufUsiZLW4WrwUVTvtJlnpb6TqTcPc0ymP-oB_3JijW_gpIbo8Zf9Y2vYqEd9IF_Jlvf681vsBciEZv27zWU8keYs',
-  path: '/aliyun/music/smai-club/live/rock-anthem.mp3'
+  path: '/assets/music/smai-club/live/rock-anthem.mp3'
 };
 
 function readJson<T>(storageKey: string): T | null {

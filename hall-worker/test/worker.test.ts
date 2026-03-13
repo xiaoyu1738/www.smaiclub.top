@@ -86,7 +86,7 @@ describe('hall-worker music gateway', () => {
     }) as typeof fetch;
 
     const response = await worker.fetch(
-      new Request('https://hall-worker.test/api/music/get-link?path=/aliyun/music/test.mp3'),
+      new Request('https://hall-worker.test/api/music/get-link?path=/assets/music/test.mp3'),
       env as any,
       ctx
     );
@@ -94,7 +94,7 @@ describe('hall-worker music gateway', () => {
     assert.equal(response.status, 200);
     const payload = (await response.json()) as { code: number; url: string };
     assert.equal(payload.code, 200);
-    assert.match(payload.url, /\/api\/music\/stream\?path=%2Faliyun%2Fmusic%2Ftest\.mp3$/);
+    assert.match(payload.url, /\/api\/music\/stream\?path=%2Fassets%2Fmusic%2Ftest\.mp3$/);
     assert.equal(calls.length, 1);
   });
 
@@ -135,7 +135,7 @@ describe('hall-worker music gateway', () => {
     }) as typeof fetch;
 
     const response = await worker.fetch(
-      new Request('https://hall-worker.test/api/music/stream?path=/aliyun/music/test.mp3', {
+      new Request('https://hall-worker.test/api/music/stream?path=/assets/music/test.mp3', {
         headers: { Range: 'bytes=0-10' },
       }),
       env as any,
@@ -149,7 +149,7 @@ describe('hall-worker music gateway', () => {
     assert.equal(calls.length, 2);
   });
 
-  it('serves catalog by fetching /aliyun/music/database.json from upstream', async () => {
+  it('serves catalog by fetching /assets/music/database.json from upstream', async () => {
     const env = createEnv();
     const ctx = createCtx();
     const calls: Array<{ url: string; init?: RequestInit }> = [];
@@ -161,7 +161,7 @@ describe('hall-worker music gateway', () => {
 
       if (url === 'https://smaiclub-alist-v3.onrender.com/api/fs/get') {
         const body = JSON.parse(String(init?.body ?? '{}')) as { path?: string };
-        assert.equal(body.path, '/aliyun/music/database.json');
+        assert.equal(body.path, '/assets/music/database.json');
 
         return new Response(
           JSON.stringify({
