@@ -1,0 +1,78 @@
+name: Reusable - Pages App
+
+on:
+  workflow_call:
+    inputs:
+      app_directory:
+        required: true
+        type: string
+      project_name:
+        required: true
+        type: string
+      dist_directory:
+        required: true
+        type: string
+      ci_command:
+        required: true
+        type: string
+      node_version:
+        required: false
+        type: string
+        default: "20"
+    secrets:
+      CLOUDFLARE_API_TOKEN:
+        required: false
+      CLOUDFLARE_ACCOUNT_ID:
+        required: false
+
+permissions:
+  contents: read
+  deployments: write
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    concurrency:
+      group: pages-${{ inputs.project_name }}-${{ github.ref }}
+      cancel-in-progress: true
+    defaults:
+      run:
+        working-directory: ${{ inputs.app_directory }}
+    env:
+      DEPLOY_BRANCH: ${{ github.head_ref || github.ref_name }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ inputs.node_version }}
+          cache: npm
+          cache-dependency-path: ${{ inputs.app_directory }}/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run CI checks
+        run: ${{ inputs.ci_command }}
+
+      - name: Deploy to Cloudflare Pages
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        id: deploy
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          gitHubToken: ${{ github.token }}
+          command: pages deploy ${{ inputs.dist_directory }} --project-name=${{ inputs.project_name }}
+
+      - name: Deploy preview to Cloudflare Pages
+        if: env.DEPLOY_BRANCH != 'main'
+        id: preview
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          gitHubToken: ${{ github.token }}
+          command: pages deploy ${{ inputs.dist_directory }} --project-name=${{ inputs.project_name }} --branch=${{ env.DEPLOY_BRANCH }}

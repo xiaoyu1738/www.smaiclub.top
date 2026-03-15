@@ -1,0 +1,17 @@
+name: CI/CD - Player
+
+on:
+  push:
+    paths:
+      - "player.smaiclub.top/**"
+  workflow_dispatch:
+
+jobs:
+  ci-cd:
+    uses: ./.github/workflows/_pages-app.yml
+    with:
+      app_directory: player.smaiclub.top
+      project_name: player-smaiclub-top
+      dist_directory: player.smaiclub.top/dist
+      ci_command: npm test && npm run build
+    secrets: inherit

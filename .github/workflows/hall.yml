@@ -1,0 +1,17 @@
+name: CI/CD - Hall
+
+on:
+  push:
+    paths:
+      - "hall.smaiclub.top/**"
+  workflow_dispatch:
+
+jobs:
+  ci-cd:
+    uses: ./.github/workflows/_pages-app.yml
+    with:
+      app_directory: hall.smaiclub.top
+      project_name: hall-smaiclub-top
+      dist_directory: hall.smaiclub.top/dist
+      ci_command: npm run test:run && npm run build
+    secrets: inherit

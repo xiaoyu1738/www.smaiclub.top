@@ -1,0 +1,15 @@
+name: CI/CD - Wanted
+
+on:
+  push:
+    paths:
+      - "wanted.smaiclub.top/**"
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    uses: ./.github/workflows/_static-pages.yml
+    with:
+      site_directory: wanted.smaiclub.top
+      project_name: wanted-smaiclub-top
+    secrets: inherit

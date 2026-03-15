@@ -1,0 +1,16 @@
+name: CI/CD - Chat Worker
+
+on:
+  push:
+    paths:
+      - "chat-worker/**"
+  workflow_dispatch:
+
+jobs:
+  ci-cd:
+    uses: ./.github/workflows/_worker.yml
+    with:
+      worker_directory: chat-worker
+      install_command: npm install
+      ci_command: npm run build
+    secrets: inherit

@@ -1,0 +1,62 @@
+name: Reusable - Static Pages
+
+on:
+  workflow_call:
+    inputs:
+      site_directory:
+        required: true
+        type: string
+      project_name:
+        required: true
+        type: string
+      ci_command:
+        required: false
+        type: string
+        default: test -s index.html
+    secrets:
+      CLOUDFLARE_API_TOKEN:
+        required: false
+      CLOUDFLARE_ACCOUNT_ID:
+        required: false
+
+permissions:
+  contents: read
+  deployments: write
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    concurrency:
+      group: static-pages-${{ inputs.project_name }}-${{ github.ref }}
+      cancel-in-progress: true
+    defaults:
+      run:
+        working-directory: ${{ inputs.site_directory }}
+    env:
+      DEPLOY_BRANCH: ${{ github.head_ref || github.ref_name }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Run CI checks
+        run: ${{ inputs.ci_command }}
+
+      - name: Deploy to Cloudflare Pages
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        id: deploy
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          gitHubToken: ${{ github.token }}
+          command: pages deploy ${{ inputs.site_directory }} --project-name=${{ inputs.project_name }}
+
+      - name: Deploy preview to Cloudflare Pages
+        if: env.DEPLOY_BRANCH != 'main'
+        id: preview
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          gitHubToken: ${{ github.token }}
+          command: pages deploy ${{ inputs.site_directory }} --project-name=${{ inputs.project_name }} --branch=${{ env.DEPLOY_BRANCH }}

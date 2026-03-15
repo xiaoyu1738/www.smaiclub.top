@@ -1,0 +1,17 @@
+name: CI/CD - Convert
+
+on:
+  push:
+    paths:
+      - "convert.smaiclub.top/**"
+  workflow_dispatch:
+
+jobs:
+  ci-cd:
+    uses: ./.github/workflows/_pages-app.yml
+    with:
+      app_directory: convert.smaiclub.top
+      project_name: convert-smaiclub-top
+      dist_directory: convert.smaiclub.top/dist
+      ci_command: npm run lint && npm test && npm run build
+    secrets: inherit

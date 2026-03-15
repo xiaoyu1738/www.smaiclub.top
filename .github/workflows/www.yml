@@ -1,0 +1,15 @@
+name: CI/CD - WWW
+
+on:
+  push:
+    paths:
+      - "www.smaiclub.top/**"
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    uses: ./.github/workflows/_static-pages.yml
+    with:
+      site_directory: www.smaiclub.top
+      project_name: www-smaiclub-top
+    secrets: inherit

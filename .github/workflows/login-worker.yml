@@ -1,0 +1,18 @@
+name: CI/CD - Login Worker
+
+on:
+  push:
+    paths:
+      - "login-worker/**"
+  workflow_dispatch:
+
+jobs:
+  ci-cd:
+    uses: ./.github/workflows/_worker.yml
+    with:
+      worker_directory: login-worker
+      install_command: ""
+      ci_command: ""
+      validate_command: deploy --dry-run --name login-smaiclub-kv
+      deploy_command: deploy --name login-smaiclub-kv
+    secrets: inherit

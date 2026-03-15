@@ -1,0 +1,15 @@
+name: CI/CD - Hall Worker
+
+on:
+  push:
+    paths:
+      - "hall-worker/**"
+  workflow_dispatch:
+
+jobs:
+  ci-cd:
+    uses: ./.github/workflows/_worker.yml
+    with:
+      worker_directory: hall-worker
+      ci_command: npm test
+    secrets: inherit

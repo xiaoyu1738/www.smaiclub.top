@@ -1,0 +1,17 @@
+name: CI/CD - Novel
+
+on:
+  push:
+    paths:
+      - "novel.smaiclub.top/**"
+  workflow_dispatch:
+
+jobs:
+  ci-cd:
+    uses: ./.github/workflows/_pages-app.yml
+    with:
+      app_directory: novel.smaiclub.top
+      project_name: novel2-smaiclub-top
+      dist_directory: novel.smaiclub.top/dist
+      ci_command: npm run build
+    secrets: inherit

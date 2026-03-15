@@ -1,0 +1,15 @@
+name: CI/CD - Kill
+
+on:
+  push:
+    paths:
+      - "kill.smaiclub.top/**"
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    uses: ./.github/workflows/_static-pages.yml
+    with:
+      site_directory: kill.smaiclub.top
+      project_name: kill-smaiclub-top
+    secrets: inherit

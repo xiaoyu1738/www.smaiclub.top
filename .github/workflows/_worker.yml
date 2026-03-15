@@ -1,0 +1,80 @@
+name: Reusable - Worker
+
+on:
+  workflow_call:
+    inputs:
+      worker_directory:
+        required: true
+        type: string
+      install_command:
+        required: false
+        type: string
+        default: npm ci
+      ci_command:
+        required: false
+        type: string
+        default: ""
+      validate_command:
+        required: false
+        type: string
+        default: ""
+      deploy_command:
+        required: false
+        type: string
+        default: deploy
+      node_version:
+        required: false
+        type: string
+        default: "20"
+    secrets:
+      CLOUDFLARE_API_TOKEN:
+        required: false
+      CLOUDFLARE_ACCOUNT_ID:
+        required: false
+
+permissions:
+  contents: read
+
+jobs:
+  deploy-worker:
+    runs-on: ubuntu-latest
+    concurrency:
+      group: worker-${{ inputs.worker_directory }}-${{ github.ref }}
+      cancel-in-progress: true
+    defaults:
+      run:
+        working-directory: ${{ inputs.worker_directory }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ inputs.node_version }}
+
+      - name: Install dependencies
+        if: inputs.install_command != ''
+        run: ${{ inputs.install_command }}
+
+      - name: Run CI checks
+        if: inputs.ci_command != ''
+        run: ${{ inputs.ci_command }}
+
+      - name: Validate Worker bundle
+        if: inputs.validate_command != ''
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          workingDirectory: ${{ inputs.worker_directory }}
+          command: ${{ inputs.validate_command }}
+
+      - name: Deploy Worker
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          workingDirectory: ${{ inputs.worker_directory }}
+          command: ${{ inputs.deploy_command }}
