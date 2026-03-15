@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { ChevronDown, Pause, Play } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router-dom';
+import { PROXY_PLAYER_ORIGIN } from '../config/mediaProxy';
 import {
   DEFAULT_DURATION_SECONDS,
   PLAYER_RETURN_PATH_KEY,
@@ -14,7 +15,6 @@ import {
 
 const BACKDROP =
   'https://lh3.googleusercontent.com/aida-public/AB6AXuAWb2BxLjMsm3zIhJc2l4khH4TZfsDXC65fkjafn8dNXPBqViHJqvS8X0Dbc2qQrrmQPSyqEWg583mk8ai-4s7qAPd65PPnmY9RW0EuM7TT-tSGtBpavUchjyGymnOE0CA1m_d9W8bSLJwbibkhbgyaRugc0c5qxzSRLH_B9H6Pw98D7z1sfhBIkzp0-X-sXzrlcF-23vhPG8xGNGLr2SOGSv0H3OBCAP6wgnd_JP1G6gPRGZOUbKFG_NWtYeddhXqNjOag_bUzNMo';
-const WORKER_HOST = import.meta.env.VITE_WORKER_HOST ?? 'https://hall-worker.xiaoyu1738jw.workers.dev';
 
 type PlayerLocationState = {
   fromPath?: string;
@@ -26,7 +26,7 @@ function buildMusicStreamUrl(path: string | null | undefined): string | null {
     return null;
   }
 
-  const endpoint = new URL(`${WORKER_HOST.replace(/\/+$/, '')}/api/music/stream`);
+  const endpoint = new URL(`${PROXY_PLAYER_ORIGIN}/api/music/stream`);
   endpoint.searchParams.set('path', normalizedPath);
   return endpoint.toString();
 }

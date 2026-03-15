@@ -1,5 +1,7 @@
 export type ArtistRegion = '内地' | '港台' | '国际' | '未知';
 
+import { PROXY_PLAYER_ORIGIN, normalizeProxyOriginUrl } from '../config/mediaProxy';
+
 export interface CatalogTrack {
   id: string;
   title: string;
@@ -39,13 +41,12 @@ export interface CatalogCacheSnapshot {
   updatedAt: number;
 }
 
-const WORKER_HOST = import.meta.env.VITE_WORKER_HOST ?? 'https://hall-worker.xiaoyu1738jw.workers.dev';
 const LEGACY_MUSIC_PREFIX = '/aliyun/music';
 const MUSIC_PREFIX = '/assets/music';
 
 /** catalog 数据现统一走 Worker 代理，解决前端直连 AList 的 CORS + 401 问题 */
 export const CATALOG_REMOTE_URL =
-  import.meta.env.VITE_CATALOG_URL ?? `${WORKER_HOST.replace(/\/+$/, '')}/api/music/catalog`;
+  import.meta.env.VITE_CATALOG_URL ?? `${PROXY_PLAYER_ORIGIN}/api/music/catalog`;
 export const CATALOG_CACHE_STORAGE_KEY = 'hall.catalog.v1';
 
 function normalizeMusicLibraryPath(path: string): string {
@@ -110,15 +111,14 @@ function getParentPath(path: string): string {
 function toAbsoluteAssetUrl(pathOrUrl: string): string {
   // 已经是完整 URL（外部 CDN 链接等）则直接返回
   if (/^https?:\/\//i.test(pathOrUrl)) {
-    return pathOrUrl;
+    return normalizeProxyOriginUrl(pathOrUrl);
   }
 
   // 本地路径 → 走 Worker 资源代理端点，Worker 会 302 到云存储直链
   const normalizedPath = normalizeMusicLibraryPath(
     pathOrUrl.startsWith('/') ? pathOrUrl : `/${pathOrUrl}`
   );
-  const workerBase = WORKER_HOST.replace(/\/+$/, '');
-  return `${workerBase}/api/music/asset?path=${encodeURIComponent(normalizedPath)}`;
+  return `${PROXY_PLAYER_ORIGIN}/api/music/asset?path=${encodeURIComponent(normalizedPath)}`;
 }
 
 function resolveAssetUrl(basePath: string, asset: string | null, fallback: string): string {

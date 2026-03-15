@@ -1,3 +1,5 @@
+import { normalizeProxyOriginUrl } from './config/mediaProxy';
+
 export type TrackState = {
   title: string;
   artist: string;
@@ -60,6 +62,7 @@ export function readTrack(): TrackState {
 
   return {
     ...savedTrack,
+    cover: normalizeProxyOriginUrl(savedTrack.cover),
     path: normalizeTrackPath(savedTrack.path)
   };
 }
@@ -69,6 +72,7 @@ export function saveTrack(track: TrackState): void {
     CURRENT_TRACK_STORAGE_KEY,
     JSON.stringify({
       ...track,
+      cover: normalizeProxyOriginUrl(track.cover),
       path: normalizeTrackPath(track.path)
     })
   );
