@@ -520,7 +520,7 @@ async function handleMusicStreamProxy(
 ): Promise<Response> {
   const url = new URL(request.url);
   const path = url.searchParams.get('path')?.trim();
- 
+
   if (!path) {
     throw new HttpError(400, '缺少必需的 path 查询参数');
   }
