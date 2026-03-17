@@ -8,6 +8,9 @@ on:
 
 jobs:
   ci-cd:
+    permissions:
+      contents: read
+      deployments: write
     uses: ./.github/workflows/_pages-app.yml
     with:
       app_directory: hall.smaiclub.top

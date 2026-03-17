@@ -8,6 +8,9 @@ on:
 
 jobs:
   deploy:
+    permissions:
+      contents: read
+      deployments: write
     uses: ./.github/workflows/_static-pages.yml
     with:
       site_directory: www.smaiclub.top
