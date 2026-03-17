@@ -121,7 +121,7 @@ export function ArtistsPage({ searchText }: ArtistsPageProps) {
           {list.map((artist) => (
             <Link key={artist.slug} className="group flex cursor-pointer flex-col items-center gap-3" to={`/artist/${artist.slug}`}>
               <div className="h-32 w-32 overflow-hidden rounded-full border-2 border-transparent group-hover:border-primary">
-                <img alt={artist.name} className="h-full w-full object-cover" src={artist.avatar || artist.hero} />
+                <img alt={artist.name} className="h-full w-full object-cover" src={artist.hero || artist.avatar} />
               </div>
               <div className="flex flex-col items-center gap-1.5">
                 <p className="text-center font-bold group-hover:text-primary">{artist.name}</p>

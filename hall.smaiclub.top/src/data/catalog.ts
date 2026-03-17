@@ -48,6 +48,7 @@ const MUSIC_PREFIX = '/assets/music';
 export const CATALOG_REMOTE_URL =
   import.meta.env.VITE_CATALOG_URL ?? `${PROXY_PLAYER_ORIGIN}/api/music/catalog`;
 export const CATALOG_CACHE_STORAGE_KEY = 'hall.catalog.v1';
+export const CATALOG_CACHE_TTL_MS = 60 * 60 * 1000;
 
 function normalizeMusicLibraryPath(path: string): string {
   return path.startsWith(LEGACY_MUSIC_PREFIX)
@@ -278,6 +279,8 @@ export function normalizeCatalogPayload(payload: unknown): CatalogArtist[] {
         readString(bandRecord.hero) ?? readString(bandRecord.banner),
         avatar || fallbackCover
       );
+      const resolvedHero = hero || avatar || fallbackCover;
+      const resolvedAvatar = avatar || hero || fallbackCover;
       const listeners =
         readString(bandRecord.listeners) ??
         `${albums.length} 张专辑 · ${tracks.length} 首歌曲`;
@@ -291,8 +294,8 @@ export function normalizeCatalogPayload(payload: unknown): CatalogArtist[] {
         region,
         genres: genres.length > 0 ? genres : ['Rock'],
         listeners,
-        avatar: avatar || fallbackCover,
-        hero: hero || avatar || fallbackCover,
+        avatar: resolvedAvatar,
+        hero: resolvedHero,
         about,
         albums,
         tracks
@@ -372,6 +375,12 @@ export function readCachedCatalogSnapshot(): CatalogCacheSnapshot | null {
   try {
     const parsed = JSON.parse(rawSnapshot) as Partial<CatalogCacheSnapshot>;
     if (!Array.isArray(parsed.artists) || typeof parsed.updatedAt !== 'number') {
+      localStorage.removeItem(CATALOG_CACHE_STORAGE_KEY);
+      return null;
+    }
+
+    if (Date.now() - parsed.updatedAt > CATALOG_CACHE_TTL_MS) {
+      localStorage.removeItem(CATALOG_CACHE_STORAGE_KEY);
       return null;
     }
 
@@ -380,6 +389,7 @@ export function readCachedCatalogSnapshot(): CatalogCacheSnapshot | null {
       updatedAt: parsed.updatedAt
     };
   } catch {
+    localStorage.removeItem(CATALOG_CACHE_STORAGE_KEY);
     return null;
   }
 }

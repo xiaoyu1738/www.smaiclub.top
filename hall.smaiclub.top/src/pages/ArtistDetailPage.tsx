@@ -125,7 +125,7 @@ export function ArtistDetailPage() {
                   className="flex items-center gap-4 rounded-lg p-2 text-left transition-colors hover:bg-primary/5"
                   onClick={() => navigate(`/artist/${item.slug}`)}
                 >
-                  <div className="size-12 rounded-full bg-cover bg-center" style={{ backgroundImage: `url('${item.avatar || item.hero}')` }} />
+                  <div className="size-12 rounded-full bg-cover bg-center" style={{ backgroundImage: `url('${item.hero || item.avatar}')` }} />
                   <div className="flex-1">
                     <p className="text-sm font-bold">{item.name}</p>
                     <p className="text-xs text-slate-500">
