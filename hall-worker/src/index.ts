@@ -477,7 +477,9 @@ async function handleGetCatalog(request: Request, env: Env): Promise<Response> {
       headers: {
         'Content-Type': 'application/json; charset=utf-8',
         ...buildCorsHeaders(request, env),
-        'Cache-Control': 'public, max-age=3600',
+        'Cache-Control': 'no-store, no-cache, must-revalidate',
+        Pragma: 'no-cache',
+        Expires: '0',
       },
     });
   } catch {
