@@ -11,5 +11,6 @@ jobs:
     uses: ./.github/workflows/_worker.yml
     with:
       worker_directory: hall-worker
+      node_version: "22"
       ci_command: npm test
     secrets: inherit

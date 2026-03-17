@@ -54,7 +54,7 @@ function normalizeMusicLibraryPath(path: string): string {
   return path.startsWith(LEGACY_MUSIC_PREFIX)
     ? `${MUSIC_PREFIX}${path.slice(LEGACY_MUSIC_PREFIX.length)}`
     : path;
-} 
+}
 
 function canUseLocalStorage(): boolean {
   return typeof window !== 'undefined' && typeof window.localStorage !== 'undefined';
