@@ -47,7 +47,7 @@ const MUSIC_PREFIX = '/assets/music';
 /** catalog 数据现统一走 Worker 代理，解决前端直连 AList 的 CORS + 401 问题 */
 export const CATALOG_REMOTE_URL =
   import.meta.env.VITE_CATALOG_URL ?? `${PROXY_PLAYER_ORIGIN}/api/music/catalog`;
-export const CATALOG_CACHE_STORAGE_KEY = 'hall.catalog.v1';
+export const CATALOG_CACHE_STORAGE_KEY = 'hall.catalog.v2';
 export const CATALOG_CACHE_TTL_MS = 60 * 60 * 1000;
 
 function normalizeMusicLibraryPath(path: string): string {
