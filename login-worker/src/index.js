@@ -50,7 +50,7 @@ export default {
             }
             // 验证当前用户状态 API
             if (url.pathname === "/api/me") {
-                const user = await getUserFromCookie(request, env);
+                const user = await getUserFromCookie(request, env, { allowPendingLicense: true });
                 if (!user) return new Response(JSON.stringify({ loggedIn: false }), { headers: responseHeaders });
 
                 // Check for ban
@@ -321,7 +321,7 @@ export default {
 
             // --- 设置许可证 (首次) ---
             if (url.pathname === "/api/set-license") {
-                const user = await getUserFromCookie(request, env);
+                const user = await getUserFromCookie(request, env, { allowPendingLicense: true });
                 if (!user) return jsonResp({ error: "请先登录" }, 401, responseHeaders);
 
                 const { licenseKey } = body;
@@ -701,7 +701,7 @@ function jsonResp(data, status = 200, headers = {}) {
     return new Response(JSON.stringify(data), { status, headers: { "Content-Type": "application/json", ...headers } });
 }
 
-async function getUserFromCookie(request, env) {
+async function getUserFromCookie(request, env, options = {}) {
     const cookieHeader = request.headers.get("Cookie");
     if (!cookieHeader) return null;
     const cookies = parseCookies(cookieHeader);
@@ -725,6 +725,11 @@ async function getUserFromCookie(request, env) {
         }
         const requiresVipLicense = isVipRole(user.role) || isVipRole(user.sessionRole);
         if (requiresVipLicense) {
+            const isPendingLicenseSetup = !user.licenseKey && !!user.licensePending;
+            if (options.allowPendingLicense && isPendingLicenseSetup) {
+                return user;
+            }
+
             if (!user.licenseKey || session.licenseVerified !== true) {
                 return null;
             }

@@ -1076,7 +1076,9 @@
                 showAlert("激活成功！即将跳转回首页...", "成功", false);
                 setTimeout(() => window.location.href = "https://www.smaiclub.top", 1500);
             } else {
-                showAlert("设置失败，请重试");
+                const err = await res.json().catch(() => null);
+                const detail = err?.message || err?.error || `HTTP ${res.status}`;
+                showAlert(`设置失败: ${detail}`);
                 closeModal('confirm-modal');
                 showModal('success-modal'); // 返回上一步
             }
