@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SMAICLUB 全域导航</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600;700&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="icon" type="image/x-icon" href="/favicon.ico">
+    <style>
+        :root {
+            --bg-light: #f4efe8;
+            --text-light: #221f1a;
+            --text-secondary-light: #5f584f;
+            --glass-bg-light: rgba(255, 250, 244, 0.78);
+            --glass-border-light: rgba(96, 69, 35, 0.12);
+            --glass-shadow-light: 0 12px 36px rgba(92, 66, 31, 0.08);
+            --bg-dark: #0b0b0d;
+            --text-dark: #f2eee7;
+            --text-secondary-dark: #b7aea2;
+            --glass-bg-dark: rgba(23, 21, 28, 0.8);
+            --glass-border-dark: rgba(211, 177, 122, 0.12);
+            --glass-shadow-dark: 0 10px 38px rgba(0, 0, 0, 0.48);
+            --btn-gradient-light: linear-gradient(135deg, #1f5b53 0%, #b98748 100%);
+            --btn-gradient-dark: linear-gradient(135deg, #7bc0b5 0%, #c08b4a 100%);
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: "Manrope", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+            min-height: 100vh;
+            color: var(--text-light);
+            background:
+                radial-gradient(circle at top left, rgba(31, 91, 83, 0.09) 0%, transparent 28%),
+                radial-gradient(circle at 85% 10%, rgba(185, 135, 72, 0.12) 0%, transparent 24%),
+                var(--bg-light);
+            transition: background 0.5s ease, color 0.5s ease;
+            line-height: 1.65;
+        }
+
+        body::before {
+            content: "";
+            position: fixed;
+            inset: 0;
+            background-image:
+                linear-gradient(rgba(70, 55, 35, 0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(70, 55, 35, 0.03) 1px, transparent 1px);
+            background-size: 72px 72px;
+            pointer-events: none;
+            z-index: -1;
+        }
+
+        body.dark-mode {
+            background:
+                radial-gradient(circle at top left, rgba(61, 104, 98, 0.15) 0%, transparent 24%),
+                radial-gradient(circle at 85% 10%, rgba(192, 139, 74, 0.14) 0%, transparent 22%),
+                var(--bg-dark);
+            color: var(--text-dark);
+        }
+
+        .container {
+            width: min(1280px, calc(100% - 40px));
+            margin: 0 auto;
+        }
+
+        .topbar {
+            position: sticky;
+            top: 18px;
+            z-index: 20;
+            margin-top: 18px;
+            padding: 14px 20px;
+            border-radius: 999px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 16px;
+            background: var(--glass-bg-light);
+            border: 1px solid var(--glass-border-light);
+            backdrop-filter: blur(20px);
+            box-shadow: var(--glass-shadow-light);
+        }
+
+        body.dark-mode .topbar {
+            background: var(--glass-bg-dark);
+            border-color: var(--glass-border-dark);
+            box-shadow: var(--glass-shadow-dark);
+        }
+
+        .brand {
+            font-family: "Cormorant Garamond", serif;
+            font-size: 2rem;
+            font-weight: 700;
+            letter-spacing: 0.04em;
+            text-transform: uppercase;
+            text-decoration: none;
+            color: inherit;
+        }
+
+        .topbar-actions {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex-wrap: wrap;
+            justify-content: flex-end;
+        }
+
+        .chip-link,
+        .theme-toggle {
+            border-radius: 999px;
+            padding: 10px 18px;
+            border: 1px solid rgba(96, 69, 35, 0.12);
+            background: rgba(255, 255, 255, 0.48);
+            color: inherit;
+            text-decoration: none;
+            font-weight: 700;
+            cursor: pointer;
+            transition: transform 0.25s ease, background 0.25s ease, border-color 0.25s ease;
+        }
+
+        body.dark-mode .chip-link,
+        body.dark-mode .theme-toggle {
+            background: rgba(255, 255, 255, 0.05);
+            border-color: rgba(211, 177, 122, 0.14);
+        }
+
+        .chip-link:hover,
+        .theme-toggle:hover {
+            transform: translateY(-2px);
+        }
+
+        .hero {
+            padding: 88px 0 34px;
+        }
+
+        .hero-shell {
+            padding: 42px;
+            border-radius: 36px;
+            background:
+                linear-gradient(135deg, rgba(31, 91, 83, 0.1), rgba(185, 135, 72, 0.12)),
+                var(--glass-bg-light);
+            border: 1px solid var(--glass-border-light);
+            box-shadow: var(--glass-shadow-light);
+            backdrop-filter: blur(18px);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .hero-shell::before {
+            content: "";
+            position: absolute;
+            inset: 0;
+            background:
+                radial-gradient(circle at 85% 15%, rgba(255, 255, 255, 0.4), transparent 22%),
+                linear-gradient(135deg, transparent 0%, rgba(255, 255, 255, 0.08) 40%, transparent 70%);
+            pointer-events: none;
+        }
+
+        body.dark-mode .hero-shell {
+            background:
+                linear-gradient(135deg, rgba(123, 192, 181, 0.08), rgba(192, 139, 74, 0.12)),
+                var(--glass-bg-dark);
+            border-color: var(--glass-border-dark);
+            box-shadow: var(--glass-shadow-dark);
+        }
+
+        .eyebrow {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 16px;
+            padding: 10px 16px;
+            border-radius: 999px;
+            background: rgba(255, 255, 255, 0.46);
+            border: 1px solid rgba(96, 69, 35, 0.12);
+            font-size: 0.82rem;
+            font-weight: 800;
+            letter-spacing: 0.14em;
+            text-transform: uppercase;
+        }
+
+        body.dark-mode .eyebrow {
+            background: rgba(255, 255, 255, 0.06);
+            border-color: rgba(211, 177, 122, 0.14);
+        }
+
+        h1 {
+            font-family: "Cormorant Garamond", serif;
+            font-size: clamp(3rem, 7vw, 5.4rem);
+            line-height: 0.95;
+            margin-bottom: 18px;
+        }
+
+        .hero p {
+            max-width: 760px;
+            color: var(--text-secondary-light);
+            font-size: 1.05rem;
+        }
+
+        body.dark-mode .hero p {
+            color: var(--text-secondary-dark);
+        }
+
+        .nav-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 18px;
+            padding-bottom: 80px;
+        }
+
+        .nav-card {
+            min-height: 220px;
+            padding: 24px;
+            border-radius: 24px;
+            text-decoration: none;
+            color: inherit;
+            background: var(--glass-bg-light);
+            border: 1px solid var(--glass-border-light);
+            box-shadow: var(--glass-shadow-light);
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+            transition: transform 0.28s ease, box-shadow 0.28s ease, border-color 0.28s ease;
+        }
+
+        .nav-card:hover {
+            transform: translateY(-6px);
+            box-shadow: 0 18px 42px rgba(92, 66, 31, 0.14);
+            border-color: rgba(31, 91, 83, 0.24);
+        }
+
+        body.dark-mode .nav-card {
+            background: var(--glass-bg-dark);
+            border-color: var(--glass-border-dark);
+            box-shadow: var(--glass-shadow-dark);
+        }
+
+        body.dark-mode .nav-card:hover {
+            border-color: rgba(192, 139, 74, 0.24);
+            box-shadow: 0 18px 46px rgba(0, 0, 0, 0.44);
+        }
+
+        .nav-card-label {
+            font-size: 0.8rem;
+            letter-spacing: 0.14em;
+            text-transform: uppercase;
+            font-weight: 800;
+            color: var(--text-secondary-light);
+        }
+
+        body.dark-mode .nav-card-label {
+            color: var(--text-secondary-dark);
+        }
+
+        .nav-card h2 {
+            font-size: 1.35rem;
+            line-height: 1.2;
+        }
+
+        .nav-card p {
+            color: var(--text-secondary-light);
+            font-size: 0.96rem;
+            flex-grow: 1;
+        }
+
+        body.dark-mode .nav-card p {
+            color: var(--text-secondary-dark);
+        }
+
+        .nav-card-cta {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.84rem;
+            font-weight: 800;
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+            color: #1f5b53;
+        }
+
+        body.dark-mode .nav-card-cta {
+            color: #d7b27d;
+        }
+
+        @media (max-width: 768px) {
+            .container { width: min(100% - 24px, 1280px); }
+            .topbar {
+                border-radius: 28px;
+                align-items: flex-start;
+                flex-direction: column;
+            }
+            .topbar-actions {
+                justify-content: flex-start;
+            }
+            .hero {
+                padding-top: 52px;
+            }
+            .hero-shell {
+                padding: 26px;
+                border-radius: 28px;
+            }
+            .nav-card {
+                min-height: unset;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="topbar">
+            <a href="/" class="brand">SMAICLUB</a>
+            <div class="topbar-actions">
+                <a href="/" class="chip-link">返回首页</a>
+                <a href="https://www.smaiclub.top/shop/" class="chip-link">加入会员</a>
+                <button class="theme-toggle" id="themeToggle" type="button">🌙</button>
+            </div>
+        </div>
+
+        <section class="hero">
+            <div class="hero-shell">
+                <div class="eyebrow">Site Matrix</div>
+                <h1>全域导航</h1>
+                <p>从内容矩阵、工具产品到私密服务节点，SMAICLUB 的子域名被统一收纳在这里。需要探索、协作或进入后台时，都可以从这张全域地图快速出发。</p>
+            </div>
+        </section>
+
+        <section class="nav-grid">
+            <a href="https://hall.smaiclub.top" target="_blank" rel="noopener noreferrer" class="nav-card">
+                <div class="nav-card-label">Culture</div>
+                <h2>音乐展览馆</h2>
+                <p>浏览策展专题、历史档案与沉浸式音乐内容，进入 SMAICLUB 的馆藏空间。</p>
+                <span class="nav-card-cta">进入展馆 →</span>
+            </a>
+            <a href="https://news.smaiclub.top" target="_blank" rel="noopener noreferrer" class="nav-card">
+                <div class="nav-card-label">Insight</div>
+                <h2>全球新闻</h2>
+                <p>获取科技、趋势与俱乐部动态，快速跟上 SMAI 世界的最新脉搏。</p>
+                <span class="nav-card-cta">阅读新闻 →</span>
+            </a>
+            <a href="https://chat.smaiclub.top" target="_blank" rel="noopener noreferrer" class="nav-card">
+                <div class="nav-card-label">Community</div>
+                <h2>安全聊天室</h2>
+                <p>进入加密房间、即时沟通与私密工单场景，是会员联系与协作的即时入口。</p>
+                <span class="nav-card-cta">开始对话 →</span>
+            </a>
+            <a href="https://player.smaiclub.top" target="_blank" rel="noopener noreferrer" class="nav-card">
+                <div class="nav-card-label">Media</div>
+                <h2>媒体播放器</h2>
+                <p>为音视频内容准备的独立播放空间，适合更沉浸、更稳定的观看体验。</p>
+                <span class="nav-card-cta">打开播放器 →</span>
+            </a>
+            <a href="https://novel.smaiclub.top" target="_blank" rel="noopener noreferrer" class="nav-card">
+                <div class="nav-card-label">Reading</div>
+                <h2>轻小说阅读器</h2>
+                <p>专为长篇阅读打造的轻量阅读界面，适合连载、EPUB 与沉浸式书页浏览。</p>
+                <span class="nav-card-cta">开始阅读 →</span>
+            </a>
+            <a href="https://convert.smaiclub.top" target="_blank" rel="noopener noreferrer" class="nav-card">
+                <div class="nav-card-label">Tooling</div>
+                <h2>音乐转换器</h2>
+                <p>多平台加密音乐处理工具，为收藏、转码与格式整理提供独立工作台。</p>
+                <span class="nav-card-cta">使用工具 →</span>
+            </a>
+            <a href="https://download.smaiclub.top" target="_blank" rel="noopener noreferrer" class="nav-card">
+                <div class="nav-card-label">Access</div>
+                <h2>下载中心</h2>
+                <p>集中获取客户端、资源包与可分发内容，是交付与更新的统一入口。</p>
+                <span class="nav-card-cta">前往下载 →</span>
+            </a>
+            <a href="https://dash.smaiclub.top" target="_blank" rel="noopener noreferrer" class="nav-card">
+                <div class="nav-card-label">Control</div>
+                <h2>控制中心</h2>
+                <p>用于系统管理、状态查看与部分后台操作的控制面板，面向核心成员开放。</p>
+                <span class="nav-card-cta">进入面板 →</span>
+            </a>
+            <a href="https://blog.smaiclub.top" target="_blank" rel="noopener noreferrer" class="nav-card">
+                <div class="nav-card-label">Journal</div>
+                <h2>开发博客</h2>
+                <p>记录功能更新、实现细节与项目思考，适合查看 SMAI 生态的构建过程。</p>
+                <span class="nav-card-cta">阅读日志 →</span>
+            </a>
+            <a href="https://wanted.smaiclub.top" target="_blank" rel="noopener noreferrer" class="nav-card">
+                <div class="nav-card-label">Archive</div>
+                <h2>Wanted 专题</h2>
+                <p>视觉叙事感更强的独立专题页，适合展示世界观、角色感与氛围型内容。</p>
+                <span class="nav-card-cta">查看专题 →</span>
+            </a>
+            <a href="https://kill.smaiclub.top" target="_blank" rel="noopener noreferrer" class="nav-card">
+                <div class="nav-card-label">Terminal</div>
+                <h2>暗网终端</h2>
+                <p>更实验性的终端式子站，保留冷峻、极客与黑客美学的一面。</p>
+                <span class="nav-card-cta">进入终端 →</span>
+            </a>
+            <a href="https://login.smaiclub.top" target="_blank" rel="noopener noreferrer" class="nav-card">
+                <div class="nav-card-label">Identity</div>
+                <h2>统一登录</h2>
+                <p>所有会员身份与许可证校验的统一入口，连接整个 SMAICLUB 站群的权限体系。</p>
+                <span class="nav-card-cta">登录账户 →</span>
+            </a>
+            <a href="https://2026.smaiclub.top" target="_blank" rel="noopener noreferrer" class="nav-card">
+                <div class="nav-card-label">Seasonal</div>
+                <h2>2026 新年页</h2>
+                <p>节庆主题的特别落地页，带有更浓烈的氛围视觉与仪式感表达。</p>
+                <span class="nav-card-cta">打开专题 →</span>
+            </a>
+            <a href="https://proxy.smaiclub.top" target="_blank" rel="noopener noreferrer" class="nav-card">
+                <div class="nav-card-label">Gateway</div>
+                <h2>代理网关</h2>
+                <p>站群内部使用的边缘代理节点，承接部分资源转发与服务衔接能力。</p>
+                <span class="nav-card-cta">访问节点 →</span>
+            </a>
+        </section>
+    </div>
+
+    <script>
+        const themeToggle = document.getElementById("themeToggle");
+        const body = document.body;
+        const savedTheme = localStorage.getItem("smai-theme");
+
+        if (savedTheme === "dark") {
+            body.classList.add("dark-mode");
+            themeToggle.textContent = "☀️";
+        }
+
+        themeToggle.addEventListener("click", () => {
+            body.classList.toggle("dark-mode");
+            if (body.classList.contains("dark-mode")) {
+                localStorage.setItem("smai-theme", "dark");
+                themeToggle.textContent = "☀️";
+            } else {
+                localStorage.setItem("smai-theme", "light");
+                themeToggle.textContent = "🌙";
+            }
+        });
+    </script>
+</body>
+</html>
