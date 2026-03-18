@@ -31,6 +31,11 @@
 
         * { margin: 0; padding: 0; box-sizing: border-box; }
 
+        html {
+            scroll-behavior: smooth;
+            scroll-padding-top: 120px;
+        }
+
         body {
             font-family: "Manrope", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
             background:
@@ -534,7 +539,7 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            background-image: url("https://images.unsplash.com/photo-1451187580459-43490279c0fa?auto=format&fit=crop&w=1200&q=80");
+            background-image: url("/assets/home/world-map.jpg");
             background-size: cover;
             background-position: center;
             filter: grayscale(0.3) brightness(0.9);
@@ -601,6 +606,11 @@
         body.dark-mode .timeline-content { background: var(--glass-bg-dark); border: 1px solid var(--glass-border-dark); }
         .timeline-content h4 { font-size: 1.2rem; margin-bottom: 5px; }
 
+        .timeline-cta {
+            margin: 36px auto 0;
+            text-align: center;
+        }
+
         .media-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; }
         .media-item { height: 250px; border-radius: var(--border-radius-md); overflow: hidden; position: relative; cursor: pointer; }
         .media-item img { width: 100%; height: 100%; object-fit: cover; transition: transform 0.5s ease; }
@@ -616,6 +626,7 @@
             opacity: 0;
             transition: opacity 0.3s ease;
         }
+        .media-overlay h4 { color: white !important; }
         .media-item:hover .media-overlay { opacity: 1; }
 
         .faq-item {
@@ -705,6 +716,34 @@
         body.dark-mode .floating-contact { background: var(--btn-gradient-dark); box-shadow: 0 10px 30px rgba(192, 139, 74, 0.2); color: #111; }
         .floating-contact:hover { transform: translateY(-5px); box-shadow: 0 15px 40px rgba(91, 68, 31, 0.3); }
 
+        .cursor-negative {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 42px;
+            height: 42px;
+            border-radius: 50%;
+            pointer-events: none;
+            z-index: 2000;
+            background: rgba(255, 255, 255, 0.92);
+            mix-blend-mode: difference;
+            transform: translate3d(-50%, -50%, 0) rotate(0deg) scaleX(1) scaleY(1);
+            opacity: 0;
+            transition: width 0.2s ease, height 0.2s ease, opacity 0.24s ease, box-shadow 0.24s ease;
+            will-change: transform;
+            box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.35), 0 0 24px rgba(255, 255, 255, 0.12);
+        }
+
+        .cursor-negative.is-visible {
+            opacity: 1;
+        }
+
+        .cursor-negative.is-active {
+            width: 58px;
+            height: 58px;
+            box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.42), 0 0 30px rgba(255, 255, 255, 0.18);
+        }
+
         footer {
             text-align: center;
             padding: 60px 0;
@@ -748,12 +787,19 @@
             .floating-contact { bottom: 20px; right: 20px; padding: 12px 20px; font-size: 0.9rem; }
             .theme-toggle { top: auto; bottom: 84px; right: 20px; }
         }
+
+        @media (pointer: coarse) {
+            .cursor-negative {
+                display: none;
+            }
+        }
     </style>
 </head>
 <body>
+    <div class="cursor-negative" id="cursorNegative" aria-hidden="true"></div>
     <div class="theme-toggle" id="themeToggle" title="切换主题">🌙</div>
 
-    <a href="#" class="floating-contact">
+    <a href="https://chat.smaiclub.top" class="floating-contact">
         <span>💬</span> 联系我们
     </a>
 
@@ -773,7 +819,7 @@
         <div class="hero-bg-glow"></div>
         <div class="hero-image-container">
             <div class="hero-frame">
-                <img src="https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=1600&q=80" alt="SMAICLUB 首页主视觉" class="hero-image">
+                <img src="/assets/home/hero-main.jpg" alt="SMAICLUB 首页主视觉" class="hero-image">
             </div>
         </div>
         <div class="hero-subtitle">Space may be the final frontier, but it's made in a human heart.</div>
@@ -803,7 +849,7 @@
         <div class="grid-2">
             <div class="glass-card">
                 <div class="img-wrapper">
-                    <img src="https://img.cdn1.vip/i/69b51eb5048ca_1773477557.webp" alt="展览馆">
+                    <img src="/assets/home/hall-exhibit.png" alt="展览馆">
                 </div>
                 <h3>音乐展览馆</h3>
                 <p>探索人类音乐历史，感受音符的魅力，沉浸在旋律之中。本月主题：现代音乐第二章之摇滚乐。已收录500+珍贵音乐档案，为您呈现听觉的极致盛宴。</p>
@@ -811,7 +857,7 @@
             </div>
             <div class="glass-card">
                 <div class="img-wrapper">
-                    <img src="https://images.unsplash.com/photo-1504711434969-e33886168f5c?auto=format&fit=crop&w=800&q=80" alt="新闻资讯">
+                    <img src="/assets/home/news-card.jpg" alt="新闻资讯">
                 </div>
                 <h3>全球前沿新闻</h3>
                 <p>掌握奢华生活的脉搏。获取独家行业报告、太空探索最新进展以及私人定制服务的创新动态。我们的新闻团队为您筛选全球最有价值的信息。</p>
@@ -848,7 +894,7 @@
                     <li><span class="check-icon">✓</span> 机场贵宾通道及快速安检</li>
                     <li><span class="check-icon">✓</span> 高端社交活动入场券</li>
                 </ul>
-                <button class="btn-action" style="width:100%; text-align:center;">立即加入</button>
+                <a href="https://www.smaiclub.top/shop/" class="btn-action" style="width:100%; text-align:center;">立即加入</a>
             </div>
 
             <div class="glass-card membership-card" style="transform: scale(1.05); border-color: #b98748; z-index: 10;">
@@ -864,7 +910,7 @@
                     <li><span class="check-icon">✓</span> 顶级医疗救援及健康管家</li>
                     <li><span class="check-icon">✓</span> 艺术品投资顾问服务</li>
                 </ul>
-                <button class="btn-action" style="width:100%; text-align:center;">立即加入</button>
+                <a href="https://www.smaiclub.top/shop/" class="btn-action" style="width:100%; text-align:center;">立即加入</a>
             </div>
 
             <div class="glass-card membership-card">
@@ -879,7 +925,7 @@
                     <li><span class="check-icon">✓</span> 个人太空项目孵化支持</li>
                     <li><span class="check-icon">✓</span> 无限次定制化需求满足</li>
                 </ul>
-                <button class="btn-action" style="width:100%; text-align:center;">联系顾问</button>
+                <a href="https://www.smaiclub.top/shop/" class="btn-action" style="width:100%; text-align:center;">联系顾问</a>
             </div>
         </div>
 
@@ -908,7 +954,9 @@
             </div>
 
             <div class="glass-card" style="justify-content: center; align-items: center; text-align: center; background: linear-gradient(135deg, rgba(31, 91, 83, 0.09), rgba(185, 135, 72, 0.12));">
-                <div style="font-size: 4rem; margin-bottom: 20px;">🚀</div>
+                <div class="img-wrapper" style="width: 100%; max-width: 280px; height: 180px; margin-bottom: 24px;">
+                    <img src="/assets/home/custom-journey.jpg" alt="定制旅程主视觉">
+                </div>
                 <h3>定制您的旅程</h3>
                 <p>以上只是冰山一角。作为 SMAICLUB 会员，您可以随时联系您的专属管家，定制任何您梦想中的活动。无论是包下整个卢浮宫，还是在珠峰大本营举办生日派对，我们都能为您实现。</p>
                 <button class="btn-action" style="margin-top: 30px;">联系私人管家</button>
@@ -918,7 +966,7 @@
         <h2 class="section-title" id="services">极致服务体验</h2>
 
         <div class="service-row">
-            <div class="service-img-large"><img src="https://images.unsplash.com/photo-1540962351504-03099e0a754b?auto=format&fit=crop&w=800&q=80" alt="私人喷气机"></div>
+            <div class="service-img-large"><img src="/assets/home/private-jet.jpg" alt="私人喷气机"></div>
             <div class="service-text">
                 <h3>私人航空舰队</h3>
                 <p>告别商业航班的繁琐，拥有您的天空。我们的机队包括最新的湾流G700和庞巴迪环球7500。机上配备米其林星级餐饮、全平躺睡眠舱及高速卫星网络。</p>
@@ -927,7 +975,7 @@
         </div>
 
         <div class="service-row reverse">
-            <div class="service-img-large"><img src="https://picui.ogmua.cn/s1/2026/03/14/69b4e35be5a2a.webp" alt="私人岛屿"></div>
+            <div class="service-img-large"><img src="/assets/home/private-island.webp" alt="私人岛屿"></div>
             <div class="service-text">
                 <h3>私属岛屿天堂</h3>
                 <p>在世界的尽头，拥有一片只属于您的净土。我们在马尔代夫、斐济和加勒比海拥有多处独家私人岛屿。岛上别墅由著名建筑师设计，融合自然与现代奢华。</p>
@@ -936,7 +984,7 @@
         </div>
 
         <div class="service-row">
-            <div class="service-img-large"><img src="https://images.unsplash.com/photo-1517976487492-5750f3195933?auto=format&fit=crop&w=800&q=80" alt="太空旅行"></div>
+            <div class="service-img-large"><img src="/assets/home/space-travel.jpg" alt="太空旅行"></div>
             <div class="service-text">
                 <h3>星际探索计划</h3>
                 <p>超越地平线，迈向星辰大海。作为SpaceX的顶级合作伙伴，SMAICLUB 为无限会员提供前所未有的太空旅行体验。从亚轨道飞行的失重快感，到环绕地球的壮丽景色。</p>
@@ -971,27 +1019,26 @@
                 </div>
             </div>
         </div>
+        <div class="timeline-cta">
+            <a href="https://www.smaiclub.top/shop/" class="btn-action">立即加入</a>
+        </div>
 
         <h2 class="section-title">视觉盛宴</h2>
         <div class="media-grid">
             <div class="media-item">
-                <img src="https://picui.ogmua.cn/s1/2026/03/14/69b4cad746879.webp" alt="SMAI CLUB 品牌主视觉">
-                <div class="media-overlay"><h4>SMAICLUB 品牌主视觉</h4></div>
-            </div>
-            <div class="media-item">
-                <img src="https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=600&q=80" alt="Luxury Hotel">
+                <img src="/assets/home/luxury-hotel.jpg" alt="Luxury Hotel">
                 <div class="media-overlay"><h4>顶级酒店合作</h4></div>
             </div>
             <div class="media-item">
-                <img src="https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?auto=format&fit=crop&w=600&q=80" alt="Yacht">
+                <img src="/assets/home/yacht.jpg" alt="Yacht">
                 <div class="media-overlay"><h4>超级游艇租赁</h4></div>
             </div>
             <div class="media-item">
-                <img src="https://images.unsplash.com/photo-1492144534655-ae79c964c9d7?auto=format&fit=crop&w=600&q=80" alt="Supercar">
+                <img src="/assets/home/supercar.jpg" alt="Supercar">
                 <div class="media-overlay"><h4>超跑车队</h4></div>
             </div>
             <div class="media-item">
-                <img src="https://images.unsplash.com/photo-1518684079-3c830dcef090?auto=format&fit=crop&w=600&q=80" alt="Dubai">
+                <img src="/assets/home/landmark.jpg" alt="Dubai">
                 <div class="media-overlay"><h4>全球地标体验</h4></div>
             </div>
         </div>
@@ -1000,7 +1047,7 @@
         <div class="grid-3">
             <div class="glass-card">
                 <div class="img-wrapper" style="height: 180px;">
-                    <img src="https://images.unsplash.com/photo-1485827404703-89b55fcc595e?auto=format&fit=crop&w=600&q=80" alt="AI">
+                    <img src="/assets/home/ai.jpg" alt="AI">
                 </div>
                 <h4>AI 如何重塑奢华体验</h4>
                 <p style="font-size: 0.9rem; margin-top: 10px;">探索人工智能在个性化旅行规划和健康管理中的革命性应用...</p>
@@ -1008,7 +1055,7 @@
             </div>
             <div class="glass-card">
                 <div class="img-wrapper" style="height: 180px;">
-                    <img src="https://images.unsplash.com/photo-1446776811953-b23d57bd21aa?auto=format&fit=crop&w=600&q=80" alt="Space">
+                    <img src="/assets/home/custom-journey.jpg" alt="Space">
                 </div>
                 <h4>2030 太空旅游展望</h4>
                 <p style="font-size: 0.9rem; margin-top: 10px;">从亚轨道飞行到月球基地，未来十年的太空旅行路线图解析...</p>
@@ -1016,7 +1063,7 @@
             </div>
             <div class="glass-card">
                 <div class="img-wrapper" style="height: 180px;">
-                    <img src="https://images.unsplash.com/photo-1611162617474-5b21e879e113?auto=format&fit=crop&w=600&q=80" alt="Art">
+                    <img src="/assets/home/digital-art.jpg" alt="Art">
                 </div>
                 <h4>数字艺术收藏指南</h4>
                 <p style="font-size: 0.9rem; margin-top: 10px;">NFT 与传统艺术品的融合趋势，高净值人群的资产配置新选择...</p>
@@ -1042,14 +1089,14 @@
 
         <h2 class="section-title" style="margin-top: 100px;">全球合作伙伴</h2>
         <div class="grid-4" style="grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));">
-            <div class="partner-logo-box">SpaceX</div>
-            <div class="partner-logo-box">Rolls-Royce</div>
-            <div class="partner-logo-box">Gulfstream</div>
-            <div class="partner-logo-box">Four Seasons</div>
-            <div class="partner-logo-box">Louis Vuitton</div>
-            <div class="partner-logo-box">Tesla</div>
-            <div class="partner-logo-box">Sotheby's</div>
-            <div class="partner-logo-box">Mayo Clinic</div>
+            <a href="https://www.spacex.com/" target="_blank" rel="noopener noreferrer" class="partner-logo-box">SpaceX</a>
+            <a href="https://www.rolls-roycemotorcars.com/" target="_blank" rel="noopener noreferrer" class="partner-logo-box">Rolls-Royce</a>
+            <a href="https://www.gulfstream.com/" target="_blank" rel="noopener noreferrer" class="partner-logo-box">Gulfstream</a>
+            <a href="https://www.fourseasons.com/" target="_blank" rel="noopener noreferrer" class="partner-logo-box">Four Seasons</a>
+            <a href="https://www.louisvuitton.com/" target="_blank" rel="noopener noreferrer" class="partner-logo-box">Louis Vuitton</a>
+            <a href="https://www.tesla.com/" target="_blank" rel="noopener noreferrer" class="partner-logo-box">Tesla</a>
+            <a href="https://www.sothebys.com/" target="_blank" rel="noopener noreferrer" class="partner-logo-box">Sotheby's</a>
+            <a href="https://www.mayoclinic.org/" target="_blank" rel="noopener noreferrer" class="partner-logo-box">Mayo Clinic</a>
         </div>
 
         <footer>
@@ -1066,6 +1113,7 @@
     <script>
         const themeToggle = document.getElementById("themeToggle");
         const body = document.body;
+        const cursorNegative = document.getElementById("cursorNegative");
 
         const savedTheme = localStorage.getItem("smai-theme");
         if (savedTheme === "dark") {
@@ -1083,6 +1131,74 @@
                 localStorage.setItem("smai-theme", "light");
             }
         });
+
+        if (cursorNegative && window.matchMedia("(pointer: fine)").matches) {
+            let cursorTargetX = window.innerWidth / 2;
+            let cursorTargetY = window.innerHeight / 2;
+            let cursorCurrentX = cursorTargetX;
+            let cursorCurrentY = cursorTargetY;
+            let cursorFrame = null;
+            let cursorVelocityX = 0;
+            let cursorVelocityY = 0;
+            let cursorLastPointerX = cursorTargetX;
+            let cursorLastPointerY = cursorTargetY;
+            let cursorAngle = 0;
+
+            const animateCursorNegative = () => {
+                cursorCurrentX += (cursorTargetX - cursorCurrentX) * 0.18;
+                cursorCurrentY += (cursorTargetY - cursorCurrentY) * 0.18;
+                cursorVelocityX *= 0.84;
+                cursorVelocityY *= 0.84;
+
+                const dx = cursorTargetX - cursorCurrentX;
+                const dy = cursorTargetY - cursorCurrentY;
+                const distance = Math.hypot(dx, dy);
+                const velocity = Math.hypot(cursorVelocityX, cursorVelocityY);
+                if (velocity > 0.15) {
+                    cursorAngle = Math.atan2(cursorVelocityY, cursorVelocityX) * (180 / Math.PI);
+                } else if (distance > 0.5) {
+                    cursorAngle = Math.atan2(dy, dx) * (180 / Math.PI);
+                }
+
+                const stretch = Math.min((velocity / 26) + (distance / 260), 0.18);
+                const scaleX = 1 + stretch;
+                const scaleY = 1 - stretch * 0.18;
+                const dynamicOpacity = 0.82 + Math.min(distance / 220, 0.14);
+
+                cursorNegative.style.left = `${cursorCurrentX}px`;
+                cursorNegative.style.top = `${cursorCurrentY}px`;
+                cursorNegative.style.transform = `translate3d(-50%, -50%, 0) rotate(${cursorAngle}deg) scaleX(${scaleX}) scaleY(${scaleY})`;
+                cursorNegative.style.opacity = cursorNegative.classList.contains("is-visible") ? `${dynamicOpacity}` : "0";
+
+                cursorFrame = window.requestAnimationFrame(animateCursorNegative);
+            };
+
+            window.addEventListener("mousemove", (event) => {
+                cursorVelocityX += (event.clientX - cursorLastPointerX) * 0.16;
+                cursorVelocityY += (event.clientY - cursorLastPointerY) * 0.16;
+                cursorLastPointerX = event.clientX;
+                cursorLastPointerY = event.clientY;
+                cursorNegative.classList.add("is-visible");
+                cursorTargetX = event.clientX;
+                cursorTargetY = event.clientY;
+
+                if (!cursorFrame) {
+                    cursorFrame = window.requestAnimationFrame(animateCursorNegative);
+                }
+            });
+
+            window.addEventListener("mousedown", () => {
+                cursorNegative.classList.add("is-active");
+            });
+
+            window.addEventListener("mouseup", () => {
+                cursorNegative.classList.remove("is-active");
+            });
+
+            document.addEventListener("mouseleave", () => {
+                cursorNegative.classList.remove("is-visible");
+            });
+        }
 
         const faqItems = document.querySelectorAll(".faq-item");
         faqItems.forEach((item) => {

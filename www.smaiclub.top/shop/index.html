@@ -3,25 +3,30 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SMAI CLUB | 购买会员</title>
-    <!-- 引入 Auth 脚本 -->
-    <script src="https://login.smaiclub.top/common-auth.js"></script>
-
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=SF+Pro+Display:wght@300;400;500;600;700&display=swap">
+    <title>SMAICLUB | 购买会员</title>
+    <script src="https://login.smaiclub.top/common-auth.js" defer></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600;700&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <link rel="icon" type="image/x-icon" href="/favicon.ico">
     <style>
         :root {
-            --primary-color: #000000;
-            --secondary-color: #1d1d1f;
-            --accent-color: #0071e3;
-            --text-light: #f5f5f7;
-            --text-dark: #1d1d1f;
-            --text-gray: #86868b;
-            --bg-gray: #f5f5f7;
-            --gradient-1: linear-gradient(45deg, #ff4d4d 0%, #f9cb28 100%);
-            --gradient-2: linear-gradient(45deg, #f72585 0%, #7209b7 50%, #3a0ca3 100%);
-            --gradient-3: linear-gradient(45deg, #00b4d8 0%, #0096c7 50%, #0077b6 100%);
+            --bg-light: #f4efe8;
+            --text-light: #221f1a;
+            --text-secondary: #5f584f;
+            --glass-bg: rgba(255, 250, 244, 0.78);
+            --glass-border: rgba(96, 69, 35, 0.12);
+            --glass-shadow: 0 12px 36px rgba(92, 66, 31, 0.08);
+            --accent-color: #1f5b53;
+            --accent-hover: #174840;
+            --accent-soft: rgba(31, 91, 83, 0.1);
+            --gold: #b98748;
+            --gold-soft: rgba(185, 135, 72, 0.12);
+            --danger: #c95745;
+            --surface: #fffaf4;
+            --line: rgba(96, 69, 35, 0.14);
+            --btn-gradient: linear-gradient(135deg, #1f5b53 0%, #b98748 100%);
         }
 
         * {
@@ -31,88 +36,136 @@
         }
 
         body {
-            font-family: 'SF Pro Display', -apple-system, BlinkMacSystemFont, sans-serif;
-            background-color: #fbfbfd;
-            color: var(--text-dark);
+            font-family: "Manrope", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+            background:
+                radial-gradient(circle at top left, rgba(31, 91, 83, 0.09) 0%, transparent 28%),
+                radial-gradient(circle at 85% 10%, rgba(185, 135, 72, 0.12) 0%, transparent 24%),
+                var(--bg-light);
+            color: var(--text-light);
             overflow-x: hidden;
-            line-height: 1.5;
+            line-height: 1.6;
             -webkit-font-smoothing: antialiased;
+            position: relative;
         }
 
-        /* 复用 www.smaiclub.top 的导航栏样式 */
+        body::before {
+            content: "";
+            position: fixed;
+            inset: 0;
+            background-image:
+                linear-gradient(rgba(70, 55, 35, 0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(70, 55, 35, 0.03) 1px, transparent 1px);
+            background-size: 72px 72px;
+            pointer-events: none;
+            z-index: -1;
+        }
+
         .navbar {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 0 22px;
-            background-color: rgba(0, 0, 0, 0.8);
-            backdrop-filter: saturate(180%) blur(20px);
+            gap: 16px;
+            padding: 15px 22px;
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            backdrop-filter: blur(20px);
             position: fixed;
-            width: 100%;
+            width: 92%;
+            max-width: 1300px;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
             z-index: 1000;
-            height: 60px;
+            border-radius: 50px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.05);
         }
 
         .logo {
-            font-size: 24px;
-            font-weight: 600;
-            color: var(--text-light);
+            font-family: "Cormorant Garamond", serif;
+            font-size: 2rem;
+            font-weight: 700;
+            letter-spacing: 0.04em;
+            color: #1b1713;
+            text-transform: uppercase;
             text-decoration: none;
+            white-space: nowrap;
         }
 
         .nav-links {
             display: flex;
             list-style: none;
             align-items: center;
-            height: 100%;
             flex-grow: 1;
             justify-content: center;
+            flex-wrap: wrap;
         }
 
         .nav-links li {
-            margin: 0 15px;
+            margin: 0 5px;
         }
 
         .nav-links a {
             color: var(--text-light);
             text-decoration: none;
-            font-weight: 400;
-            font-size: 14px;
+            font-weight: 600;
+            font-size: 0.93rem;
+            padding: 10px 18px;
+            border-radius: 30px;
             transition: all 0.3s ease;
-            opacity: 0.9;
-        }
-        .nav-links a:hover {
-            opacity: 1;
         }
 
-        /* 页面内容 */
+        .nav-links a:hover {
+            background: var(--accent-soft);
+        }
+
+        .auth-container {
+            min-width: 156px;
+            display: flex;
+            justify-content: flex-end;
+            align-items: center;
+        }
+
+        .auth-container .smai-auth-wrapper {
+            width: 100%;
+            display: flex;
+            justify-content: flex-end;
+            position: relative;
+        }
+
         .page-container {
             max-width: 1000px;
             margin: 0 auto;
-            padding: 100px 20px 40px;
+            padding: 128px 20px 40px;
         }
 
         .section-header {
             text-align: center;
             margin-bottom: 50px;
+            padding: 38px;
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 28px;
+            box-shadow: var(--glass-shadow);
         }
 
         .section-header h1 {
-            font-size: 48px;
+            font-family: "Cormorant Garamond", serif;
+            font-size: 3.8rem;
             font-weight: 700;
             margin-bottom: 10px;
+            letter-spacing: 0.02em;
         }
 
         .section-header p {
-            font-size: 21px;
-            color: var(--text-gray);
+            font-size: 1.12rem;
+            color: var(--text-secondary);
         }
 
-        /* 步骤条 */
         .steps {
             display: flex;
             justify-content: center;
             margin-bottom: 40px;
+            flex-wrap: wrap;
         }
 
         .step {
@@ -128,7 +181,7 @@
         .step-number {
             width: 28px;
             height: 28px;
-            background: var(--text-dark);
+            background: var(--btn-gradient);
             color: white;
             border-radius: 50%;
             display: flex;
@@ -140,11 +193,10 @@
         .step-divider {
             width: 60px;
             height: 2px;
-            background: #ddd;
+            background: rgba(96, 69, 35, 0.18);
             margin: 0 15px;
         }
 
-        /* 会员卡选择 */
         .tier-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
@@ -153,24 +205,24 @@
         }
 
         .tier-card {
-            background: white;
-            border-radius: 18px;
+            background: var(--glass-bg);
+            border-radius: 24px;
             padding: 30px;
-            border: 2px solid transparent;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.05);
+            border: 1px solid var(--glass-border);
+            box-shadow: var(--glass-shadow);
             cursor: pointer;
-            transition: all 0.2s;
+            transition: all 0.25s ease;
             position: relative;
         }
 
         .tier-card:hover {
             transform: translateY(-5px);
-            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            box-shadow: 0 18px 40px rgba(92, 66, 31, 0.12);
         }
 
         .tier-card.selected {
-            border-color: var(--accent-color);
-            background: #f0f7ff;
+            border-color: var(--gold);
+            background: linear-gradient(180deg, rgba(255, 250, 244, 0.96), rgba(255, 247, 237, 0.92));
         }
 
         .tier-card.selected::after {
@@ -178,7 +230,7 @@
             position: absolute;
             top: 20px;
             right: 20px;
-            color: var(--accent-color);
+            color: var(--gold);
             font-size: 24px;
             font-weight: bold;
         }
@@ -193,21 +245,21 @@
             font-size: 32px;
             font-weight: 700;
             margin-bottom: 15px;
-            color: var(--text-dark);
+            color: var(--text-light);
         }
 
         .tier-price span {
             font-size: 16px;
             font-weight: 400;
-            color: var(--text-gray);
+            color: var(--text-secondary);
         }
 
-        /* 表单区域 */
         .form-container {
-            background: white;
-            border-radius: 18px;
+            background: var(--glass-bg);
+            border-radius: 24px;
             padding: 40px;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.05);
+            box-shadow: var(--glass-shadow);
+            border: 1px solid var(--glass-border);
             display: none; /* 默认隐藏，选完套餐后显示 */
         }
 
@@ -225,7 +277,7 @@
             font-size: 21px;
             font-weight: 600;
             margin-bottom: 25px;
-            border-bottom: 1px solid #eee;
+            border-bottom: 1px solid rgba(96, 69, 35, 0.12);
             padding-bottom: 15px;
         }
 
@@ -245,18 +297,20 @@
             display: block;
             margin-bottom: 8px;
             font-size: 14px;
-            color: var(--text-gray);
+            color: var(--text-secondary);
             font-weight: 500;
         }
 
         input, select {
             width: 100%;
             padding: 12px;
-            border: 1px solid #d2d2d7;
+            border: 1px solid var(--line);
             border-radius: 10px;
             font-size: 16px;
             transition: border-color 0.2s;
             outline: none;
+            background: rgba(255, 255, 255, 0.78);
+            color: var(--text-light);
         }
 
         input:focus, select:focus {
@@ -284,7 +338,7 @@
 
         .payment-method {
             flex: 1;
-            border: 1px solid #d2d2d7;
+            border: 1px solid var(--line);
             border-radius: 10px;
             padding: 15px;
             text-align: center;
@@ -293,28 +347,30 @@
         }
 
         .payment-method.selected {
-            border-color: var(--accent-color);
-            background: #f0f7ff;
+            border-color: var(--gold);
+            background: var(--gold-soft);
             color: var(--accent-color);
             font-weight: 600;
         }
 
         .submit-btn {
             width: 100%;
-            background: var(--accent-color);
+            background: var(--btn-gradient);
             color: white;
             border: none;
-            border-radius: 12px;
+            border-radius: 999px;
             padding: 18px;
             font-size: 18px;
-            font-weight: 600;
+            font-weight: 700;
             cursor: pointer;
             margin-top: 30px;
-            transition: background 0.3s;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            box-shadow: 0 8px 24px rgba(91, 68, 31, 0.22);
         }
 
         .submit-btn:hover {
-            background: #0077ed;
+            transform: translateY(-2px);
+            box-shadow: 0 14px 30px rgba(91, 68, 31, 0.28);
         }
 
         .submit-btn:disabled {
@@ -322,7 +378,6 @@
             cursor: not-allowed;
         }
 
-        /* 模态框通用样式 */
         .modal-overlay {
             position: fixed;
             top: 0; left: 0;
@@ -336,15 +391,16 @@
         }
 
         .modal {
-            background: white;
+            background: var(--surface);
             width: 90%;
             max-width: 450px;
-            border-radius: 20px;
+            border-radius: 24px;
             padding: 40px;
             text-align: center;
             box-shadow: 0 20px 40px rgba(0,0,0,0.2);
             animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
             position: relative;
+            border: 1px solid var(--glass-border);
         }
 
         .modal-close {
@@ -366,13 +422,13 @@
         .info-icon { font-size: 60px; color: #0071e3; margin-bottom: 20px; }
 
         .key-display {
-            background: #f5f5f7;
+            background: rgba(255, 255, 255, 0.7);
             padding: 15px;
             border-radius: 10px;
             font-family: monospace;
             font-size: 18px;
             margin: 20px 0;
-            border: 1px dashed #c7c7cc;
+            border: 1px dashed rgba(96, 69, 35, 0.22);
             word-break: break-all;
             user-select: text;
         }
@@ -385,7 +441,7 @@
         }
 
         .confirm-btn {
-            background: #34c759;
+            background: var(--btn-gradient);
             color: white;
             border: none;
             padding: 12px 30px;
@@ -411,14 +467,102 @@
             cursor: pointer;
             border: none;
         }
-        .btn-cancel { background: #f5f5f7; color: var(--text-dark); }
-        .btn-confirm { background: #0071e3; color: white; }
+        .btn-cancel { background: rgba(96, 69, 35, 0.08); color: var(--text-light); }
+        .btn-confirm { background: var(--btn-gradient); color: white; }
+
+        .cursor-negative {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 42px;
+            height: 42px;
+            border-radius: 50%;
+            pointer-events: none;
+            z-index: 2000;
+            background: rgba(255, 255, 255, 0.92);
+            mix-blend-mode: difference;
+            transform: translate3d(-50%, -50%, 0) rotate(0deg) scaleX(1) scaleY(1);
+            opacity: 0;
+            transition: width 0.2s ease, height 0.2s ease, opacity 0.24s ease, box-shadow 0.24s ease;
+            will-change: transform;
+            box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.35), 0 0 24px rgba(255, 255, 255, 0.12);
+        }
+
+        .cursor-negative.is-visible {
+            opacity: 1;
+        }
+
+        .cursor-negative.is-active {
+            width: 58px;
+            height: 58px;
+            box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.42), 0 0 30px rgba(255, 255, 255, 0.18);
+        }
+
+        @media (max-width: 768px) {
+            .navbar {
+                width: 95%;
+                padding: 15px 20px;
+                flex-direction: column;
+                gap: 15px;
+                top: 10px;
+            }
+
+            .nav-links {
+                justify-content: center;
+                gap: 5px;
+            }
+
+            .nav-links li {
+                margin: 0;
+            }
+
+            .nav-links a {
+                padding: 8px 15px;
+                font-size: 0.85rem;
+            }
+
+            .auth-container {
+                width: 100%;
+                justify-content: center;
+            }
+
+            .auth-container .smai-auth-wrapper {
+                justify-content: center;
+            }
+
+            .section-header {
+                padding: 28px 22px;
+            }
+
+            .section-header h1 {
+                font-size: 2.8rem;
+            }
+
+            .form-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .full-width {
+                grid-column: span 1;
+            }
+
+            .payment-methods {
+                flex-direction: column;
+            }
+        }
+
+        @media (pointer: coarse) {
+            .cursor-negative {
+                display: none;
+            }
+        }
     </style>
 </head>
 <body>
+<div class="cursor-negative" id="cursorNegative" aria-hidden="true"></div>
 
 <nav class="navbar">
-    <a href="https://www.smaiclub.top" class="logo">SMAI CLUB</a>
+    <a href="https://www.smaiclub.top" class="logo">SMAICLUB</a>
     <ul class="nav-links">
         <li><a href="https://www.smaiclub.top">首页</a></li>
         <li><a href="https://news.smaiclub.top">新闻</a></li>
@@ -429,7 +573,7 @@
 
 <div class="page-container">
     <div class="section-header">
-        <h1>加入 SMAI CLUB</h1>
+        <h1>加入 SMAICLUB</h1>
         <p>开启您的精英生活方式</p>
     </div>
 
@@ -449,20 +593,20 @@
 
     <!-- 1. 会员选择 -->
     <div class="tier-grid" id="tier-selection">
-        <div class="tier-card" onclick="selectTier('vip', 5000)">
-            <div class="tier-name">SMAI VIP</div>
-            <div class="tier-price">$5,000<span>/年</span></div>
-            <p style="color:#666; font-size:14px">入门级精英体验，享受基础全球特权。</p>
+        <div class="tier-card" onclick="selectTier('vip', 99999)">
+            <div class="tier-name">精英会员</div>
+            <div class="tier-price">¥99,999<span>/年</span></div>
+            <p style="color:var(--text-secondary); font-size:14px">入门级精英体验，享受基础全球特权。</p>
         </div>
-        <div class="tier-card" onclick="selectTier('svip1', 15000)">
-            <div class="tier-name">SMAI SVIP I</div>
-            <div class="tier-price">$15,000<span>/年</span></div>
-            <p style="color:#666; font-size:14px">进阶尊享，私人飞机与定制旅行。</p>
+        <div class="tier-card" onclick="selectTier('svip1', 299999)">
+            <div class="tier-name">尊享会员</div>
+            <div class="tier-price">¥299,999<span>/年</span></div>
+            <p style="color:var(--text-secondary); font-size:14px">进阶尊享，私人飞机与定制旅行。</p>
         </div>
-        <div class="tier-card" onclick="selectTier('svip2', 50000)">
-            <div class="tier-name">SMAI SVIP II</div>
-            <div class="tier-price">$50,000<span>/年</span></div>
-            <p style="color:#666; font-size:14px">顶级奢华，私人岛屿与全球顶级资源。</p>
+        <div class="tier-card" onclick="selectTier('svip2', 999999)">
+            <div class="tier-name">无限会员</div>
+            <div class="tier-price">¥999,999<span>/年</span></div>
+            <p style="color:var(--text-secondary); font-size:14px">顶级奢华，私人岛屿与全球顶级资源。</p>
         </div>
     </div>
 
@@ -559,7 +703,7 @@
     <div class="modal">
         <div class="success-icon"><i class="fas fa-check-circle"></i></div>
         <h2>购买成功！</h2>
-        <p style="color:#666; margin:10px 0;">欢迎加入 SMAI CLUB。</p>
+        <p style="color:var(--text-secondary); margin:10px 0;">欢迎加入 SMAICLUB。</p>
 
         <div style="text-align:left; margin-top:20px;">
             <p style="font-size:14px; font-weight:600;">设置会员许可证：</p>
@@ -592,8 +736,8 @@
         <div class="modal-close" onclick="closeModal('alert-modal')">&times;</div>
         <div class="error-icon" id="alert-icon"><i class="fas fa-exclamation-circle"></i></div>
         <h2 id="alert-title">提示</h2>
-        <p id="alert-msg" style="color:#666; margin:10px 0;">内容</p>
-        <button class="confirm-btn" onclick="closeModal('alert-modal')" style="background:#0071e3;">确定</button>
+        <p id="alert-msg" style="color:var(--text-secondary); margin:10px 0;">内容</p>
+        <button class="confirm-btn" onclick="closeModal('alert-modal')">确定</button>
     </div>
 </div>
 
@@ -601,6 +745,7 @@
     let selectedTier = null;
     let selectedPrice = 0;
     let selectedPaymentMethod = null;
+    const cursorNegative = document.getElementById('cursorNegative');
 
     // 工具：显示模态框
     function showModal(id) { document.getElementById(id).style.display = 'flex'; }
@@ -620,6 +765,74 @@
     let currentUserLevel = 0;
 
     document.addEventListener('DOMContentLoaded', async () => {
+        if (cursorNegative && window.matchMedia("(pointer: fine)").matches) {
+            let cursorTargetX = window.innerWidth / 2;
+            let cursorTargetY = window.innerHeight / 2;
+            let cursorCurrentX = cursorTargetX;
+            let cursorCurrentY = cursorTargetY;
+            let cursorFrame = null;
+            let cursorVelocityX = 0;
+            let cursorVelocityY = 0;
+            let cursorLastPointerX = cursorTargetX;
+            let cursorLastPointerY = cursorTargetY;
+            let cursorAngle = 0;
+
+            const animateCursorNegative = () => {
+                cursorCurrentX += (cursorTargetX - cursorCurrentX) * 0.18;
+                cursorCurrentY += (cursorTargetY - cursorCurrentY) * 0.18;
+                cursorVelocityX *= 0.84;
+                cursorVelocityY *= 0.84;
+
+                const dx = cursorTargetX - cursorCurrentX;
+                const dy = cursorTargetY - cursorCurrentY;
+                const distance = Math.hypot(dx, dy);
+                const velocity = Math.hypot(cursorVelocityX, cursorVelocityY);
+                if (velocity > 0.15) {
+                    cursorAngle = Math.atan2(cursorVelocityY, cursorVelocityX) * (180 / Math.PI);
+                } else if (distance > 0.5) {
+                    cursorAngle = Math.atan2(dy, dx) * (180 / Math.PI);
+                }
+
+                const stretch = Math.min((velocity / 26) + (distance / 260), 0.18);
+                const scaleX = 1 + stretch;
+                const scaleY = 1 - stretch * 0.18;
+                const dynamicOpacity = 0.82 + Math.min(distance / 220, 0.14);
+
+                cursorNegative.style.left = `${cursorCurrentX}px`;
+                cursorNegative.style.top = `${cursorCurrentY}px`;
+                cursorNegative.style.transform = `translate3d(-50%, -50%, 0) rotate(${cursorAngle}deg) scaleX(${scaleX}) scaleY(${scaleY})`;
+                cursorNegative.style.opacity = cursorNegative.classList.contains("is-visible") ? `${dynamicOpacity}` : "0";
+
+                cursorFrame = window.requestAnimationFrame(animateCursorNegative);
+            };
+
+            window.addEventListener("mousemove", (event) => {
+                cursorVelocityX += (event.clientX - cursorLastPointerX) * 0.16;
+                cursorVelocityY += (event.clientY - cursorLastPointerY) * 0.16;
+                cursorLastPointerX = event.clientX;
+                cursorLastPointerY = event.clientY;
+                cursorNegative.classList.add("is-visible");
+                cursorTargetX = event.clientX;
+                cursorTargetY = event.clientY;
+
+                if (!cursorFrame) {
+                    cursorFrame = window.requestAnimationFrame(animateCursorNegative);
+                }
+            });
+
+            window.addEventListener("mousedown", () => {
+                cursorNegative.classList.add("is-active");
+            });
+
+            window.addEventListener("mouseup", () => {
+                cursorNegative.classList.remove("is-active");
+            });
+
+            document.addEventListener("mouseleave", () => {
+                cursorNegative.classList.remove("is-visible");
+            });
+        }
+
         try {
             const res = await fetch('https://login.smaiclub.top/api/me', { credentials: 'include' });
             const data = await res.json();
@@ -666,7 +879,7 @@
 
         const form = document.getElementById('info-form');
         form.classList.add('active');
-        document.getElementById('pay-amount').textContent = `$${price.toLocaleString()}`;
+        document.getElementById('pay-amount').textContent = `¥${price.toLocaleString()}`;
 
         form.scrollIntoView({ behavior: 'smooth', block: 'start' });
         document.getElementById('step2').classList.add('active');
@@ -768,12 +981,10 @@
             el.classList.remove('invalid');
             if (errEl) errEl.style.display = 'none';
         }
-        console.log(`Validation for ${field}: ${isValid}`);
         return isValid;
     }
 
     async function processPurchase() {
-        console.log("processPurchase called");
         if (!selectedTier) return showAlert("请先选择会员等级");
         if (!selectedPaymentMethod) return showAlert("请选择支付方式");
 
@@ -784,7 +995,6 @@
         let allValid = true;
         fields.forEach(f => {
             if (!validateField(f)) {
-                console.log(`Validation failed for ${f}`);
                 allValid = false;
             }
         });
@@ -792,7 +1002,6 @@
         if (!allValid) return showAlert("请检查表单中红色的错误项", "表单错误");
 
         // 检查登录状态
-        console.log("Checking login status...");
         const authRes = await fetch('https://login.smaiclub.top/api/me', { credentials: 'include' });
         const authData = await authRes.json();
 
@@ -815,7 +1024,6 @@
         btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 正在处理支付...';
 
         try {
-            console.log("Submitting purchase...");
             const res = await fetch('https://login.smaiclub.top/api/buy', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -827,18 +1035,15 @@
             });
 
             if (res.ok) {
-                console.log("Purchase success!");
                 document.getElementById('step3').classList.add('active');
                 showModal('success-modal');
             } else {
                 const err = await res.json();
-                console.error("Purchase error:", err);
                 showAlert("购买失败: " + (err.error || "未知错误"));
                 btn.disabled = false;
                 btn.innerHTML = originalText;
             }
         } catch (e) {
-            console.error("Network error:", e);
             showAlert("网络错误，请重试");
             btn.disabled = false;
             btn.innerHTML = originalText;
