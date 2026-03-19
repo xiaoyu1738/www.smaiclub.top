@@ -33,6 +33,16 @@ const STREAM_RESPONSE_HEADERS = [
   'last-modified',
   'content-encoding',
 ] as const;
+const ASSET_REQUEST_HEADERS = ['if-none-match', 'if-modified-since'] as const;
+const ASSET_RESPONSE_HEADERS = [
+  'cache-control',
+  'content-disposition',
+  'content-length',
+  'content-type',
+  'etag',
+  'last-modified',
+  'content-encoding',
+] as const;
 
 const ALLOWED_AUDIO_EXTENSIONS = new Set([
   '.mp3', '.flac', '.wav', '.ogg', '.m4a', '.aac', '.wma', '.opus', '.ape',
@@ -41,6 +51,7 @@ const ALLOWED_AUDIO_EXTENSIONS = new Set([
 const ALLOWED_ASSET_EXTENSIONS = new Set([
   '.jpg', '.jpeg', '.png', '.webp', '.gif', '.svg', '.avif', '.bmp',
   '.mp3', '.flac', '.wav', '.ogg', '.m4a', '.aac', '.wma', '.opus', '.ape',
+  '.lrc',
 ]);
 
 const VERSIONED_CACHE_CONTROL = 'public, max-age=31536000, immutable';
@@ -426,6 +437,19 @@ function copyStreamRequestHeaders(request: Request): Headers {
   return headers;
 }
 
+function copyAssetRequestHeaders(request: Request): Headers {
+  const headers = new Headers();
+
+  for (const headerName of ASSET_REQUEST_HEADERS) {
+    const value = request.headers.get(headerName);
+    if (value) {
+      headers.set(headerName, value);
+    }
+  }
+
+  return headers;
+}
+
 function buildMusicStreamUrl(request: Request, path: string): string {
   const requestUrl = new URL(request.url);
   const streamUrl = new URL(request.url);
@@ -447,6 +471,15 @@ async function fetchMusicStreamFromRawUrl(request: Request, rawUrl: string): Pro
   return fetchWithTimeout(rawUrl, {
     method: upstreamMethod,
     headers: copyStreamRequestHeaders(request),
+  });
+}
+
+async function fetchAssetFromRawUrl(request: Request, rawUrl: string): Promise<Response> {
+  const upstreamMethod = request.method === 'HEAD' ? 'GET' : request.method;
+
+  return fetchWithTimeout(rawUrl, {
+    method: upstreamMethod,
+    headers: copyAssetRequestHeaders(request),
   });
 }
 
@@ -580,26 +613,44 @@ async function handleGetAsset(
   validateAssetPath(path);
 
   const cacheKey = `asset:${path}`;
-  const cached = await readCachedRawUrl(env, cacheKey);
-  if (cached) {
-    return new Response(null, {
-      status: 302,
-      headers: {
-        Location: cached,
-        'Cache-Control': hasVersion ? VERSIONED_CACHE_CONTROL : UNVERSIONED_ASSET_CACHE_CONTROL,
-      },
-    });
+  const firstAttempt = await getOrCreateRawUrl(env, ctx, cacheKey, path, 'Asset');
+  let upstream = await fetchAssetFromRawUrl(request, firstAttempt.rawUrl);
+
+  if (upstream.status === 401 || upstream.status === 403) {
+    deleteCachedRawUrl(env, ctx, cacheKey, 'Asset');
+    const freshRawUrl = await requestAListRawUrl(env, path);
+    writeCachedRawUrl(env, ctx, cacheKey, freshRawUrl, 'Asset');
+    upstream = await fetchAssetFromRawUrl(request, freshRawUrl);
   }
 
-  const rawUrl = await requestAListRawUrl(env, path);
-  writeCachedRawUrl(env, ctx, cacheKey, rawUrl, 'Asset');
+  if (!upstream.ok && upstream.status !== 304) {
+    if (upstream.status === 404) {
+      throw new HttpError(404, '上游资源不存在');
+    }
+    if (upstream.status === 403) {
+      throw new HttpError(403, '上游资源拒绝访问，通常是直链签名或 Referer 限制导致');
+    }
+    throw new HttpError(502, `上游资源返回 HTTP ${upstream.status}`);
+  }
 
-  return new Response(null, {
-    status: 302,
-    headers: {
-      Location: rawUrl,
-      'Cache-Control': hasVersion ? VERSIONED_CACHE_CONTROL : UNVERSIONED_ASSET_CACHE_CONTROL,
-    },
+  const headers = new Headers(buildCorsHeaders(request, env));
+
+  for (const headerName of ASSET_RESPONSE_HEADERS) {
+    const value = upstream.headers.get(headerName);
+    if (value) {
+      headers.set(headerName, value);
+    }
+  }
+
+  headers.set(
+    'Cache-Control',
+    hasVersion ? VERSIONED_CACHE_CONTROL : UNVERSIONED_ASSET_CACHE_CONTROL
+  );
+
+  return new Response(request.method === 'HEAD' ? null : upstream.body, {
+    status: upstream.status,
+    statusText: upstream.statusText,
+    headers,
   });
 }
 
