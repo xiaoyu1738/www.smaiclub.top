@@ -20,6 +20,82 @@ type PlayerLocationState = {
   fromPath?: string;
 };
 
+type LyricLine = {
+  id: string;
+  time: number | null;
+  text: string;
+};
+
+function parseLyricText(rawText: string): LyricLine[] {
+  const lines = rawText
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter(Boolean);
+
+  const parsed: LyricLine[] = [];
+  const timeTagPattern = /\[(\d{1,2}):(\d{2})(?:\.(\d{1,3}))?\]/g;
+
+  lines.forEach((line, lineIndex) => {
+    const tags = [...line.matchAll(timeTagPattern)];
+    const text = line.replace(timeTagPattern, '').trim();
+
+    if (tags.length === 0) {
+      if (text) {
+        parsed.push({
+          id: `plain-${lineIndex}`,
+          time: null,
+          text,
+        });
+      }
+      return;
+    }
+
+    tags.forEach((tag, tagIndex) => {
+      const minutes = Number(tag[1] || 0);
+      const seconds = Number(tag[2] || 0);
+      const fractionRaw = tag[3] || '0';
+      const milliseconds = Number(fractionRaw.padEnd(3, '0').slice(0, 3));
+
+      parsed.push({
+        id: `timed-${lineIndex}-${tagIndex}`,
+        time: minutes * 60 + seconds + milliseconds / 1000,
+        text: text || '...',
+      });
+    });
+  });
+
+  return parsed.sort((a, b) => {
+    if (a.time === null && b.time === null) {
+      return a.id.localeCompare(b.id);
+    }
+    if (a.time === null) {
+      return 1;
+    }
+    if (b.time === null) {
+      return -1;
+    }
+    return a.time - b.time;
+  });
+}
+
+function getActiveLyricIndex(lines: LyricLine[], currentTime: number): number {
+  let activeIndex = -1;
+
+  for (let index = 0; index < lines.length; index += 1) {
+    const line = lines[index];
+    if (line.time === null) {
+      continue;
+    }
+    if (line.time <= currentTime) {
+      activeIndex = index;
+    } else {
+      break;
+    }
+  }
+
+  return activeIndex;
+}
+
 function buildMusicStreamUrl(
   path: string | null | undefined,
   version: string | null | undefined
@@ -44,13 +120,20 @@ export function HomePage() {
   const [isPlaying, setIsPlaying] = useState(false);
   const [isMinimizing, setIsMinimizing] = useState(false);
   const [playbackError, setPlaybackError] = useState<string | null>(null);
+  const [lyricLines, setLyricLines] = useState<LyricLine[]>([]);
+  const [lyricError, setLyricError] = useState<string | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const lyricScrollerRef = useRef<HTMLDivElement | null>(null);
   const location = useLocation();
   const navigate = useNavigate();
   const minimizeTimerRef = useRef<number | null>(null);
   const audioUrl = useMemo(
     () => buildMusicStreamUrl(track.path, track.version),
     [track.path, track.version]
+  );
+  const activeLyricIndex = useMemo(
+    () => getActiveLyricIndex(lyricLines, currentTime),
+    [lyricLines, currentTime]
   );
 
   const fromPath = (location.state as PlayerLocationState | null)?.fromPath;
@@ -77,8 +160,73 @@ export function HomePage() {
     setCurrentTime(readCurrentTime());
     setDuration(readDurationSeconds());
     setPlaybackError(null);
+    setLyricError(null);
     setIsPlaying(false);
   }, [track.path, track.version]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    if (!track.lyricPath) {
+      setLyricLines([]);
+      setLyricError(null);
+      return () => {
+        cancelled = true;
+      };
+    }
+
+    setLyricError(null);
+
+    void fetch(track.lyricPath, {
+      method: 'GET',
+      cache: 'force-cache',
+      headers: {
+        Accept: 'text/plain, text/lrc, */*',
+      },
+    })
+      .then(async (response) => {
+        if (!response.ok) {
+          throw new Error(`歌词请求失败，HTTP ${response.status}`);
+        }
+        const text = await response.text();
+        return parseLyricText(text);
+      })
+      .then((lines) => {
+        if (cancelled) {
+          return;
+        }
+        setLyricLines(lines);
+      })
+      .catch((error) => {
+        if (cancelled) {
+          return;
+        }
+        setLyricLines([]);
+        setLyricError(error instanceof Error ? error.message : '歌词加载失败');
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [track.lyricPath, track.lyricVersion]);
+
+  useEffect(() => {
+    if (activeLyricIndex < 0 || !lyricScrollerRef.current) {
+      return;
+    }
+
+    const container = lyricScrollerRef.current;
+    const activeElement = container.querySelector<HTMLElement>(`[data-lyric-index="${activeLyricIndex}"]`);
+    if (!activeElement) {
+      return;
+    }
+
+    const nextTop = activeElement.offsetTop - container.clientHeight / 2 + activeElement.clientHeight / 2;
+    container.scrollTo({
+      top: Math.max(0, nextTop),
+      behavior: 'smooth',
+    });
+  }, [activeLyricIndex]);
 
   useEffect(
     () => () => {
@@ -226,15 +374,37 @@ export function HomePage() {
           <div className="relative hidden min-h-0 overflow-hidden rounded-2xl bg-black/20 md:block">
             <div className="pointer-events-none absolute left-0 right-0 top-0 z-10 h-16 bg-gradient-to-b from-background-dark to-transparent" />
             <div className="pointer-events-none absolute bottom-0 left-0 right-0 z-10 h-20 bg-gradient-to-t from-background-dark to-transparent" />
-            <div className="hide-scrollbar h-full overflow-y-auto px-6 py-20">
+            <div ref={lyricScrollerRef} className="hide-scrollbar h-full overflow-y-auto px-6 py-20">
               <div className="mx-auto max-w-2xl space-y-8 text-center md:text-left">
-                <p className="text-2xl font-medium text-subtext-dark/60">走在这条空荡的街</p>
-                <p className="text-2xl font-medium text-subtext-dark/60">影子在寒冷中消散</p>
-                <p className="text-4xl font-bold text-text-dark drop-shadow-lg md:text-5xl">我要整夜摇滚</p>
-                <p className="text-4xl font-bold text-primary drop-shadow-lg md:text-5xl animate-pulse">每天都要狂欢！</p>
-                <p className="text-3xl font-semibold text-subtext-dark">(吉他独奏)</p>
-                <p className="text-2xl font-medium text-subtext-dark/60">感受贝斯的震动穿透</p>
-                <p className="text-2xl font-medium text-subtext-dark/60">我不愿做任何其他事</p>
+                {lyricError ? (
+                  <p className="text-xl font-medium text-subtext-dark/80">{lyricError}</p>
+                ) : lyricLines.length > 0 ? (
+                  lyricLines.map((line, index) => {
+                    const isActive = index === activeLyricIndex;
+                    const isPast = activeLyricIndex > index;
+
+                    return (
+                      <p
+                        key={line.id}
+                        data-lyric-index={index}
+                        className={[
+                          'transition-all duration-300',
+                          isActive
+                            ? 'text-4xl font-bold text-primary drop-shadow-lg md:text-5xl'
+                            : isPast
+                              ? 'text-2xl font-medium text-subtext-dark/45'
+                              : 'text-2xl font-medium text-subtext-dark/70',
+                        ].join(' ')}
+                      >
+                        {line.text}
+                      </p>
+                    );
+                  })
+                ) : track.lyricPath ? (
+                  <p className="text-xl font-medium text-subtext-dark/80">歌词加载中...</p>
+                ) : (
+                  <p className="text-xl font-medium text-subtext-dark/80">这首歌暂时没有歌词。</p>
+                )}
               </div>
             </div>
           </div>
