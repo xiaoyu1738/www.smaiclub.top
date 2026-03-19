@@ -1,7 +1,7 @@
 /index.html
   Cache-Control: public, no-cache, must-revalidate
 
-/ 
+/
   Cache-Control: public, no-cache, must-revalidate
 
 /discover
