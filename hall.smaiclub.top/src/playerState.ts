@@ -11,11 +11,17 @@ export type TrackState = {
   lyricVersion?: string | null;
 };
 
+const STORAGE_KEY_VERSION = 'v2';
+
+function createStorageKey(name: string): string {
+  return `hall.${STORAGE_KEY_VERSION}.${name}`;
+}
+
 export const DEFAULT_DURATION_SECONDS = 12 * 60;
-export const PLAYER_RETURN_PATH_KEY = 'hall.player.returnPath';
-export const PLAYER_CURRENT_TIME_KEY = 'hall.player.currentTime';
-export const PLAYER_DURATION_SECONDS_KEY = 'hall.player.durationSeconds';
-const CURRENT_TRACK_STORAGE_KEY = 'hall.currentTrack';
+export const PLAYER_RETURN_PATH_KEY = createStorageKey('player.returnPath');
+export const PLAYER_CURRENT_TIME_KEY = createStorageKey('player.currentTime');
+export const PLAYER_DURATION_SECONDS_KEY = createStorageKey('player.durationSeconds');
+const CURRENT_TRACK_STORAGE_KEY = createStorageKey('currentTrack');
 const LEGACY_MUSIC_PREFIX = '/aliyun/music';
 const MUSIC_PREFIX = '/assets/music';
 
