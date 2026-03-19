@@ -6,6 +6,9 @@ export type TrackState = {
   album: string;
   cover: string;
   path: string;
+  version?: string | null;
+  lyricPath?: string | null;
+  lyricVersion?: string | null;
 };
 
 export const DEFAULT_DURATION_SECONDS = 12 * 60;
@@ -63,7 +66,8 @@ export function readTrack(): TrackState {
   return {
     ...savedTrack,
     cover: normalizeProxyOriginUrl(savedTrack.cover),
-    path: normalizeTrackPath(savedTrack.path)
+    path: normalizeTrackPath(savedTrack.path),
+    lyricPath: savedTrack.lyricPath ? normalizeProxyOriginUrl(savedTrack.lyricPath) : savedTrack.lyricPath
   };
 }
 
@@ -73,7 +77,8 @@ export function saveTrack(track: TrackState): void {
     JSON.stringify({
       ...track,
       cover: normalizeProxyOriginUrl(track.cover),
-      path: normalizeTrackPath(track.path)
+      path: normalizeTrackPath(track.path),
+      lyricPath: track.lyricPath ? normalizeProxyOriginUrl(track.lyricPath) : track.lyricPath
     })
   );
 }

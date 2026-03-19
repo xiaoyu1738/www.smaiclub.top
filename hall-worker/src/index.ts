@@ -43,6 +43,11 @@ const ALLOWED_ASSET_EXTENSIONS = new Set([
   '.mp3', '.flac', '.wav', '.ogg', '.m4a', '.aac', '.wma', '.opus', '.ape',
 ]);
 
+const VERSIONED_CACHE_CONTROL = 'public, max-age=31536000, immutable';
+const UNVERSIONED_STREAM_CACHE_CONTROL = 'private, no-store';
+const UNVERSIONED_ASSET_CACHE_CONTROL = 'public, max-age=3600';
+const CATALOG_CACHE_CONTROL = 'public, max-age=300, stale-while-revalidate=60';
+
 let runtimeAListToken: string | null = null;
 let runtimeLoginPromise: Promise<string> | null = null;
 
@@ -422,10 +427,15 @@ function copyStreamRequestHeaders(request: Request): Headers {
 }
 
 function buildMusicStreamUrl(request: Request, path: string): string {
+  const requestUrl = new URL(request.url);
   const streamUrl = new URL(request.url);
   streamUrl.pathname = '/api/music/stream';
   streamUrl.search = '';
   streamUrl.searchParams.set('path', path);
+  const version = requestUrl.searchParams.get('v')?.trim();
+  if (version) {
+    streamUrl.searchParams.set('v', version);
+  }
   return streamUrl.toString();
 }
 
@@ -442,6 +452,8 @@ async function fetchMusicStreamFromRawUrl(request: Request, rawUrl: string): Pro
 
 function createStreamResponse(request: Request, env: Env, upstream: Response): Response {
   const headers = new Headers(buildCorsHeaders(request, env));
+  const requestUrl = new URL(request.url);
+  const hasVersion = Boolean(requestUrl.searchParams.get('v')?.trim());
 
   for (const headerName of STREAM_RESPONSE_HEADERS) {
     const value = upstream.headers.get(headerName);
@@ -450,7 +462,10 @@ function createStreamResponse(request: Request, env: Env, upstream: Response): R
     }
   }
 
-  headers.set('Cache-Control', 'private, no-store');
+  headers.set(
+    'Cache-Control',
+    hasVersion ? VERSIONED_CACHE_CONTROL : UNVERSIONED_STREAM_CACHE_CONTROL
+  );
 
   return new Response(request.method === 'HEAD' ? null : upstream.body, {
     status: upstream.status,
@@ -477,9 +492,7 @@ async function handleGetCatalog(request: Request, env: Env): Promise<Response> {
       headers: {
         'Content-Type': 'application/json; charset=utf-8',
         ...buildCorsHeaders(request, env),
-        'Cache-Control': 'no-store, no-cache, must-revalidate',
-        Pragma: 'no-cache',
-        Expires: '0',
+        'Cache-Control': CATALOG_CACHE_CONTROL,
       },
     });
   } catch {
@@ -558,6 +571,7 @@ async function handleGetAsset(
 ): Promise<Response> {
   const url = new URL(request.url);
   const path = url.searchParams.get('path')?.trim();
+  const hasVersion = Boolean(url.searchParams.get('v')?.trim());
 
   if (!path) {
     throw new HttpError(400, '缺少必需的 path 查询参数');
@@ -572,7 +586,7 @@ async function handleGetAsset(
       status: 302,
       headers: {
         Location: cached,
-        'Cache-Control': 'public, max-age=3600',
+        'Cache-Control': hasVersion ? VERSIONED_CACHE_CONTROL : UNVERSIONED_ASSET_CACHE_CONTROL,
       },
     });
   }
@@ -584,7 +598,7 @@ async function handleGetAsset(
     status: 302,
     headers: {
       Location: rawUrl,
-      'Cache-Control': 'public, max-age=3600',
+      'Cache-Control': hasVersion ? VERSIONED_CACHE_CONTROL : UNVERSIONED_ASSET_CACHE_CONTROL,
     },
   });
 }

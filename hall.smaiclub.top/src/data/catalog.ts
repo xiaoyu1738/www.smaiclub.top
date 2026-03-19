@@ -1,4 +1,4 @@
-export type ArtistRegion = '内地' | '港台' | '国际' | '未知';
+export type ArtistRegion = string;
 
 import { PROXY_PLAYER_ORIGIN, normalizeProxyOriginUrl } from '../config/mediaProxy';
 
@@ -8,6 +8,9 @@ export interface CatalogTrack {
   duration: string | null;
   cover: string;
   path: string;
+  lyricPath: string | null;
+  version: string | null;
+  lyricVersion: string | null;
   albumSlug: string;
   albumTitle: string;
   artistSlug: string;
@@ -37,6 +40,7 @@ export interface CatalogArtist {
 }
 
 export interface CatalogCacheSnapshot {
+  version: string | null;
   artists: CatalogArtist[];
   updatedAt: number;
 }
@@ -46,8 +50,8 @@ const MUSIC_PREFIX = '/assets/music';
 
 /** catalog 数据现统一走 Worker 代理，解决前端直连 AList 的 CORS + 401 问题 */
 export const CATALOG_REMOTE_URL =
-  import.meta.env.VITE_CATALOG_URL ?? `${PROXY_PLAYER_ORIGIN}/api/music/catalog?t=${Date.now()}`;
-export const CATALOG_CACHE_STORAGE_KEY = 'hall.catalog.v2';
+  import.meta.env.VITE_CATALOG_URL ?? `${PROXY_PLAYER_ORIGIN}/api/music/catalog`;
+export const CATALOG_CACHE_STORAGE_KEY = 'hall.catalog.v3';
 export const CATALOG_CACHE_TTL_MS = 60 * 60 * 1000;
 
 function normalizeMusicLibraryPath(path: string): string {
@@ -70,6 +74,37 @@ function asRecord(value: unknown): Record<string, unknown> | null {
 
 function readString(value: unknown): string | null {
   return typeof value === 'string' && value.trim() ? value.trim() : null;
+}
+
+function readVersionValue(value: unknown): string | null {
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    return String(value);
+  }
+
+  return readString(value);
+}
+
+function appendVersionParam(url: string, version: string | null | undefined): string {
+  if (!version) {
+    return url;
+  }
+
+  const separator = url.includes('?') ? '&' : '?';
+  return `${url}${separator}v=${encodeURIComponent(version)}`;
+}
+
+function readAssetVersion(
+  record: Record<string, unknown> | null,
+  ...keys: string[]
+): string | null {
+  for (const key of keys) {
+    const value = readVersionValue(record?.[key]);
+    if (value) {
+      return value;
+    }
+  }
+
+  return null;
 }
 
 function readStringArray(value: unknown): string[] {
@@ -122,20 +157,25 @@ function toAbsoluteAssetUrl(pathOrUrl: string): string {
   return `${PROXY_PLAYER_ORIGIN}/api/music/asset?path=${encodeURIComponent(normalizedPath)}`;
 }
 
-function resolveAssetUrl(basePath: string, asset: string | null, fallback: string): string {
+function resolveAssetUrl(
+  basePath: string,
+  asset: string | null,
+  fallback: string,
+  version?: string | null
+): string {
   if (asset) {
     if (/^https?:\/\//i.test(asset)) {
-      return asset;
+      return appendVersionParam(asset, version);
     }
 
     if (asset.startsWith('/')) {
-      return toAbsoluteAssetUrl(asset);
+      return appendVersionParam(toAbsoluteAssetUrl(asset), version);
     }
 
-    return toAbsoluteAssetUrl(joinPath(basePath, asset));
+    return appendVersionParam(toAbsoluteAssetUrl(joinPath(basePath, asset)), version);
   }
 
-  return fallback;
+  return appendVersionParam(fallback, version);
 }
 
 function resolveTrackPath(
@@ -180,11 +220,47 @@ function normalizeTrack(
     (fallbackFileName ? stripExtension(fallbackFileName.split('/').pop() ?? fallbackFileName) : null) ??
     `Track ${trackIndex + 1}`;
   const duration = readString(trackRecord?.duration);
+  const coverVersion = readAssetVersion(trackRecord, 'cover_version', 'coverVersion');
+  const lyricVersion =
+    readVersionValue(trackRecord?.lyric_version) ??
+    readVersionValue(trackRecord?.lyricVersion);
   const cover = resolveAssetUrl(
     album.basePath,
     readString(trackRecord?.cover),
-    album.cover
+    album.cover,
+    coverVersion
   );
+  const lyricPath = (() => {
+    const explicitLyricPath =
+      readString(trackRecord?.lyric_path) ??
+      readString(trackRecord?.lyricPath) ??
+      readString(trackRecord?.lrc_path) ??
+      readString(trackRecord?.lrcPath);
+
+    if (explicitLyricPath) {
+      if (explicitLyricPath.startsWith('/')) {
+        return appendVersionParam(toAbsoluteAssetUrl(explicitLyricPath), lyricVersion);
+      }
+
+      return appendVersionParam(
+        toAbsoluteAssetUrl(joinPath(album.basePath, explicitLyricPath)),
+        lyricVersion
+      );
+    }
+
+    const lyricFile =
+      readString(trackRecord?.lyric) ??
+      readString(trackRecord?.lyrics) ??
+      readString(trackRecord?.lrc);
+
+    return lyricFile
+      ? appendVersionParam(toAbsoluteAssetUrl(joinPath(album.basePath, lyricFile)), lyricVersion)
+      : null;
+  })();
+  const version =
+    readVersionValue(trackRecord?.version) ??
+    readVersionValue(trackRecord?.audio_version) ??
+    readVersionValue(trackRecord?.audioVersion);
 
   return {
     id: `${album.slug}-${trackIndex + 1}-${createSlug(title, 'track', trackIndex)}`,
@@ -192,6 +268,9 @@ function normalizeTrack(
     duration,
     cover,
     path,
+    lyricPath,
+    version,
+    lyricVersion,
     albumSlug: album.slug,
     albumTitle: album.title,
     artistSlug: artist.slug,
@@ -214,8 +293,11 @@ function normalizeAlbum(
     readString(albumRecord.base_path) ?? readString(albumRecord.basePath) ?? ''
   );
   const slug = createSlug(`${artist.slug}-${title}`, 'album', albumIndex);
-  const coverFallback = basePath ? toAbsoluteAssetUrl(joinPath(basePath, 'cover.jpg')) : '';
-  const cover = resolveAssetUrl(basePath, readString(albumRecord.cover), coverFallback);
+  const coverVersion = readAssetVersion(albumRecord, 'cover_version', 'coverVersion');
+  const coverFallback = basePath
+    ? appendVersionParam(toAbsoluteAssetUrl(joinPath(basePath, 'cover.jpg')), coverVersion)
+    : '';
+  const cover = resolveAssetUrl(basePath, readString(albumRecord.cover), coverFallback, coverVersion);
   const trackValues = Array.isArray(albumRecord.tracks) ? albumRecord.tracks : [];
   const albumForTracks: Pick<CatalogAlbum, 'slug' | 'title' | 'cover' | 'basePath'> = {
     slug,
@@ -238,11 +320,7 @@ function normalizeAlbum(
 }
 
 function normalizeRegion(value: string | null): ArtistRegion {
-  if (value === '内地' || value === '港台' || value === '国际' || value === '未知') {
-    return value;
-  }
-
-  return '国际';
+  return value?.trim() || '未知';
 }
 
 export function normalizeCatalogPayload(payload: unknown): CatalogArtist[] {
@@ -269,15 +347,19 @@ export function normalizeCatalogPayload(payload: unknown): CatalogArtist[] {
         readString(bandRecord.basePath) ??
         (albums[0]?.basePath ? getParentPath(albums[0].basePath) : '');
       const fallbackCover = albums[0]?.cover ?? '';
+      const avatarVersion = readAssetVersion(bandRecord, 'avatar_version', 'avatarVersion', 'image_version', 'imageVersion');
+      const heroVersion = readAssetVersion(bandRecord, 'hero_version', 'heroVersion', 'banner_version', 'bannerVersion');
       const avatar = resolveAssetUrl(
         bandBasePath,
         readString(bandRecord.avatar) ?? readString(bandRecord.image),
-        fallbackCover
+        fallbackCover,
+        avatarVersion
       );
       const hero = resolveAssetUrl(
         bandBasePath,
         readString(bandRecord.hero) ?? readString(bandRecord.banner),
-        avatar || fallbackCover
+        avatar || fallbackCover,
+        heroVersion
       );
       const resolvedHero = hero || avatar || fallbackCover;
       const resolvedAvatar = avatar || hero || fallbackCover;
@@ -303,6 +385,11 @@ export function normalizeCatalogPayload(payload: unknown): CatalogArtist[] {
     })
     .filter((artist): artist is CatalogArtist => Boolean(artist))
     .filter((artist) => artist.albums.length > 0 || artist.tracks.length > 0);
+}
+
+export function readCatalogVersion(payload: unknown): string | null {
+  const rootRecord = asRecord(payload);
+  return readVersionValue(rootRecord?.version);
 }
 
 export function serializeCatalogArtists(artists: CatalogArtist[]): string {
@@ -351,12 +438,14 @@ function normalizeCachedArtists(artists: CatalogArtist[]): CatalogArtist[] {
       tracks: album.tracks.map((track) => ({
         ...track,
         cover: track.cover ? toAbsoluteAssetUrl(track.cover) : track.cover,
+        lyricPath: track.lyricPath ? toAbsoluteAssetUrl(track.lyricPath) : track.lyricPath,
         path: normalizeMusicLibraryPath(track.path)
       }))
     })),
     tracks: artist.tracks.map((track) => ({
       ...track,
       cover: track.cover ? toAbsoluteAssetUrl(track.cover) : track.cover,
+      lyricPath: track.lyricPath ? toAbsoluteAssetUrl(track.lyricPath) : track.lyricPath,
       path: normalizeMusicLibraryPath(track.path)
     }))
   }));
@@ -385,6 +474,7 @@ export function readCachedCatalogSnapshot(): CatalogCacheSnapshot | null {
     }
 
     return {
+      version: readVersionValue(parsed.version),
       artists: normalizeCachedArtists(parsed.artists as CatalogArtist[]),
       updatedAt: parsed.updatedAt
     };

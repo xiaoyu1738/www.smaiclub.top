@@ -79,7 +79,10 @@ export function ArtistDetailPage() {
                           artist: artist.name,
                           album: album.title,
                           cover: track.cover,
-                          path: track.path
+                          path: track.path,
+                          version: track.version,
+                          lyricPath: track.lyricPath,
+                          lyricVersion: track.lyricVersion
                         });
                         resetPlaybackProgress();
                         navigate('/player', {

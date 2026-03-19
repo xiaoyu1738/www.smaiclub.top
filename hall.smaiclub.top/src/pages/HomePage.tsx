@@ -20,7 +20,10 @@ type PlayerLocationState = {
   fromPath?: string;
 };
 
-function buildMusicStreamUrl(path: string | null | undefined): string | null {
+function buildMusicStreamUrl(
+  path: string | null | undefined,
+  version: string | null | undefined
+): string | null {
   const normalizedPath = path?.trim();
   if (!normalizedPath) {
     return null;
@@ -28,6 +31,9 @@ function buildMusicStreamUrl(path: string | null | undefined): string | null {
 
   const endpoint = new URL(`${PROXY_PLAYER_ORIGIN}/api/music/stream`);
   endpoint.searchParams.set('path', normalizedPath);
+  if (version) {
+    endpoint.searchParams.set('v', version);
+  }
   return endpoint.toString();
 }
 
@@ -42,7 +48,10 @@ export function HomePage() {
   const location = useLocation();
   const navigate = useNavigate();
   const minimizeTimerRef = useRef<number | null>(null);
-  const audioUrl = useMemo(() => buildMusicStreamUrl(track.path), [track.path]);
+  const audioUrl = useMemo(
+    () => buildMusicStreamUrl(track.path, track.version),
+    [track.path, track.version]
+  );
 
   const fromPath = (location.state as PlayerLocationState | null)?.fromPath;
 
@@ -69,7 +78,7 @@ export function HomePage() {
     setDuration(readDurationSeconds());
     setPlaybackError(null);
     setIsPlaying(false);
-  }, [track.path]);
+  }, [track.path, track.version]);
 
   useEffect(
     () => () => {

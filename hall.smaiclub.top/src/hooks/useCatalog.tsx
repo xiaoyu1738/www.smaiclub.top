@@ -11,6 +11,7 @@ import {
   CATALOG_REMOTE_URL,
   getArtistBySlug,
   normalizeCatalogPayload,
+  readCatalogVersion,
   readCachedCatalogSnapshot,
   serializeCatalogArtists,
   writeCachedCatalogSnapshot,
@@ -63,6 +64,7 @@ async function fetchRemoteCatalog(): Promise<CatalogCacheSnapshot> {
   }
 
   return {
+    version: readCatalogVersion(payload),
     artists: normalizeCatalogPayload(payload),
     updatedAt: Date.now()
   };
@@ -96,6 +98,9 @@ export function CatalogProvider({ children }: { children: ReactNode }) {
       const cachedSnapshot = readCachedCatalogSnapshot();
       const hasChanged =
         !cachedSnapshot ||
+        (nextSnapshot.version && cachedSnapshot.version
+          ? cachedSnapshot.version !== nextSnapshot.version
+          : false) ||
         serializeCatalogArtists(cachedSnapshot.artists) !== serializeCatalogArtists(nextSnapshot.artists);
 
       if (hasChanged) {
