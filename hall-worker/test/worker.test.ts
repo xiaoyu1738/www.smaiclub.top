@@ -188,6 +188,7 @@ describe('hall-worker music gateway', () => {
     );
 
     assert.equal(response.status, 200);
+    assert.equal(response.headers.get('access-control-allow-origin'), '*');
     assert.deepEqual(await response.json(), expectedCatalog);
     assert.equal(calls.length, 2);
   });

@@ -19,7 +19,6 @@ type AListLoginResponse = AListEnvelope<{ token?: string }>;
 
 const CACHE_TTL_SECONDS = 7_200;
 const REQUEST_TIMEOUT_MS = 30_000;
-const LOCAL_ORIGIN_PATTERN = /^https?:\/\/(?:localhost|127\.0\.0\.1)(?::\d+)?$/;
 const MUSIC_PATH_PREFIX = '/assets/music/';
 const STREAM_REQUEST_HEADERS = ['range', 'if-range', 'if-none-match', 'if-modified-since'] as const;
 const STREAM_RESPONSE_HEADERS = [
@@ -88,18 +87,13 @@ function normalizeAListApiHost(env: Env): string {
 }
 
 function buildCorsHeaders(request: Request, env: Env): Record<string, string> {
-  const origin = request.headers.get('Origin');
-  const allowedOrigin =
-    origin === env.PRODUCTION_ORIGIN || LOCAL_ORIGIN_PATTERN.test(origin || '')
-      ? origin!
-      : env.PRODUCTION_ORIGIN;
-
   return {
-    'Access-Control-Allow-Origin': allowedOrigin,
+    // These endpoints are public, read-only resources behind an edge cache.
+    // Use a stable wildcard ACAO so cached responses do not leak per-origin CORS headers.
+    'Access-Control-Allow-Origin': '*',
     'Access-Control-Allow-Methods': 'GET, HEAD, OPTIONS',
     'Access-Control-Allow-Headers': 'Content-Type, Range, If-Range, If-None-Match, If-Modified-Since',
     'Access-Control-Expose-Headers': 'Accept-Ranges, Content-Length, Content-Range, Content-Type, ETag',
-    Vary: 'Origin',
   };
 }
 
