@@ -4,9 +4,15 @@ import {
   readCurrentTime,
   readDurationSeconds,
   readIsPlaying,
+  readPlaylist,
+  readPlaylistIndex,
+  readRepeatMode,
+  resetPlaybackProgress,
   saveCurrentTime,
   saveDurationSeconds,
   saveIsPlaying,
+  savePlaylistIndex,
+  saveTrack,
   type TrackState
 } from './playerState';
 
@@ -131,6 +137,34 @@ function ensureAudio(): HTMLAudioElement | null {
   });
 
   sharedAudio.addEventListener('ended', () => {
+    const repeatMode = readRepeatMode();
+    if (repeatMode === 'single') {
+      // Single repeat: restart same track
+      if (sharedAudio) {
+        sharedAudio.currentTime = 0;
+        saveCurrentTime(0);
+        setSnapshot({ currentTime: 0 });
+        void sharedAudio.play();
+      }
+      return;
+    }
+
+    // List repeat: advance to next
+    const playlist = readPlaylist();
+    if (playlist.length > 0) {
+      const currentIndex = readPlaylistIndex();
+      const nextIndex = (currentIndex + 1) % playlist.length;
+      const nextTrack = playlist[nextIndex];
+      if (nextTrack) {
+        savePlaylistIndex(nextIndex);
+        saveTrack(nextTrack);
+        resetPlaybackProgress();
+        saveIsPlaying(true);
+        loadAndPlayTrack(nextTrack);
+        return;
+      }
+    }
+
     saveCurrentTime(0);
     saveIsPlaying(false);
     setSnapshot({ currentTime: 0, isPlaying: false });
@@ -233,4 +267,49 @@ export function seekPlayer(nextTime: number): void {
   audio.currentTime = clampedTime;
   saveCurrentTime(clampedTime);
   setSnapshot({ currentTime: clampedTime });
+}
+
+function loadAndPlayTrack(track: TrackState): void {
+  const audio = ensureAudio();
+  const nextTrackKey = buildTrackKey(track);
+  if (!audio || !nextTrackKey) return;
+
+  sharedTrackKey = nextTrackKey;
+  setSnapshot({
+    currentTime: 0,
+    duration: DEFAULT_DURATION_SECONDS,
+    isPlaying: true,
+    error: null,
+    trackKey: sharedTrackKey
+  });
+
+  audio.src = nextTrackKey;
+  audio.load();
+}
+
+export function playTrackByIndex(index: number): void {
+  const playlist = readPlaylist();
+  if (index < 0 || index >= playlist.length) return;
+  const track = playlist[index];
+  savePlaylistIndex(index);
+  saveTrack(track);
+  resetPlaybackProgress();
+  saveIsPlaying(true);
+  loadAndPlayTrack(track);
+}
+
+export function playNextTrack(): void {
+  const playlist = readPlaylist();
+  if (playlist.length === 0) return;
+  const currentIndex = readPlaylistIndex();
+  const nextIndex = (currentIndex + 1) % playlist.length;
+  playTrackByIndex(nextIndex);
+}
+
+export function playPrevTrack(): void {
+  const playlist = readPlaylist();
+  if (playlist.length === 0) return;
+  const currentIndex = readPlaylistIndex();
+  const prevIndex = (currentIndex - 1 + playlist.length) % playlist.length;
+  playTrackByIndex(prevIndex);
 }

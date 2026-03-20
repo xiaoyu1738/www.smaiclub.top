@@ -10,6 +10,19 @@ import { ArtistDetailPage } from './pages/ArtistDetailPage';
 import { AllSongsPage } from './pages/AllSongsPage';
 import { PLAYER_RETURN_PATH_KEY } from './playerState';
 
+function ScrollToTop() {
+  const { pathname } = useLocation();
+  const prevPathRef = useRef(pathname);
+  useEffect(() => {
+    const prevPath = prevPathRef.current;
+    prevPathRef.current = pathname;
+    // Don't scroll when leaving the player overlay — the underlying page hasn't changed
+    if (prevPath === '/player') return;
+    window.scrollTo(0, 0);
+  }, [pathname]);
+  return null;
+}
+
 function AppShell() {
   const [searchText, setSearchText] = useState('');
   const [playerOpen, setPlayerOpen] = useState(false);
@@ -118,6 +131,7 @@ function AppShell() {
 
   return (
     <div className="app-shell">
+      <ScrollToTop />
       <NavBar
         searchMode={searchMode}
         searchText={searchText}

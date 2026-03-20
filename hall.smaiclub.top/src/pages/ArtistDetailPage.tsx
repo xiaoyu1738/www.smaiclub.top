@@ -2,7 +2,7 @@ import { useMemo } from 'react';
 import { Info, Play } from 'lucide-react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { useCatalog } from '../hooks/useCatalog';
-import { resetPlaybackProgress, saveTrack } from '../playerState';
+import { resetPlaybackProgress, savePlaylist, savePlaylistIndex, saveTrack } from '../playerState';
 
 export function ArtistDetailPage() {
   const { slug } = useParams<{ slug: string }>();
@@ -18,6 +18,21 @@ export function ArtistDetailPage() {
     return getArtist(slug);
   }, [artists, getArtist, slug]);
 
+  // Build the full artist playlist for prev/next
+  const artistPlaylist = useMemo(() => {
+    if (!artist) return [];
+    return artist.tracks.map((track) => ({
+      title: track.title,
+      artist: artist.name,
+      album: track.albumTitle,
+      cover: track.cover,
+      path: track.path,
+      version: track.version,
+      lyricPath: track.lyricPath,
+      lyricVersion: track.lyricVersion
+    }));
+  }, [artist]);
+
   const similar = useMemo(
     () => artists.filter((item) => item.slug !== artist?.slug).slice(0, 3),
     [artist?.slug, artists]
@@ -31,6 +46,11 @@ export function ArtistDetailPage() {
         </main>
       </section>
     );
+  }
+
+  // Find the flat index of a track within artist.tracks
+  function findTrackIndex(trackId: string): number {
+    return artist!.tracks.findIndex((t) => t.id === trackId);
   }
 
   return (
@@ -74,7 +94,7 @@ export function ArtistDetailPage() {
                       type="button"
                       className="group flex cursor-pointer items-center gap-4 rounded-lg bg-white/5 p-3 text-left hover:bg-primary/10"
                       onClick={() => {
-                        saveTrack({
+                        const trackData = {
                           title: track.title,
                           artist: artist.name,
                           album: album.title,
@@ -83,7 +103,10 @@ export function ArtistDetailPage() {
                           version: track.version,
                           lyricPath: track.lyricPath,
                           lyricVersion: track.lyricVersion
-                        });
+                        };
+                        saveTrack(trackData);
+                        savePlaylist(artistPlaylist);
+                        savePlaylistIndex(findTrackIndex(track.id));
                         resetPlaybackProgress();
                         navigate('/player', {
                           state: {

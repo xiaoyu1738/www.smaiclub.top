@@ -1,15 +1,21 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { ChevronDown, Pause, Play } from 'lucide-react';
+import { ChevronDown, Pause, Play, Repeat, Repeat1, SkipBack, SkipForward } from 'lucide-react';
 import {
   DEFAULT_DURATION_SECONDS,
   formatTime,
+  readPlaylist,
+  readRepeatMode,
   readTrack,
   saveCurrentTime,
   saveDurationSeconds,
+  saveRepeatMode,
+  type RepeatMode,
 } from '../playerState';
 import {
   ensurePlayerTrack,
   getPlayerSnapshot,
+  playNextTrack,
+  playPrevTrack,
   seekPlayer,
   subscribeToPlayer,
   togglePlayerPlayback
@@ -107,7 +113,10 @@ export function HomePage({ onMinimize }: HomePageProps) {
   const [playbackError, setPlaybackError] = useState<string | null>(null);
   const [lyricLines, setLyricLines] = useState<LyricLine[]>([]);
   const [lyricError, setLyricError] = useState<string | null>(null);
+  const [repeatMode, setRepeatMode] = useState<RepeatMode>(readRepeatMode);
   const lyricScrollerRef = useRef<HTMLDivElement | null>(null);
+  const trackKeyRef = useRef<string | null>(initialSnapshot.trackKey);
+  const hasPlaylist = readPlaylist().length > 1;
   const activeLyricIndex = useMemo(
     () => getActiveLyricIndex(lyricLines, currentTime),
     [lyricLines, currentTime]
@@ -132,6 +141,11 @@ export function HomePage({ onMinimize }: HomePageProps) {
       setDuration(snapshot.duration);
       setIsPlaying(snapshot.isPlaying);
       setPlaybackError(snapshot.error);
+      // Detect track change from prev/next
+      if (snapshot.trackKey && snapshot.trackKey !== trackKeyRef.current) {
+        trackKeyRef.current = snapshot.trackKey;
+        setTrack(readTrack());
+      }
     });
   }, []);
 
@@ -214,6 +228,14 @@ export function HomePage({ onMinimize }: HomePageProps) {
     setCurrentTime(clampedTime);
     seekPlayer(clampedTime);
   }
+
+  function toggleRepeat(): void {
+    const next: RepeatMode = repeatMode === 'list' ? 'single' : 'list';
+    saveRepeatMode(next);
+    setRepeatMode(next);
+  }
+
+  const RepeatIcon = repeatMode === 'single' ? Repeat1 : Repeat;
 
   return (
     <section
@@ -321,6 +343,12 @@ export function HomePage({ onMinimize }: HomePageProps) {
                 <p className="truncate text-sm font-bold">{track.title}</p>
                 <p className="truncate text-xs text-subtext-dark">{track.artist}</p>
               </div>
+              <button type="button" className={`inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full border transition ${repeatMode === 'single' ? 'border-primary/40 bg-primary/10 text-primary' : 'border-transparent text-subtext-dark hover:text-primary'}`} onClick={toggleRepeat} aria-label={repeatMode === 'single' ? '当前：单曲循环' : '当前：列表循环'}>
+                <RepeatIcon size={14} aria-hidden="true" />
+              </button>
+              <button type="button" className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-white transition hover:text-primary disabled:opacity-30" onClick={playPrevTrack} disabled={!hasPlaylist} aria-label="上一曲">
+                <SkipBack size={16} aria-hidden="true" />
+              </button>
               <button
                 type="button"
                 className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-white/15 bg-white/5 text-white transition hover:border-primary hover:text-primary disabled:cursor-not-allowed disabled:opacity-50"
@@ -329,6 +357,9 @@ export function HomePage({ onMinimize }: HomePageProps) {
                 aria-label={isPlaying ? '暂停播放' : '开始播放'}
               >
                 {isPlaying ? <Pause size={16} aria-hidden="true" /> : <Play size={16} aria-hidden="true" />}
+              </button>
+              <button type="button" className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-white transition hover:text-primary disabled:opacity-30" onClick={playNextTrack} disabled={!hasPlaylist} aria-label="下一曲">
+                <SkipForward size={16} aria-hidden="true" />
               </button>
             </div>
             <div className="flex items-center gap-3">
@@ -359,6 +390,12 @@ export function HomePage({ onMinimize }: HomePageProps) {
               </div>
             </div>
             <div className="flex items-center gap-3">
+              <button type="button" className={`inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full border transition ${repeatMode === 'single' ? 'border-primary/40 bg-primary/10 text-primary' : 'border-transparent text-subtext-dark hover:text-primary'}`} onClick={toggleRepeat} aria-label={repeatMode === 'single' ? '当前：单曲循环' : '当前：列表循环'}>
+                <RepeatIcon size={14} aria-hidden="true" />
+              </button>
+              <button type="button" className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-white transition hover:text-primary disabled:opacity-30" onClick={playPrevTrack} disabled={!hasPlaylist} aria-label="上一曲">
+                <SkipBack size={16} aria-hidden="true" />
+              </button>
               <button
                 type="button"
                 className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-white/15 bg-white/5 text-white transition hover:border-primary hover:text-primary disabled:cursor-not-allowed disabled:opacity-50"
@@ -367,6 +404,9 @@ export function HomePage({ onMinimize }: HomePageProps) {
                 aria-label={isPlaying ? '暂停播放' : '开始播放'}
               >
                 {isPlaying ? <Pause size={16} aria-hidden="true" /> : <Play size={16} aria-hidden="true" />}
+              </button>
+              <button type="button" className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-white transition hover:text-primary disabled:opacity-30" onClick={playNextTrack} disabled={!hasPlaylist} aria-label="下一曲">
+                <SkipForward size={16} aria-hidden="true" />
               </button>
               <input
                 type="range"

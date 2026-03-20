@@ -23,6 +23,9 @@ export const PLAYER_CURRENT_TIME_KEY = createStorageKey('player.currentTime');
 export const PLAYER_DURATION_SECONDS_KEY = createStorageKey('player.durationSeconds');
 export const PLAYER_IS_PLAYING_KEY = createStorageKey('player.isPlaying');
 const CURRENT_TRACK_STORAGE_KEY = createStorageKey('currentTrack');
+const PLAYLIST_STORAGE_KEY = createStorageKey('playlist');
+const PLAYLIST_INDEX_KEY = createStorageKey('playlistIndex');
+const REPEAT_MODE_KEY = createStorageKey('repeatMode');
 const LEGACY_MUSIC_PREFIX = '/aliyun/music';
 const MUSIC_PREFIX = '/assets/music';
 
@@ -130,4 +133,38 @@ export function resetPlaybackProgress(): void {
   localStorage.setItem(PLAYER_CURRENT_TIME_KEY, '0');
   localStorage.setItem(PLAYER_DURATION_SECONDS_KEY, String(DEFAULT_DURATION_SECONDS));
   localStorage.setItem(PLAYER_IS_PLAYING_KEY, '0');
+}
+
+export type RepeatMode = 'list' | 'single';
+
+export function readPlaylist(): TrackState[] {
+  const raw = sessionStorage.getItem(PLAYLIST_STORAGE_KEY);
+  if (!raw) return [];
+  try {
+    return JSON.parse(raw) as TrackState[];
+  } catch {
+    return [];
+  }
+}
+
+export function savePlaylist(tracks: TrackState[]): void {
+  sessionStorage.setItem(PLAYLIST_STORAGE_KEY, JSON.stringify(tracks));
+}
+
+export function readPlaylistIndex(): number {
+  const saved = Number(sessionStorage.getItem(PLAYLIST_INDEX_KEY));
+  return Number.isFinite(saved) && saved >= 0 ? saved : 0;
+}
+
+export function savePlaylistIndex(index: number): void {
+  sessionStorage.setItem(PLAYLIST_INDEX_KEY, String(index));
+}
+
+export function readRepeatMode(): RepeatMode {
+  const saved = localStorage.getItem(REPEAT_MODE_KEY);
+  return saved === 'single' ? 'single' : 'list';
+}
+
+export function saveRepeatMode(mode: RepeatMode): void {
+  localStorage.setItem(REPEAT_MODE_KEY, mode);
 }

@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react';
 import { Disc3, Play, Search, Sparkles } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useCatalog } from '../hooks/useCatalog';
-import { resetPlaybackProgress, saveTrack } from '../playerState';
+import { resetPlaybackProgress, savePlaylist, savePlaylistIndex, saveTrack } from '../playerState';
 
 type AllSongsPageProps = {
   searchText: string;
@@ -172,7 +172,7 @@ export function AllSongsPage({ searchText }: AllSongsPageProps) {
               type="button"
               className="song-row"
               onClick={() => {
-                saveTrack({
+                const trackData = {
                   title: entry.title,
                   artist: entry.artistName,
                   album: entry.albumTitle,
@@ -181,7 +181,21 @@ export function AllSongsPage({ searchText }: AllSongsPageProps) {
                   version: entry.version,
                   lyricPath: entry.lyricPath,
                   lyricVersion: entry.lyricVersion
-                });
+                };
+                saveTrack(trackData);
+                // Save the current filtered list as the playlist
+                const playlist = filteredEntries.map((e) => ({
+                  title: e.title,
+                  artist: e.artistName,
+                  album: e.albumTitle,
+                  cover: e.cover,
+                  path: e.path,
+                  version: e.version,
+                  lyricPath: e.lyricPath,
+                  lyricVersion: e.lyricVersion
+                }));
+                savePlaylist(playlist);
+                savePlaylistIndex(index);
                 resetPlaybackProgress();
                 navigate('/player', {
                   state: {
