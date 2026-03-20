@@ -17,13 +17,13 @@ describe('NavBar', () => {
     delete window.CommonAuth;
   });
 
-  function renderNavBar(showArtistSearch = true) {
+  function renderNavBar(searchMode: 'artists' | 'songs' | null = 'artists') {
     const onSearchTextChange = vi.fn();
 
     render(
       <MemoryRouter initialEntries={['/artists']}>
         <NavBar
-          showArtistSearch={showArtistSearch}
+          searchMode={searchMode}
           searchText=""
           onSearchTextChange={onSearchTextChange}
         />
@@ -35,24 +35,24 @@ describe('NavBar', () => {
 
   it('does not render the search input until the search panel is opened', async () => {
     const user = userEvent.setup();
-    renderNavBar(true);
+    renderNavBar('artists');
 
-    expect(screen.queryByRole('searchbox', { name: '搜索乐队' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('searchbox', { name: '目录搜索' })).not.toBeInTheDocument();
 
     await user.click(screen.getByRole('button', { name: '展开搜索框' }));
 
-    const searchInput = screen.getByRole('searchbox', { name: '搜索乐队' });
+    const searchInput = screen.getByRole('searchbox', { name: '目录搜索' });
     expect(searchInput).toBeInTheDocument();
     expect(searchInput).toHaveFocus();
 
     await user.click(screen.getByRole('button', { name: '收起搜索框' }));
 
-    expect(screen.queryByRole('searchbox', { name: '搜索乐队' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('searchbox', { name: '目录搜索' })).not.toBeInTheDocument();
   });
 
   it('removes the mobile drawer from the document when closed and locks body scroll when open', async () => {
     const user = userEvent.setup();
-    renderNavBar(true);
+    renderNavBar('artists');
 
     expect(screen.queryByRole('navigation', { name: '移动端导航' })).not.toBeInTheDocument();
     expect(document.body.style.overflow).toBe('');
@@ -68,12 +68,12 @@ describe('NavBar', () => {
     expect(document.body.style.overflow).toBe('');
   });
 
-  it('clears search state when artist search is disabled', () => {
+  it('clears search state when search is disabled', () => {
     const onSearchTextChange = vi.fn();
     const { rerender } = render(
       <MemoryRouter initialEntries={['/artists']}>
         <NavBar
-          showArtistSearch
+          searchMode="artists"
           searchText="slint"
           onSearchTextChange={onSearchTextChange}
         />
@@ -83,7 +83,7 @@ describe('NavBar', () => {
     rerender(
       <MemoryRouter initialEntries={['/discover']}>
         <NavBar
-          showArtistSearch={false}
+          searchMode={null}
           searchText="slint"
           onSearchTextChange={onSearchTextChange}
         />
@@ -91,6 +91,6 @@ describe('NavBar', () => {
     );
 
     expect(onSearchTextChange).toHaveBeenCalledWith('');
-    expect(screen.queryByRole('searchbox', { name: '搜索乐队' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('searchbox', { name: '目录搜索' })).not.toBeInTheDocument();
   });
 });

@@ -21,6 +21,7 @@ export const DEFAULT_DURATION_SECONDS = 12 * 60;
 export const PLAYER_RETURN_PATH_KEY = createStorageKey('player.returnPath');
 export const PLAYER_CURRENT_TIME_KEY = createStorageKey('player.currentTime');
 export const PLAYER_DURATION_SECONDS_KEY = createStorageKey('player.durationSeconds');
+export const PLAYER_IS_PLAYING_KEY = createStorageKey('player.isPlaying');
 const CURRENT_TRACK_STORAGE_KEY = createStorageKey('currentTrack');
 const LEGACY_MUSIC_PREFIX = '/aliyun/music';
 const MUSIC_PREFIX = '/assets/music';
@@ -117,7 +118,16 @@ export function saveDurationSeconds(durationSeconds: number): void {
   localStorage.setItem(PLAYER_DURATION_SECONDS_KEY, String(durationSeconds));
 }
 
+export function readIsPlaying(): boolean {
+  return localStorage.getItem(PLAYER_IS_PLAYING_KEY) === '1';
+}
+
+export function saveIsPlaying(isPlaying: boolean): void {
+  localStorage.setItem(PLAYER_IS_PLAYING_KEY, isPlaying ? '1' : '0');
+}
+
 export function resetPlaybackProgress(): void {
   localStorage.setItem(PLAYER_CURRENT_TIME_KEY, '0');
   localStorage.setItem(PLAYER_DURATION_SECONDS_KEY, String(DEFAULT_DURATION_SECONDS));
+  localStorage.setItem(PLAYER_IS_PLAYING_KEY, '0');
 }

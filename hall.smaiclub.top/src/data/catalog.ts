@@ -44,7 +44,7 @@ export interface CatalogCacheSnapshot {
   artists: CatalogArtist[];
   updatedAt: number;
 }
-
+ 
 const STORAGE_KEY_VERSION = 'v5';
 const LEGACY_MUSIC_PREFIX = '/aliyun/music';
 const MUSIC_PREFIX = '/assets/music';
