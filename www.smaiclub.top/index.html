@@ -27,6 +27,9 @@
             --border-radius-lg: 24px;
             --border-radius-xl: 40px;
             --border-radius-md: 16px;
+            --april-red: #bf2f45;
+            --april-blue: #1d6fa4;
+            --april-paper: rgba(255, 248, 240, 0.94);
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -63,6 +66,24 @@
             background-size: 72px 72px;
             pointer-events: none;
             z-index: -1;
+        }
+
+        body::after {
+            content: "";
+            position: fixed;
+            inset: 0;
+            background:
+                radial-gradient(circle at 12% 18%, rgba(191, 47, 69, 0.16), transparent 22%),
+                radial-gradient(circle at 86% 14%, rgba(29, 111, 164, 0.16), transparent 20%),
+                repeating-linear-gradient(
+                    -24deg,
+                    rgba(255, 221, 120, 0.08) 0 16px,
+                    rgba(25, 14, 10, 0) 16px 38px
+                );
+            opacity: 0.92;
+            pointer-events: none;
+            z-index: -1;
+            mix-blend-mode: multiply;
         }
 
         body.dark-mode {
@@ -212,6 +233,73 @@
             overflow: visible;
         }
 
+        .april-fool-badge {
+            position: absolute;
+            top: 12%;
+            left: max(4%, calc(50% - 620px));
+            z-index: 3;
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            padding: 12px 18px;
+            border-radius: 999px;
+            background: linear-gradient(135deg, rgba(255, 244, 228, 0.9), rgba(255, 233, 213, 0.82));
+            border: 1px solid rgba(191, 47, 69, 0.24);
+            box-shadow: 0 18px 36px rgba(63, 18, 25, 0.18);
+            backdrop-filter: blur(14px);
+            font-size: 0.88rem;
+            font-weight: 800;
+            letter-spacing: 0.2em;
+            text-transform: uppercase;
+            color: #6a2230;
+        }
+
+        .april-fool-badge::before {
+            content: "04/01";
+            display: inline-grid;
+            place-items: center;
+            width: 54px;
+            height: 32px;
+            border-radius: 999px;
+            background: linear-gradient(135deg, rgba(191, 47, 69, 0.94), rgba(29, 111, 164, 0.92));
+            color: #fff8f0;
+            letter-spacing: 0.08em;
+            font-size: 0.72rem;
+        }
+
+        .april-fool-ticker {
+            position: relative;
+            width: min(1320px, calc(100% - 56px));
+            margin: 118px auto 0;
+            border-radius: 999px;
+            overflow: hidden;
+            border: 1px solid rgba(191, 47, 69, 0.24);
+            background: linear-gradient(90deg, rgba(27, 18, 15, 0.82), rgba(70, 23, 35, 0.88), rgba(16, 46, 78, 0.82));
+            box-shadow: 0 18px 42px rgba(39, 17, 16, 0.18);
+        }
+
+        .april-fool-ticker-track {
+            display: flex;
+            gap: 38px;
+            width: max-content;
+            padding: 12px 0;
+            color: #fff2df;
+            font-size: 0.86rem;
+            font-weight: 800;
+            letter-spacing: 0.18em;
+            text-transform: uppercase;
+            animation: aprilTicker 22s linear infinite;
+        }
+
+        .april-fool-ticker-track span {
+            white-space: nowrap;
+        }
+
+        @keyframes aprilTicker {
+            from { transform: translateX(0); }
+            to { transform: translateX(-50%); }
+        }
+
         .hero-bg-glow {
             position: absolute;
             width: 800px;
@@ -252,10 +340,21 @@
             border-radius: var(--border-radius-xl);
             overflow: hidden;
             position: relative;
-            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.15), inset 0 0 0 1px rgba(255, 255, 255, 0.45);
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.15), inset 0 0 0 1px rgba(255, 255, 255, 0.45), 0 0 0 8px rgba(255, 223, 138, 0.08);
             border: 1px solid rgba(255, 255, 255, 0.3);
             backdrop-filter: blur(10px);
             transition: transform 0.8s ease, box-shadow 0.8s ease;
+        }
+
+        .hero-frame::after {
+            content: "";
+            position: absolute;
+            inset: 0;
+            background:
+                linear-gradient(115deg, rgba(191, 47, 69, 0.22), transparent 28%),
+                linear-gradient(315deg, rgba(29, 111, 164, 0.18), transparent 34%);
+            pointer-events: none;
+            mix-blend-mode: screen;
         }
 
         body.dark-mode .hero-frame {
@@ -271,17 +370,78 @@
         .hero-image { width: 100%; height: 100%; object-fit: cover; transition: transform 1.2s ease; }
         .hero-image-container:hover .hero-image { transform: scale(1.05); }
 
+        .april-fool-polaroid {
+            position: absolute;
+            right: -34px;
+            bottom: -36px;
+            width: min(280px, 26vw);
+            padding: 14px 14px 20px;
+            border-radius: 24px;
+            background: var(--april-paper);
+            box-shadow: 0 26px 58px rgba(32, 18, 12, 0.22);
+            transform: rotate(7deg);
+            z-index: 3;
+            border: 1px solid rgba(0, 0, 0, 0.06);
+        }
+
+        .april-fool-polaroid::before,
+        .april-fool-polaroid::after {
+            content: "";
+            position: absolute;
+            width: 74px;
+            height: 18px;
+            background: rgba(255, 250, 240, 0.72);
+            box-shadow: 0 1px 0 rgba(255, 255, 255, 0.3) inset;
+            top: -8px;
+            border-radius: 6px;
+        }
+
+        .april-fool-polaroid::before {
+            left: 18px;
+            transform: rotate(-8deg);
+        }
+
+        .april-fool-polaroid::after {
+            right: 18px;
+            transform: rotate(9deg);
+        }
+
+        .april-fool-polaroid img {
+            width: 100%;
+            aspect-ratio: 600 / 443;
+            object-fit: cover;
+            border-radius: 16px;
+            display: block;
+            margin-bottom: 12px;
+        }
+
+        .april-fool-polaroid strong {
+            display: block;
+            margin-bottom: 4px;
+            font-size: 0.96rem;
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+            color: #241711;
+        }
+
+        .april-fool-polaroid span {
+            display: block;
+            color: #6f6155;
+            font-size: 0.9rem;
+            line-height: 1.55;
+        }
+
         .hero-subtitle {
             margin-top: 30px;
-            font-size: 1.05rem;
-            color: var(--text-secondary-light);
-            letter-spacing: 2px;
+            font-size: 1.14rem;
+            color: #6d2737;
+            letter-spacing: 3px;
             text-transform: uppercase;
             opacity: 0;
             animation: fadeInUp 1.2s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
             animation-delay: 0.8s;
             text-align: center;
-            font-weight: 600;
+            font-weight: 800;
         }
 
         body.dark-mode .hero-subtitle { color: var(--text-secondary-dark); }
@@ -343,12 +503,14 @@
             font-family: "Cormorant Garamond", serif;
             font-size: 3.2rem;
             margin: 100px 0 60px;
-            background: var(--btn-gradient-light);
+            background: linear-gradient(90deg, #84253a 0%, #cf8247 42%, #226fa0 100%);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
             font-weight: 700;
             letter-spacing: 0.01em;
+            position: relative;
+            transform: skewX(-3deg);
         }
 
         body.dark-mode h2.section-title {
@@ -480,6 +642,77 @@
         }
 
         .event-card:hover { background: rgba(255, 255, 255, 0.12); }
+
+        .april-fool-inline-note {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            margin: 8px 0 22px;
+            padding: 8px 14px;
+            border-radius: 999px;
+            background: rgba(255, 248, 240, 0.74);
+            border: 1px dashed rgba(191, 47, 69, 0.32);
+            color: #7c3040;
+            font-size: 0.76rem;
+            font-weight: 800;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+        }
+
+        .april-fool-spotlight {
+            position: relative;
+            min-height: 100%;
+            justify-content: flex-end;
+            align-items: flex-start;
+            text-align: left;
+            overflow: hidden;
+            background:
+                linear-gradient(180deg, rgba(14, 11, 16, 0.06), rgba(14, 11, 16, 0.7)),
+                url("/assets/april-fool/DJT_WIN.jpg") center / cover no-repeat;
+        }
+
+        .april-fool-spotlight::before {
+            content: "";
+            position: absolute;
+            inset: 0;
+            background:
+                radial-gradient(circle at top right, rgba(255, 226, 177, 0.28), transparent 26%),
+                linear-gradient(135deg, rgba(191, 47, 69, 0.14), rgba(29, 111, 164, 0.08));
+            pointer-events: none;
+        }
+
+        .april-fool-spotlight .april-fool-chip {
+            position: relative;
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 18px;
+            padding: 8px 14px;
+            border-radius: 999px;
+            background: rgba(255, 248, 238, 0.82);
+            color: #552230;
+            font-size: 0.74rem;
+            font-weight: 800;
+            letter-spacing: 0.18em;
+            text-transform: uppercase;
+        }
+
+        .april-fool-spotlight h3,
+        .april-fool-spotlight p,
+        .april-fool-spotlight .btn-action {
+            position: relative;
+            z-index: 1;
+        }
+
+        .april-fool-spotlight h3 {
+            color: #fff8ee;
+            max-width: 15ch;
+        }
+
+        .april-fool-spotlight p {
+            color: rgba(255, 244, 233, 0.84);
+            max-width: 38ch;
+        }
 
         .event-date {
             background: var(--btn-gradient-light);
@@ -716,6 +949,94 @@
         body.dark-mode .floating-contact { background: var(--btn-gradient-dark); box-shadow: 0 10px 30px rgba(192, 139, 74, 0.2); color: #111; }
         .floating-contact:hover { transform: translateY(-5px); box-shadow: 0 15px 40px rgba(91, 68, 31, 0.3); }
 
+        .april-audio-toggle {
+            position: fixed;
+            right: 30px;
+            bottom: 108px;
+            width: 78px;
+            height: 78px;
+            border: none;
+            border-radius: 50%;
+            background:
+                radial-gradient(circle at center, #141214 0 13px, #d6c4a2 13px 15px, #242024 15px 22px, #080708 22px 100%);
+            box-shadow:
+                0 16px 34px rgba(20, 10, 12, 0.36),
+                inset 0 0 0 3px rgba(255, 245, 223, 0.08),
+                inset 0 0 24px rgba(255, 255, 255, 0.08);
+            cursor: pointer;
+            z-index: 1002;
+            transition: transform 0.26s ease, box-shadow 0.26s ease, opacity 0.26s ease;
+        }
+
+        .april-audio-toggle::before {
+            content: "";
+            position: absolute;
+            inset: 10px;
+            border-radius: 50%;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            background:
+                repeating-radial-gradient(
+                    circle at center,
+                    rgba(255, 255, 255, 0.08) 0 2px,
+                    rgba(0, 0, 0, 0) 2px 5px
+                );
+            opacity: 0.78;
+        }
+
+        .april-audio-toggle::after {
+            content: "♫";
+            position: absolute;
+            right: -4px;
+            top: -6px;
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            display: grid;
+            place-items: center;
+            background: linear-gradient(135deg, rgba(191, 47, 69, 0.98), rgba(29, 111, 164, 0.9));
+            color: #fff7e9;
+            font-size: 0.95rem;
+            box-shadow: 0 6px 14px rgba(26, 12, 15, 0.24);
+        }
+
+        .april-audio-toggle.is-spinning {
+            animation: aprilRecordSpin 2.4s linear infinite;
+        }
+
+        .april-audio-toggle.is-paused {
+            opacity: 0.78;
+            transform: scale(0.96);
+        }
+
+        .april-audio-toggle:hover {
+            box-shadow:
+                0 20px 42px rgba(20, 10, 12, 0.42),
+                inset 0 0 0 3px rgba(255, 245, 223, 0.12),
+                inset 0 0 24px rgba(255, 255, 255, 0.1);
+        }
+
+        .april-audio-label {
+            position: fixed;
+            right: 24px;
+            bottom: 194px;
+            z-index: 1002;
+            padding: 8px 12px;
+            border-radius: 999px;
+            background: rgba(18, 14, 17, 0.74);
+            color: #fff5df;
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            font-size: 0.72rem;
+            font-weight: 800;
+            letter-spacing: 0.14em;
+            text-transform: uppercase;
+            backdrop-filter: blur(8px);
+        }
+
+        @keyframes aprilRecordSpin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
         .cursor-negative {
             position: fixed;
             top: 0;
@@ -742,6 +1063,98 @@
             width: 58px;
             height: 58px;
             box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.42), 0 0 30px rgba(255, 255, 255, 0.18);
+        }
+
+        .april-fool-splash {
+            position: fixed;
+            inset: 0;
+            z-index: 3000;
+            display: grid;
+            place-items: center;
+            padding: 24px;
+            background:
+                radial-gradient(circle at center, rgba(255, 243, 226, 0.18), rgba(8, 6, 10, 0.86)),
+                rgba(12, 10, 14, 0.72);
+            backdrop-filter: blur(10px);
+            transition: opacity 0.45s ease, visibility 0.45s ease;
+        }
+
+        .april-fool-splash.is-hidden {
+            opacity: 0;
+            visibility: hidden;
+        }
+
+        .april-fool-splash-card {
+            position: relative;
+            width: min(1180px, 94vw);
+            transform: scale(1.18) rotate(-3deg);
+            animation: aprilSplashDrop 0.72s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+            filter: drop-shadow(0 36px 90px rgba(0, 0, 0, 0.42));
+        }
+
+        .april-fool-splash-card img {
+            display: block;
+            width: 100%;
+            max-height: 82vh;
+            object-fit: contain;
+        }
+
+        .april-fool-splash-copy {
+            position: absolute;
+            left: 24px;
+            right: 24px;
+            bottom: 22px;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+            gap: 20px;
+        }
+
+        .april-fool-splash-copy strong {
+            display: block;
+            margin-bottom: 8px;
+            color: #fff9ef;
+            font-size: clamp(1.2rem, 2vw, 1.8rem);
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+        }
+
+        .april-fool-splash-copy span {
+            color: rgba(255, 246, 236, 0.84);
+            font-size: 0.96rem;
+            max-width: 36ch;
+            line-height: 1.6;
+        }
+
+        .april-fool-dismiss {
+            border: 1px solid rgba(255, 245, 232, 0.42);
+            background: rgba(18, 14, 17, 0.48);
+            color: #fff7eb;
+            border-radius: 999px;
+            padding: 12px 18px;
+            font-weight: 800;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            cursor: pointer;
+            backdrop-filter: blur(10px);
+            transition: transform 0.24s ease, background 0.24s ease;
+        }
+
+        .april-fool-dismiss:hover {
+            transform: translateY(-2px);
+            background: rgba(18, 14, 17, 0.68);
+        }
+
+        @keyframes aprilSplashDrop {
+            0% {
+                opacity: 0;
+                transform: scale(1.24) translateY(-42px) rotate(-5deg);
+            }
+
+            100% {
+                opacity: 1;
+                transform: scale(1) translateY(0) rotate(0deg);
+            }
         }
 
         footer {
@@ -786,6 +1199,46 @@
             .event-date { width: 100%; }
             .floating-contact { bottom: 20px; right: 20px; padding: 12px 20px; font-size: 0.9rem; }
             .theme-toggle { top: auto; bottom: 84px; right: 20px; }
+            .april-audio-toggle {
+                right: 20px;
+                bottom: 92px;
+                width: 70px;
+                height: 70px;
+            }
+            .april-audio-label {
+                right: 20px;
+                bottom: 170px;
+                font-size: 0.66rem;
+                letter-spacing: 0.1em;
+            }
+            .april-fool-ticker {
+                width: calc(100% - 24px);
+                margin-top: 126px;
+            }
+            .april-fool-badge {
+                position: relative;
+                left: auto;
+                top: auto;
+                margin-top: 36px;
+                margin-left: 20px;
+                margin-right: 20px;
+                width: fit-content;
+            }
+            .hero-section {
+                padding-top: 32px;
+            }
+            .april-fool-polaroid {
+                width: min(250px, 56vw);
+                right: 0;
+                bottom: -84px;
+            }
+            .april-fool-splash-copy {
+                left: 16px;
+                right: 16px;
+                bottom: 16px;
+                flex-direction: column;
+                align-items: stretch;
+            }
         }
 
         @media (pointer: coarse) {
@@ -797,7 +1250,27 @@
 </head>
 <body>
     <div class="cursor-negative" id="cursorNegative" aria-hidden="true"></div>
+    <div class="april-fool-splash" id="aprilFoolSplash" aria-hidden="true">
+        <div class="april-fool-splash-card">
+            <img src="/assets/april-fool/MEME.png" alt="愚人节突袭主视觉">
+            <div class="april-fool-splash-copy">
+                <div>
+                    <strong>April Fool Override</strong>
+                    <span>今天的首页没有任何缓冲环节，系统已经直接把这张图顶到你视野中央。欢迎进入被恶作剧彻底接管的 SMAICLUB。</span>
+                </div>
+                <button class="april-fool-dismiss" id="aprilFoolDismiss" type="button">解除入侵，继续浏览</button>
+            </div>
+        </div>
+    </div>
     <div class="theme-toggle" id="themeToggle" title="切换主题">🌙</div>
+    <div class="april-audio-label" id="aprilAudioLabel">Now Spinning</div>
+    <button
+        class="april-audio-toggle is-spinning"
+        id="aprilAudioToggle"
+        type="button"
+        aria-label="暂停背景音乐"
+        title="暂停背景音乐"
+    ></button>
 
     <a href="https://chat.smaiclub.top" class="floating-contact">
         <span>💬</span> 联系我们
@@ -816,59 +1289,76 @@
         <div class="auth-container" aria-label="统一登录入口"></div>
     </nav>
 
+    <div class="april-fool-ticker" aria-hidden="true">
+        <div class="april-fool-ticker-track">
+            <span>APRIL FOOL BROADCAST</span>
+            <span>MEMBERSHIP UPGRADE MAY BE A TRAP</span>
+            <span>EVERY LUXURY PROMISE LOOKS SUSPICIOUS TODAY</span>
+            <span>APRIL FOOL BROADCAST</span>
+            <span>MEMBERSHIP UPGRADE MAY BE A TRAP</span>
+            <span>EVERY LUXURY PROMISE LOOKS SUSPICIOUS TODAY</span>
+        </div>
+    </div>
+
     <section class="hero-section">
+        <div class="april-fool-badge">APRIL FOOL SPECIAL TRANSMISSION</div>
         <div class="hero-bg-glow"></div>
         <div class="hero-image-container">
             <div class="hero-frame">
-                <img src="/assets/home/hero-main.jpg" alt="SMAICLUB 首页主视觉" class="hero-image">
+                <img src="/assets/april-fool/MEME.jpg alt="SMAICLUB 首页主视觉" class="hero-image">
             </div>
+            <aside class="april-fool-polaroid" aria-label="愚人节现场快照">
+                <img src="/assets/april-fool/DJTnHM.jpg" alt="愚人节现场快照">
+                <strong>Unauthorized Drop</strong>
+                <span>有人把原本该藏在后台的图钉进了主视觉边角，像整页品牌形象刚被恶作剧小组接管。</span>
+            </aside>
         </div>
-        <div class="hero-subtitle">Space may be the final frontier, but it's made in a human heart.</div>
+        <div class="hero-subtitle">Luxury signal corrupted. April channel now overrides all premium programming.</div>
     </section>
 
     <div class="container main-content">
         <div class="stats-grid">
             <div class="stat-card">
-                <span class="stat-number" data-target="500">0</span>
-                <span class="stat-label">收录作品</span>
+                <span class="stat-number" data-target="404">0</span>
+                <span class="stat-label">严肃承诺离线中</span>
             </div>
             <div class="stat-card">
-                <span class="stat-number" data-target="12">0</span>
-                <span class="stat-label">私人岛屿</span>
+                <span class="stat-number" data-target="77">0</span>
+                <span class="stat-label">可疑彩蛋埋伏点</span>
             </div>
             <div class="stat-card">
-                <span class="stat-number" data-target="24">0</span>
-                <span class="stat-label">全球服务中心</span>
+                <span class="stat-number" data-target="13">0</span>
+                <span class="stat-label">假消息专属通道</span>
             </div>
             <div class="stat-card">
-                <span class="stat-number" data-target="100">0</span>
-                <span class="stat-label">% 满意度</span>
+                <span class="stat-number" data-target="1">0</span>
+                <span class="stat-label">% 正经营业成分</span>
             </div>
         </div>
 
-        <h2 class="section-title">探索非凡世界</h2>
+        <h2 class="section-title">探索失控世界</h2>
         <div class="grid-2">
             <div class="glass-card">
                 <div class="img-wrapper">
                     <img src="/assets/home/hall-exhibit.webp" alt="展览馆">
                 </div>
-                <h3>音乐展览馆</h3>
-                <p>探索人类音乐历史，感受音符的魅力，沉浸在旋律之中。本月主题：现代音乐第二章之摇滚乐。已收录500+珍贵音乐档案，为您呈现听觉的极致盛宴。</p>
-                <a href="https://hall.smaiclub.top" class="btn-action">进入展览馆</a>
+                <h3>谣言策展馆</h3>
+                <p>本页临时宣布：所有策展内容均由不可靠线人提供，摇滚史、流言史和聊天记录被统一摆进同一个展柜，只求声势够大。</p>
+                <a href="https://hall.smaiclub.top" class="btn-action">进入混乱展厅</a>
             </div>
             <div class="glass-card">
                 <div class="img-wrapper">
                     <img src="/assets/home/news-card.jpg" alt="新闻资讯">
                 </div>
-                <h3>全球前沿新闻</h3>
-                <p>掌握奢华生活的脉搏。获取独家行业报告、太空探索最新进展以及私人定制服务的创新动态。我们的新闻团队为您筛选全球最有价值的信息。</p>
-                <a href="https://news.smaiclub.top" class="btn-action">阅读新闻</a>
+                <h3>全球离谱快讯</h3>
+                <p>今日新闻标准全面崩塌，头条可能是真的，配图可能是假的，标题一定是在喊。点击前请先系好安全带。</p>
+                <a href="https://news.smaiclub.top" class="btn-action">阅读离谱头条</a>
             </div>
         </div>
 
-        <h2 class="section-title">全球服务网络</h2>
+        <h2 class="section-title">全球恶作剧网络</h2>
         <div class="global-presence">
-            <h3 style="text-align: center; margin-bottom: 30px;">24/7 全天候覆盖六大洲</h3>
+            <h3 style="text-align: center; margin-bottom: 30px;">24/7 全天候投放到六大洲</h3>
             <div class="map-placeholder">
                 <div class="map-dot" style="top: 30%; left: 20%;" title="纽约"></div>
                 <div class="map-dot" style="top: 25%; left: 48%;" title="伦敦"></div>
@@ -877,218 +1367,217 @@
                 <div class="map-dot" style="top: 70%; left: 50%;" title="迪拜"></div>
                 <div class="map-dot" style="top: 55%; left: 45%;" title="新加坡"></div>
                 <div style="position: absolute; bottom: 20px; left: 20px; background: rgba(0,0,0,0.6); color: white; padding: 10px 20px; border-radius: 20px; backdrop-filter: blur(5px);">
-                    📍 实时在线管家：1,240 位
+                    📍 实时在线整活专员：1,240 位
                 </div>
             </div>
         </div>
 
-        <h2 class="section-title" id="membership">选择您的专属身份</h2>
+        <h2 class="section-title" id="membership">选择您的离谱身份</h2>
         <div class="grid-3">
             <div class="glass-card membership-card">
-                <h3>精英会员</h3>
-                <div class="price-tag">¥99,999<span style="font-size:1rem; color:var(--text-secondary-light); -webkit-text-fill-color: var(--text-secondary-light)">/年</span></div>
+                <h3>吃瓜会员</h3>
+                <div class="price-tag">¥4,444<span style="font-size:1rem; color:var(--text-secondary-light); -webkit-text-fill-color: var(--text-secondary-light)">/年 / 纯图一乐</span></div>
                 <ul class="features-list">
-                    <li><span class="check-icon">✓</span> 全球顶级商务车接送 (劳斯莱斯/宾利)</li>
-                    <li><span class="check-icon">✓</span> 直升机城市快速穿梭</li>
-                    <li><span class="check-icon">✓</span> 五星级酒店及度假村优先预订</li>
-                    <li><span class="check-icon">✓</span> 24/7 专属管家服务</li>
-                    <li><span class="check-icon">✓</span> 机场贵宾通道及快速安检</li>
-                    <li><span class="check-icon">✓</span> 高端社交活动入场券</li>
+                    <li><span class="check-icon">✓</span> 每周收到三封真假难辨的内部通报</li>
+                    <li><span class="check-icon">✓</span> 评论区优先围观席</li>
+                    <li><span class="check-icon">✓</span> 朋友圈炫耀用电子徽章一枚</li>
+                    <li><span class="check-icon">✓</span> 被管家已读不回一次</li>
+                    <li><span class="check-icon">✓</span> 节日彩蛋抢先剧透 30 秒</li>
+                    <li><span class="check-icon">✓</span> 线下活动随机站票资格</li>
                 </ul>
-                <a href="https://www.smaiclub.top/shop/" class="btn-action" style="width:100%; text-align:center;">立即加入</a>
+                <a href="https://www.smaiclub.top/shop/" class="btn-action" style="width:100%; text-align:center;">先占个位</a>
             </div>
 
             <div class="glass-card membership-card" style="transform: scale(1.05); border-color: #b98748; z-index: 10;">
-                <div style="position:absolute; top:0; right:0; background:var(--btn-gradient-light); color:white; padding:8px 20px; border-bottom-left-radius:15px; font-size:0.85rem; font-weight:bold; z-index: 2;">最受欢迎</div>
-                <h3>尊享会员</h3>
-                <div class="price-tag">¥299,999<span style="font-size:1rem; color:var(--text-secondary-light); -webkit-text-fill-color: var(--text-secondary-light)">/年</span></div>
+                <div style="position:absolute; top:0; right:0; background:var(--btn-gradient-light); color:white; padding:8px 20px; border-bottom-left-radius:15px; font-size:0.85rem; font-weight:bold; z-index: 2;">最会整活</div>
+                <h3>造谣会员</h3>
+                <div class="price-tag">¥88,888<span style="font-size:1rem; color:var(--text-secondary-light); -webkit-text-fill-color: var(--text-secondary-light)">/年 / 吓唬亲友专用</span></div>
                 <ul class="features-list">
-                    <li><span class="check-icon">✓</span> <strong>包含所有精英权益</strong></li>
-                    <li><span class="check-icon">✓</span> 私人喷气机长途包机 (湾流G650)</li>
-                    <li><span class="check-icon">✓</span> 私人岛屿度假租赁 (马尔代夫/塞舌尔)</li>
-                    <li><span class="check-icon">✓</span> 专业私人保镖团队</li>
-                    <li><span class="check-icon">✓</span> 全球卫星安全监控网络</li>
-                    <li><span class="check-icon">✓</span> 顶级医疗救援及健康管家</li>
-                    <li><span class="check-icon">✓</span> 艺术品投资顾问服务</li>
+                    <li><span class="check-icon">✓</span> <strong>包含所有吃瓜权益</strong></li>
+                    <li><span class="check-icon">✓</span> 可自行命名一条首页滚动广播</li>
+                    <li><span class="check-icon">✓</span> 获得“内部人士”身份贴纸一张</li>
+                    <li><span class="check-icon">✓</span> 任意群聊空降爆料模板 12 套</li>
+                    <li><span class="check-icon">✓</span> 假装受邀参加闭门峰会的截图授权</li>
+                    <li><span class="check-icon">✓</span> 优先体验今年所有愚人节故障</li>
+                    <li><span class="check-icon">✓</span> 人工打造的胜利海报挂墙资格</li>
                 </ul>
-                <a href="https://www.smaiclub.top/shop/" class="btn-action" style="width:100%; text-align:center;">立即加入</a>
+                <a href="https://www.smaiclub.top/shop/" class="btn-action" style="width:100%; text-align:center;">升级失控权限</a>
             </div>
 
             <div class="glass-card membership-card">
-                <h3>无限会员</h3>
-                <div class="price-tag">¥999,999<span style="font-size:1rem; color:var(--text-secondary-light); -webkit-text-fill-color: var(--text-secondary-light)">/年</span></div>
+                <h3>宇宙诈骗会员</h3>
+                <div class="price-tag">¥9,999,999<span style="font-size:1rem; color:var(--text-secondary-light); -webkit-text-fill-color: var(--text-secondary-light)">/年 / 含尊严手续费</span></div>
                 <ul class="features-list">
-                    <li><span class="check-icon">✓</span> <strong>包含所有尊享权益</strong></li>
-                    <li><span class="check-icon">✓</span> SSTO 空天飞机跨半球直达</li>
-                    <li><span class="check-icon">✓</span> Starship 星舰月球/火星旅行名额</li>
-                    <li><span class="check-icon">✓</span> 轨道空间站住宿体验</li>
-                    <li><span class="check-icon">✓</span> 量子加密通讯服务</li>
-                    <li><span class="check-icon">✓</span> 个人太空项目孵化支持</li>
-                    <li><span class="check-icon">✓</span> 无限次定制化需求满足</li>
+                    <li><span class="check-icon">✓</span> <strong>包含所有造谣权益</strong></li>
+                    <li><span class="check-icon">✓</span> 可把任意公告伪装成太空计划</li>
+                    <li><span class="check-icon">✓</span> 获得“我认识老板”口头授权</li>
+                    <li><span class="check-icon">✓</span> 每季度一次首页首屏接管权</li>
+                    <li><span class="check-icon">✓</span> 量子级别胡说八道加密通道</li>
+                    <li><span class="check-icon">✓</span> 可指定一位朋友成为今日主角</li>
+                    <li><span class="check-icon">✓</span> 无限次高调登场与当场后悔</li>
                 </ul>
-                <a href="https://www.smaiclub.top/shop/" class="btn-action" style="width:100%; text-align:center;">联系顾问</a>
+                <a href="https://www.smaiclub.top/shop/" class="btn-action" style="width:100%; text-align:center;">联系骗子顾问</a>
             </div>
         </div>
 
-        <h2 class="section-title" id="events">2026 年度精选活动</h2>
+        <h2 class="section-title" id="events">2026 年度整活档期</h2>
         <div class="grid-2">
             <div class="glass-card">
-                <h3>会员专属日历</h3>
-                <p style="margin-bottom: 25px;">仅限 SMAICLUB 会员参与的全球顶级盛事，从赛道到雪山，从艺术展到科技峰会。</p>
+                <h3>恶作剧节目单</h3>
+                <div class="april-fool-inline-note">APRIL FOOL BRIEFING: 全天活动表已被彩蛋频道劫持</div>
+                <p style="margin-bottom: 25px;">仅限今日频道播出的高能节目，从社交吓唬到豪华整蛊，从会场劫持到朋友圈封神，全都按时开演。</p>
 
                 <div class="event-card">
                     <div class="event-date"><span class="event-day">15</span><span class="event-month">MAY</span></div>
-                    <div class="event-info"><h4>摩纳哥大奖赛 VIP 包厢</h4><p>蒙特卡洛赛道 · 香槟晚宴 · 车手见面会</p></div>
+                    <div class="event-info"><h4>摩纳哥传言大奖赛</h4><p>蒙特卡洛赛道 · 假新闻香槟塔 · 冠军发言被全员抢麦</p></div>
                 </div>
                 <div class="event-card">
                     <div class="event-date"><span class="event-day">22</span><span class="event-month">JUN</span></div>
-                    <div class="event-info"><h4>达沃斯夏季峰会</h4><p>瑞士 · 全球精英闭门会议 · 私人游艇派对</p></div>
+                    <div class="event-info"><h4>达沃斯失控圆桌</h4><p>瑞士 · 话题失踪 · 每个人都坚称自己刚从幕后出来</p></div>
                 </div>
                 <div class="event-card">
                     <div class="event-date"><span class="event-day">10</span><span class="event-month">SEP</span></div>
-                    <div class="event-info"><h4>米兰时装周前排席位</h4><p>意大利 · 顶级品牌私密秀场 · 设计师晚宴</p></div>
+                    <div class="event-info"><h4>米兰离谱时装周</h4><p>意大利 · 前排吃瓜位 · 设计师临时改成表情包发布会</p></div>
                 </div>
                 <div class="event-card">
                     <div class="event-date"><span class="event-day">05</span><span class="event-month">DEC</span></div>
-                    <div class="event-info"><h4>南极极光探险之旅</h4><p>南极圈 · 破冰船巡航 · 星空观测站</p></div>
+                    <div class="event-info"><h4>南极冷笑话远征</h4><p>南极圈 · 破冰船巡航 · 全员轮流讲最烂的那一个</p></div>
                 </div>
             </div>
 
-            <div class="glass-card" style="justify-content: center; align-items: center; text-align: center; background: linear-gradient(135deg, rgba(31, 91, 83, 0.09), rgba(185, 135, 72, 0.12));">
-                <div class="img-wrapper" style="width: 100%; max-width: 280px; height: 180px; margin-bottom: 24px;">
-                    <img src="/assets/home/custom-journey.jpg" alt="定制旅程主视觉">
-                </div>
-                <h3>定制您的旅程</h3>
-                <p>以上只是冰山一角。作为 SMAICLUB 会员，您可以随时联系您的专属管家，定制任何您梦想中的活动。无论是包下整个卢浮宫，还是在珠峰大本营举办生日派对，我们都能为您实现。</p>
-                <button class="btn-action" style="margin-top: 30px;">联系私人管家</button>
+            <div class="glass-card april-fool-spotlight">
+                <div class="april-fool-chip">Emergency Broadcast</div>
+                <h3>胜利海报已接管活动屏</h3>
+                <p>这一块现在不再扮演温柔的导览卡，而是像会场大屏一样直接砸到你面前，带着够满的压迫感和庆典噪点。</p>
+                <button class="btn-action" style="margin-top: 14px;">进入失控现场</button>
             </div>
         </div>
 
-        <h2 class="section-title" id="services">极致服务体验</h2>
+        <h2 class="section-title" id="services">极致恶作剧服务</h2>
 
         <div class="service-row">
             <div class="service-img-large"><img src="/assets/home/private-jet.jpg" alt="私人喷气机"></div>
             <div class="service-text">
-                <h3>私人航空舰队</h3>
-                <p>告别商业航班的繁琐，拥有您的天空。我们的机队包括最新的湾流G700和庞巴迪环球7500。机上配备米其林星级餐饮、全平躺睡眠舱及高速卫星网络。</p>
-                <p>飞行员团队均拥有超过10,000小时飞行经验，确保每一次起降都绝对安全平稳。</p>
+                <h3>私人嘴炮舰队</h3>
+                <p>告别商业航班，直接拥有一整支在群聊里低空掠过的发言编队。每一条通知都像要起飞，但落点通常是别人下巴。</p>
+                <p>整活团队平均拥有超过 10,000 小时社交平台冲浪经验，确保每一次登场都足够突然、足够响亮。</p>
             </div>
         </div>
 
         <div class="service-row reverse">
             <div class="service-img-large"><img src="/assets/home/private-island.webp" alt="私人岛屿"></div>
             <div class="service-text">
-                <h3>私属岛屿天堂</h3>
-                <p>在世界的尽头，拥有一片只属于您的净土。我们在马尔代夫、斐济和加勒比海拥有多处独家私人岛屿。岛上别墅由著名建筑师设计，融合自然与现代奢华。</p>
-                <p>从日出瑜伽到星空下的篝火晚会，我们的管家团队将您的每一个愿望变为现实。</p>
+                <h3>私属谣言群岛</h3>
+                <p>这里不是避世天堂，而是每一条消息都长了腿的海上谣言实验场。你以为自己在度假，别人已经在猜你是不是刚签了火星地产。</p>
+                <p>从清晨到深夜，整活管家会确保每个愿望都先被夸张十倍，再礼貌递回你的面前。</p>
             </div>
         </div>
 
         <div class="service-row">
             <div class="service-img-large"><img src="/assets/home/space-travel.jpg" alt="太空旅行"></div>
             <div class="service-text">
-                <h3>星际探索计划</h3>
-                <p>超越地平线，迈向星辰大海。作为SpaceX的顶级合作伙伴，SMAICLUB 为无限会员提供前所未有的太空旅行体验。从亚轨道飞行的失重快感，到环绕地球的壮丽景色。</p>
-                <p>我们将为您提供长达6个月的宇航员级训练，确保您以最佳状态迎接这场终极冒险。</p>
+                <h3>星际吹牛计划</h3>
+                <p>今天的终极服务不是飞出地球，而是把牛吹出大气层。我们承诺让每一位会员在今天都像刚从宇宙董事会回来一样发光发热。</p>
+                <p>无需六个月训练，只要一张足够震撼的截图和一颗敢说的心，你就已经具备升空条件。</p>
             </div>
         </div>
 
-        <h2 class="section-title">加入 SMAICLUB 的流程</h2>
+        <h2 class="section-title">加入恶作剧频道的流程</h2>
         <div class="timeline">
             <div class="timeline-item left">
                 <div class="timeline-content">
-                    <h4>01. 提交申请</h4>
-                    <p>填写在线申请表或由现有会员推荐，提交基本背景资料。</p>
+                    <h4>01. 提交离谱申请</h4>
+                    <p>填写申请表，顺便附上你这辈子最想让朋友相信的一句假消息。</p>
                 </div>
             </div>
             <div class="timeline-item right">
                 <div class="timeline-content">
-                    <h4>02. 资格审核</h4>
-                    <p>我们的会员委员会将在 48 小时内完成背景调查与资格审核。</p>
+                    <h4>02. 审核表情管理</h4>
+                    <p>整活委员会将在 48 小时内确认你撒谎时能不能面不改色。</p>
                 </div>
             </div>
             <div class="timeline-item left">
                 <div class="timeline-content">
-                    <h4>03. 私人面谈</h4>
-                    <p>受邀前往最近的 SMAI 中心或与高级顾问进行视频面谈，探讨您的需求。</p>
+                    <h4>03. 接受彩排</h4>
+                    <p>前往最近的 SMAI 中心，或直接在线视频演练一次“重大消息发布会”。</p>
                 </div>
             </div>
             <div class="timeline-item right">
                 <div class="timeline-content">
-                    <h4>04. 正式入会</h4>
-                    <p>签署会员协议，激活专属账户，您的私人管家将立即与您对接。</p>
+                    <h4>04. 正式接管</h4>
+                    <p>签署愚人节协议，激活整活账户，你的专属推波助澜官立即上线。</p>
                 </div>
             </div>
         </div>
         <div class="timeline-cta">
-            <a href="https://www.smaiclub.top/shop/" class="btn-action">立即加入</a>
+            <a href="https://www.smaiclub.top/shop/" class="btn-action">立即加入失控计划</a>
         </div>
 
-        <h2 class="section-title">视觉盛宴</h2>
+        <h2 class="section-title">视觉轰炸</h2>
         <div class="media-grid">
             <div class="media-item">
                 <img src="/assets/home/luxury-hotel.jpg" alt="Luxury Hotel">
-                <div class="media-overlay"><h4>顶级酒店合作</h4></div>
+                <div class="media-overlay"><h4>顶级酒店幻觉</h4></div>
             </div>
             <div class="media-item">
                 <img src="/assets/home/yacht.jpg" alt="Yacht">
-                <div class="media-overlay"><h4>超级游艇租赁</h4></div>
+                <div class="media-overlay"><h4>超级游艇嘴替</h4></div>
             </div>
             <div class="media-item">
                 <img src="/assets/home/supercar.jpg" alt="Supercar">
-                <div class="media-overlay"><h4>超跑车队</h4></div>
+                <div class="media-overlay"><h4>超跑谣言车队</h4></div>
             </div>
             <div class="media-item">
                 <img src="/assets/home/landmark.jpg" alt="Dubai">
-                <div class="media-overlay"><h4>全球地标体验</h4></div>
+                <div class="media-overlay"><h4>全球地标刷屏</h4></div>
             </div>
         </div>
 
-        <h2 class="section-title">前沿洞察</h2>
+        <h2 class="section-title">前沿胡说</h2>
         <div class="grid-3">
             <div class="glass-card">
                 <div class="img-wrapper" style="height: 180px;">
                     <img src="/assets/home/ai.jpg" alt="AI">
                 </div>
-                <h4>AI 如何重塑奢华体验</h4>
-                <p style="font-size: 0.9rem; margin-top: 10px;">探索人工智能在个性化旅行规划和健康管理中的革命性应用...</p>
-                <a href="#" style="color: inherit; font-weight: bold; margin-top: 10px; display: inline-block;">阅读全文 →</a>
+                <h4>AI 如何帮你一本正经地乱说</h4>
+                <p style="font-size: 0.9rem; margin-top: 10px;">探索人工智能如何把一句玩笑包装成发布会级别的重磅消息...</p>
+                <a href="#" style="color: inherit; font-weight: bold; margin-top: 10px; display: inline-block;">继续添油加醋 →</a>
             </div>
             <div class="glass-card">
                 <div class="img-wrapper" style="height: 180px;">
                     <img src="/assets/home/custom-journey.jpg" alt="Space">
                 </div>
-                <h4>2030 太空旅游展望</h4>
-                <p style="font-size: 0.9rem; margin-top: 10px;">从亚轨道飞行到月球基地，未来十年的太空旅行路线图解析...</p>
-                <a href="#" style="color: inherit; font-weight: bold; margin-top: 10px; display: inline-block;">阅读全文 →</a>
+                <h4>2030 太空旅游嘴替手册</h4>
+                <p style="font-size: 0.9rem; margin-top: 10px;">如果你明天就想装作自己要去月球，今天至少得先学会怎么发朋友圈...</p>
+                <a href="#" style="color: inherit; font-weight: bold; margin-top: 10px; display: inline-block;">继续吹到轨道外 →</a>
             </div>
             <div class="glass-card">
                 <div class="img-wrapper" style="height: 180px;">
                     <img src="/assets/home/digital-art.jpg" alt="Art">
                 </div>
-                <h4>数字艺术收藏指南</h4>
-                <p style="font-size: 0.9rem; margin-top: 10px;">NFT 与传统艺术品的融合趋势，高净值人群的资产配置新选择...</p>
-                <a href="#" style="color: inherit; font-weight: bold; margin-top: 10px; display: inline-block;">阅读全文 →</a>
+                <h4>数字艺术碰瓷指南</h4>
+                <p style="font-size: 0.9rem; margin-top: 10px;">当每张图都像能拍出天价时，最重要的技能就是先把气势做满...</p>
+                <a href="#" style="color: inherit; font-weight: bold; margin-top: 10px; display: inline-block;">继续摆出专家样 →</a>
             </div>
         </div>
 
-        <h2 class="section-title">常见问题</h2>
+        <h2 class="section-title">常见离谱问题</h2>
         <div style="max-width: 800px; margin: 0 auto;">
             <div class="faq-item">
-                <div class="faq-question">如何申请成为会员？ <span>+</span></div>
-                <div class="faq-answer"><p style="padding-top:10px; margin:0;">您可以通过官网提交申请表，或联系我们的私人顾问。我们将对申请人进行背景审核，并安排一次面对面的访谈，以确保我们的服务理念与您相符。审核通过后，即可激活您的会员权益。</p></div>
+                <div class="faq-question">这些会员价格是真的吗？ <span>+</span></div>
+                <div class="faq-answer"><p style="padding-top:10px; margin:0;">今天不建议把任何价格当真，尤其当它们已经开始包含“尊严手续费”时。请把它们理解为愚人节艺术装置。</p></div>
             </div>
             <div class="faq-item">
-                <div class="faq-question">太空旅行的安全性如何保障？ <span>+</span></div>
-                <div class="faq-answer"><p style="padding-top:10px; margin:0;">安全是我们的首要原则。所有太空旅行项目均与经过NASA认证的顶尖航天公司合作。会员需接受严格的体能训练和安全指导，并配备最先进的生命维持系统。我们为每次任务购买巨额保险，并提供全程医疗监护。</p></div>
+                <div class="faq-question">那太空计划也是假的吗？ <span>+</span></div>
+                <div class="faq-answer"><p style="padding-top:10px; margin:0;">今天的太空计划主要用于把牛吹到大气层外。真正能起飞的是首页情绪，不是你的行程单。</p></div>
             </div>
             <div class="faq-item">
-                <div class="faq-question">会员服务可以定制吗？ <span>+</span></div>
-                <div class="faq-answer"><p style="padding-top:10px; margin:0;">当然。特别是尊享和无限会员，我们提供完全的定制化服务。无论是特殊的饮食需求、独特的旅行路线，还是罕见的物品采购，我们的全球网络都将全力以赴满足您的个性化需求。</p></div>
+                <div class="faq-question">如果我也想整朋友，可以定制吗？ <span>+</span></div>
+                <div class="faq-answer"><p style="padding-top:10px; margin:0;">可以，今天的默认服务就是“帮你把一句玩笑包装成看起来像内部消息”。唯一要求是，明天记得解释清楚。</p></div>
             </div>
         </div>
 
-        <h2 class="section-title" style="margin-top: 100px;">全球合作伙伴</h2>
+        <h2 class="section-title" style="margin-top: 100px;">全球可疑同伙</h2>
         <div class="grid-4" style="grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));">
             <a href="https://www.spacex.com/" target="_blank" rel="noopener noreferrer" class="partner-logo-box">SpaceX</a>
             <a href="https://www.rolls-roycemotorcars.com/" target="_blank" rel="noopener noreferrer" class="partner-logo-box">Rolls-Royce</a>
@@ -1115,6 +1604,12 @@
         const themeToggle = document.getElementById("themeToggle");
         const body = document.body;
         const cursorNegative = document.getElementById("cursorNegative");
+        const aprilFoolSplash = document.getElementById("aprilFoolSplash");
+        const aprilFoolDismiss = document.getElementById("aprilFoolDismiss");
+        const aprilAudioToggle = document.getElementById("aprilAudioToggle");
+        const aprilAudioLabel = document.getElementById("aprilAudioLabel");
+        const aprilAudio = new Audio("https://assets.smaiclub.top/videos/Never%20Gonna%20Give%20You%20Up%20feat.DJT.mp3");
+        aprilAudio.loop = true;
 
         const savedTheme = localStorage.getItem("smai-theme");
         if (savedTheme === "dark") {
@@ -1132,6 +1627,72 @@
                 localStorage.setItem("smai-theme", "light");
             }
         });
+
+        if (aprilAudioToggle && aprilAudioLabel) {
+            let playbackStarted = false;
+
+            const syncAprilAudioUi = () => {
+                const paused = aprilAudio.paused;
+                aprilAudioToggle.classList.toggle("is-spinning", !paused);
+                aprilAudioToggle.classList.toggle("is-paused", paused);
+                aprilAudioToggle.setAttribute("aria-label", paused ? "播放背景音乐" : "暂停背景音乐");
+                aprilAudioToggle.title = paused ? "播放背景音乐" : "暂停背景音乐";
+                aprilAudioLabel.textContent = paused ? "Record Paused" : "Now Spinning";
+            };
+
+            const attemptAutoplay = () => {
+                aprilAudio.play().then(() => {
+                    playbackStarted = true;
+                    syncAprilAudioUi();
+                }).catch(() => {
+                    syncAprilAudioUi();
+                });
+            };
+
+            const unlockPlayback = () => {
+                if (!playbackStarted && aprilAudio.paused) {
+                    attemptAutoplay();
+                }
+                window.removeEventListener("pointerdown", unlockPlayback);
+                window.removeEventListener("keydown", unlockPlayback);
+            };
+
+            attemptAutoplay();
+            window.addEventListener("pointerdown", unlockPlayback, { once: true });
+            window.addEventListener("keydown", unlockPlayback, { once: true });
+
+            aprilAudio.addEventListener("play", syncAprilAudioUi);
+            aprilAudio.addEventListener("pause", syncAprilAudioUi);
+            syncAprilAudioUi();
+
+            aprilAudioToggle.addEventListener("click", () => {
+                if (aprilAudio.paused) {
+                    aprilAudio.play().then(() => {
+                        playbackStarted = true;
+                        syncAprilAudioUi();
+                    }).catch(() => {
+                        syncAprilAudioUi();
+                    });
+                } else {
+                    aprilAudio.pause();
+                    syncAprilAudioUi();
+                }
+            });
+        }
+
+        if (aprilFoolSplash && aprilFoolDismiss) {
+            const dismissSplash = () => {
+                aprilFoolSplash.classList.add("is-hidden");
+            };
+
+            window.setTimeout(dismissSplash, 2400);
+            aprilFoolDismiss.addEventListener("click", dismissSplash);
+            aprilFoolSplash.addEventListener("click", (event) => {
+                if (event.target === aprilFoolSplash) {
+                    dismissSplash();
+                }
+            });
+        }
 
         if (cursorNegative && window.matchMedia("(pointer: fine)").matches) {
             let cursorTargetX = window.innerWidth / 2;
