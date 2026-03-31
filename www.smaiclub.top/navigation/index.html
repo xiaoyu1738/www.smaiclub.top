@@ -38,6 +38,7 @@
                 var(--bg-light);
             transition: background 0.5s ease, color 0.5s ease;
             line-height: 1.65;
+            overflow-x: hidden;
         }
 
         body::before {
@@ -66,11 +67,14 @@
         }
 
         .topbar {
-            position: sticky;
-            top: 18px;
-            z-index: 20;
-            margin-top: 18px;
-            padding: 14px 20px;
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 92%;
+            max-width: 1300px;
+            z-index: 1000;
+            padding: 15px 22px;
             border-radius: 999px;
             display: flex;
             justify-content: space-between;
@@ -79,13 +83,20 @@
             background: var(--glass-bg-light);
             border: 1px solid var(--glass-border-light);
             backdrop-filter: blur(20px);
-            box-shadow: var(--glass-shadow-light);
+            -webkit-backdrop-filter: blur(20px);
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.05);
+            opacity: 0;
+            animation: slideDown 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
         }
 
         body.dark-mode .topbar {
             background: var(--glass-bg-dark);
             border-color: var(--glass-border-dark);
-            box-shadow: var(--glass-shadow-dark);
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+        }
+
+        @keyframes slideDown {
+            to { opacity: 1; transform: translateX(-50%) translateY(0); }
         }
 
         .brand {
@@ -131,7 +142,7 @@
         }
 
         .hero {
-            padding: 88px 0 34px;
+            padding: 112px 0 34px;
         }
 
         .hero-shell {
@@ -283,18 +294,50 @@
             color: #d7b27d;
         }
 
+        .cursor-negative {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 42px;
+            height: 42px;
+            border-radius: 50%;
+            pointer-events: none;
+            z-index: 2000;
+            background: rgba(255, 255, 255, 0.92);
+            mix-blend-mode: difference;
+            transform: translate3d(-50%, -50%, 0) rotate(0deg) scaleX(1) scaleY(1);
+            opacity: 0;
+            transition: width 0.2s ease, height 0.2s ease, opacity 0.24s ease, box-shadow 0.24s ease;
+            will-change: transform;
+            box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.35), 0 0 24px rgba(255, 255, 255, 0.12);
+        }
+
+        .cursor-negative.is-visible {
+            opacity: 1;
+        }
+
+        .cursor-negative.is-active {
+            width: 58px;
+            height: 58px;
+            box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.42), 0 0 30px rgba(255, 255, 255, 0.18);
+        }
+
         @media (max-width: 768px) {
             .container { width: min(100% - 24px, 1280px); }
             .topbar {
+                width: 95%;
+                top: 10px;
+                padding: 15px 20px;
                 border-radius: 28px;
                 align-items: flex-start;
                 flex-direction: column;
+                gap: 15px;
             }
             .topbar-actions {
                 justify-content: flex-start;
             }
             .hero {
-                padding-top: 52px;
+                padding-top: 108px;
             }
             .hero-shell {
                 padding: 26px;
@@ -304,9 +347,16 @@
                 min-height: unset;
             }
         }
+
+        @media (pointer: coarse) {
+            .cursor-negative {
+                display: none;
+            }
+        }
     </style>
 </head>
 <body>
+    <div class="cursor-negative" id="cursorNegative" aria-hidden="true"></div>
     <div class="container">
         <div class="topbar">
             <a href="/" class="brand">SMAICLUB</a>
@@ -404,6 +454,7 @@
     <script>
         const themeToggle = document.getElementById("themeToggle");
         const body = document.body;
+        const cursorNegative = document.getElementById("cursorNegative");
         const savedTheme = localStorage.getItem("smai-theme");
 
         if (savedTheme === "dark") {
@@ -421,6 +472,74 @@
                 themeToggle.textContent = "🌙";
             }
         });
+
+        if (cursorNegative && window.matchMedia("(pointer: fine)").matches) {
+            let cursorTargetX = window.innerWidth / 2;
+            let cursorTargetY = window.innerHeight / 2;
+            let cursorCurrentX = cursorTargetX;
+            let cursorCurrentY = cursorTargetY;
+            let cursorFrame = null;
+            let cursorVelocityX = 0;
+            let cursorVelocityY = 0;
+            let cursorLastPointerX = cursorTargetX;
+            let cursorLastPointerY = cursorTargetY;
+            let cursorAngle = 0;
+
+            const animateCursorNegative = () => {
+                cursorCurrentX += (cursorTargetX - cursorCurrentX) * 0.18;
+                cursorCurrentY += (cursorTargetY - cursorCurrentY) * 0.18;
+                cursorVelocityX *= 0.84;
+                cursorVelocityY *= 0.84;
+
+                const dx = cursorTargetX - cursorCurrentX;
+                const dy = cursorTargetY - cursorCurrentY;
+                const distance = Math.hypot(dx, dy);
+                const velocity = Math.hypot(cursorVelocityX, cursorVelocityY);
+                if (velocity > 0.15) {
+                    cursorAngle = Math.atan2(cursorVelocityY, cursorVelocityX) * (180 / Math.PI);
+                } else if (distance > 0.5) {
+                    cursorAngle = Math.atan2(dy, dx) * (180 / Math.PI);
+                }
+
+                const stretch = Math.min((velocity / 26) + (distance / 260), 0.18);
+                const scaleX = 1 + stretch;
+                const scaleY = 1 - stretch * 0.18;
+                const dynamicOpacity = 0.82 + Math.min(distance / 220, 0.14);
+
+                cursorNegative.style.left = `${cursorCurrentX}px`;
+                cursorNegative.style.top = `${cursorCurrentY}px`;
+                cursorNegative.style.transform = `translate3d(-50%, -50%, 0) rotate(${cursorAngle}deg) scaleX(${scaleX}) scaleY(${scaleY})`;
+                cursorNegative.style.opacity = cursorNegative.classList.contains("is-visible") ? `${dynamicOpacity}` : "0";
+
+                cursorFrame = window.requestAnimationFrame(animateCursorNegative);
+            };
+
+            window.addEventListener("mousemove", (event) => {
+                cursorVelocityX += (event.clientX - cursorLastPointerX) * 0.16;
+                cursorVelocityY += (event.clientY - cursorLastPointerY) * 0.16;
+                cursorLastPointerX = event.clientX;
+                cursorLastPointerY = event.clientY;
+                cursorNegative.classList.add("is-visible");
+                cursorTargetX = event.clientX;
+                cursorTargetY = event.clientY;
+
+                if (!cursorFrame) {
+                    cursorFrame = window.requestAnimationFrame(animateCursorNegative);
+                }
+            });
+
+            window.addEventListener("mousedown", () => {
+                cursorNegative.classList.add("is-active");
+            });
+
+            window.addEventListener("mouseup", () => {
+                cursorNegative.classList.remove("is-active");
+            });
+
+            document.addEventListener("mouseleave", () => {
+                cursorNegative.classList.remove("is-visible");
+            });
+        }
     </script>
 </body>
 </html>

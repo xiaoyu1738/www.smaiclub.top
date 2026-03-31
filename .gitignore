@@ -15,3 +15,5 @@ hall.smaiclub.top/dist/*
 hall.smaiclub.top/node_modules/*
 hall-worker/node_modules/*
 hall-worker/.wrangler/*
+.nexus-map/*
+.codex
