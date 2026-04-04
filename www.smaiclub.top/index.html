@@ -530,40 +530,159 @@
 
         body.dark-mode .global-presence { background: var(--glass-bg-dark); border: 1px solid var(--glass-border-dark); }
 
-        .map-placeholder {
+        .globe-stage {
             width: 100%;
-            height: 400px;
-            background: rgba(128, 128, 128, 0.1);
+            min-height: 440px;
             border-radius: var(--border-radius-md);
             position: relative;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            background-image: url("https://assets.smaiclub.top/www/home/world-map.jpg");
-            background-size: cover;
-            background-position: center;
-            filter: grayscale(0.3) brightness(0.9);
+            overflow: hidden;
+            background:
+                radial-gradient(circle at 82% 14%, rgba(185, 135, 72, 0.08), transparent 18%),
+                linear-gradient(135deg, rgba(7, 18, 34, 0.98), rgba(8, 29, 52, 0.92) 42%, rgba(12, 20, 35, 0.98));
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            box-shadow:
+                inset 0 0 0 1px rgba(255, 255, 255, 0.04),
+                0 20px 60px rgba(8, 20, 42, 0.32);
         }
 
-        body.dark-mode .map-placeholder { filter: grayscale(0.5) brightness(0.4); }
-
-        .map-dot {
+        .globe-stage::before,
+        .globe-stage::after {
+            content: "";
             position: absolute;
-            width: 12px;
-            height: 12px;
-            background: #b98748;
+            inset: auto;
             border-radius: 50%;
-            box-shadow: 0 0 0 4px rgba(185, 135, 72, 0.28);
-            animation: pulseDot 2s infinite;
-            cursor: pointer;
+            pointer-events: none;
         }
 
-        body.dark-mode .map-dot { background: #d2a15e; box-shadow: 0 0 0 4px rgba(210, 161, 94, 0.28); }
+        .globe-stage::before {
+            display: none;
+        }
 
-        @keyframes pulseDot {
-            0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(185, 135, 72, 0.7); }
-            70% { transform: scale(1.5); box-shadow: 0 0 0 10px rgba(185, 135, 72, 0); }
-            100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(185, 135, 72, 0); }
+        .globe-stage::after {
+            width: 280px;
+            height: 280px;
+            bottom: -100px;
+            left: -70px;
+            background: radial-gradient(circle, rgba(215, 83, 73, 0.16), rgba(215, 83, 73, 0));
+        }
+
+        body.dark-mode .globe-stage {
+            background:
+                radial-gradient(circle at 82% 14%, rgba(210, 161, 94, 0.08), transparent 18%),
+                linear-gradient(135deg, rgba(4, 9, 18, 0.98), rgba(6, 16, 28, 0.94) 42%, rgba(5, 11, 18, 0.99));
+            border-color: rgba(210, 161, 94, 0.12);
+            box-shadow:
+                inset 0 0 0 1px rgba(255, 255, 255, 0.03),
+                0 24px 70px rgba(0, 0, 0, 0.48);
+        }
+
+        .globe-canvas {
+            width: 100%;
+            height: 440px;
+            display: block;
+            touch-action: none;
+            cursor: grab;
+        }
+
+        .globe-canvas.is-dragging { cursor: grabbing; }
+
+        .globe-overlay {
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
+        }
+
+        .globe-drag-hint,
+        .globe-live-panel,
+        .globe-summary {
+            position: absolute;
+            backdrop-filter: blur(18px);
+            -webkit-backdrop-filter: blur(18px);
+            background: rgba(7, 18, 34, 0.42);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            color: rgba(255, 255, 255, 0.92);
+            box-shadow: 0 14px 35px rgba(0, 0, 0, 0.18);
+        }
+
+        .globe-drag-hint {
+            top: 18px;
+            left: 18px;
+            padding: 10px 14px;
+            border-radius: 999px;
+            font-size: 0.82rem;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+        }
+
+        .globe-summary {
+            left: 24px;
+            bottom: 24px;
+            padding: 16px 20px;
+            border-radius: 18px;
+            max-width: 250px;
+        }
+
+        .globe-summary strong,
+        .globe-live-panel strong {
+            display: block;
+            font-size: 1.05rem;
+            letter-spacing: 0.03em;
+            margin-bottom: 4px;
+            color: #fff8ef;
+        }
+
+        .globe-summary span,
+        .globe-live-panel span {
+            display: block;
+            font-size: 0.9rem;
+            color: rgba(255, 255, 255, 0.72);
+        }
+
+        .globe-live-panel {
+            right: 22px;
+            bottom: 22px;
+            min-width: 200px;
+            padding: 18px 20px;
+            border-radius: 20px;
+            text-align: right;
+        }
+
+        .globe-live-label {
+            font-size: 0.8rem;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            color: rgba(255, 255, 255, 0.68);
+            margin-bottom: 8px;
+        }
+
+        .globe-live-count {
+            font-size: clamp(1.8rem, 3.4vw, 2.6rem);
+            font-weight: 800;
+            line-height: 1;
+            color: #fff;
+            text-shadow: 0 0 22px rgba(255, 114, 104, 0.36);
+        }
+
+        .globe-live-count::after {
+            content: " 位";
+            font-size: 0.95rem;
+            font-weight: 600;
+            margin-left: 8px;
+            color: rgba(255, 255, 255, 0.7);
+            text-shadow: none;
+        }
+
+        .globe-live-meta {
+            margin-top: 8px;
+            font-size: 0.82rem;
+            color: rgba(255, 255, 255, 0.62);
+        }
+
+        body.dark-mode .globe-drag-hint,
+        body.dark-mode .globe-live-panel,
+        body.dark-mode .globe-summary {
+            background: rgba(9, 11, 16, 0.5);
+            border-color: rgba(210, 161, 94, 0.14);
         }
 
         .timeline { position: relative; max-width: 800px; margin: 0 auto; }
@@ -762,6 +881,9 @@
             .service-img-large { height: 250px; }
             .hero-section { height: 70vh; }
             .hero-frame { border-radius: 24px; }
+            .global-presence { padding: 28px; }
+            .globe-stage, .globe-canvas { min-height: 420px; height: 420px; }
+            .globe-summary { max-width: 220px; }
             .timeline::after { left: 31px; }
             .timeline-item { width: 100%; padding-left: 70px; padding-right: 25px; }
             .timeline-item::after { left: 21px; }
@@ -786,6 +908,24 @@
             .event-date { width: 100%; }
             .floating-contact { bottom: 20px; right: 20px; padding: 12px 20px; font-size: 0.9rem; }
             .theme-toggle { top: auto; bottom: 84px; right: 20px; }
+            .global-presence { padding: 20px; }
+            .globe-stage, .globe-canvas { min-height: 520px; height: 520px; }
+            .globe-drag-hint { top: 14px; left: 14px; font-size: 0.74rem; padding: 9px 12px; }
+            .globe-summary {
+                left: 14px;
+                right: 14px;
+                bottom: 110px;
+                max-width: none;
+                padding: 14px 16px;
+            }
+            .globe-live-panel {
+                left: 14px;
+                right: 14px;
+                bottom: 14px;
+                min-width: 0;
+                text-align: left;
+                padding: 16px;
+            }
         }
 
         @media (pointer: coarse) {
@@ -869,15 +1009,19 @@
         <h2 class="section-title">全球服务网络</h2>
         <div class="global-presence">
             <h3 style="text-align: center; margin-bottom: 30px;">24/7 全天候覆盖六大洲</h3>
-            <div class="map-placeholder">
-                <div class="map-dot" style="top: 30%; left: 20%;" title="纽约"></div>
-                <div class="map-dot" style="top: 25%; left: 48%;" title="伦敦"></div>
-                <div class="map-dot" style="top: 35%; left: 75%;" title="东京"></div>
-                <div class="map-dot" style="top: 60%; left: 80%;" title="悉尼"></div>
-                <div class="map-dot" style="top: 70%; left: 50%;" title="迪拜"></div>
-                <div class="map-dot" style="top: 55%; left: 45%;" title="新加坡"></div>
-                <div style="position: absolute; bottom: 20px; left: 20px; background: rgba(0,0,0,0.6); color: white; padding: 10px 20px; border-radius: 20px; backdrop-filter: blur(5px);">
-                    📍 实时在线管家：1,240 位
+            <div class="globe-stage">
+                <canvas id="conciergeGlobe" class="globe-canvas" aria-label="可拖拽的全球在线管家 3D 地球"></canvas>
+                <div class="globe-overlay">
+                    <div class="globe-drag-hint">拖拽地球查看全球城市</div>
+                    <div class="globe-summary">
+                        <strong>全球大城市响应节点</strong>
+                        <span>覆盖六大洲主要国家核心城市，红点代表当前在线的专属管家。</span>
+                    </div>
+                    <div class="globe-live-panel">
+                        <div class="globe-live-label">实时在线管家</div>
+                        <div id="conciergeCount" class="globe-live-count">1286</div>
+                        <div class="globe-live-meta">右下角数据会随全球排班轻微波动</div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -1237,6 +1381,446 @@
                 updateCount();
             });
         };
+
+        const globeCanvas = document.getElementById("conciergeGlobe");
+        const conciergeCount = document.getElementById("conciergeCount");
+        if (globeCanvas && conciergeCount) {
+            const ctx = globeCanvas.getContext("2d");
+            const globeSummary = document.querySelector(".globe-summary span");
+            const globeHint = document.querySelector(".globe-drag-hint");
+            const satelliteTextureUrl = "https://raw.githubusercontent.com/jeromeetienne/threex.planets/master/images/earthmap1k.jpg";
+            const countryBoundaryUrl = "https://raw.githubusercontent.com/nvkelso/natural-earth-vector/master/geojson/ne_50m_admin_0_boundary_lines_land.geojson";
+            const adminBoundaryUrl = "https://raw.githubusercontent.com/nvkelso/natural-earth-vector/master/geojson/ne_50m_admin_1_states_provinces_lines.geojson";
+            const citySeeds = [
+                ["Vancouver", 49.2827, -123.1207], ["Seattle", 47.6062, -122.3321], ["San Francisco", 37.7749, -122.4194],
+                ["Los Angeles", 34.0522, -118.2437], ["Las Vegas", 36.1699, -115.1398], ["Dallas", 32.7767, -96.797],
+                ["Houston", 29.7604, -95.3698], ["Chicago", 41.8781, -87.6298], ["Miami", 25.7617, -80.1918],
+                ["Atlanta", 33.749, -84.388], ["Toronto", 43.6532, -79.3832], ["Montreal", 45.5017, -73.5673],
+                ["New York", 40.7128, -74.006], ["Boston", 42.3601, -71.0589], ["Mexico City", 19.4326, -99.1332],
+                ["Monterrey", 25.6866, -100.3161], ["Guatemala City", 14.6349, -90.5069], ["Panama City", 8.9824, -79.5199],
+                ["Bogota", 4.711, -74.0721], ["Lima", -12.0464, -77.0428], ["Santiago", -33.4489, -70.6693],
+                ["Buenos Aires", -34.6037, -58.3816], ["Sao Paulo", -23.5505, -46.6333], ["Rio de Janeiro", -22.9068, -43.1729],
+                ["Montevideo", -34.9011, -56.1645], ["Recife", -8.0476, -34.877], ["Reykjavik", 64.1466, -21.9426],
+                ["Dublin", 53.3498, -6.2603], ["Edinburgh", 55.9533, -3.1883], ["London", 51.5072, -0.1276],
+                ["Manchester", 53.4808, -2.2426], ["Lisbon", 38.7223, -9.1393], ["Madrid", 40.4168, -3.7038],
+                ["Barcelona", 41.3874, 2.1686], ["Paris", 48.8566, 2.3522], ["Brussels", 50.8503, 4.3517],
+                ["Amsterdam", 52.3676, 4.9041], ["Luxembourg", 49.6116, 6.1319], ["Zurich", 47.3769, 8.5417],
+                ["Milan", 45.4642, 9.19], ["Rome", 41.9028, 12.4964], ["Munich", 48.1351, 11.582],
+                ["Berlin", 52.52, 13.405], ["Vienna", 48.2082, 16.3738], ["Prague", 50.0755, 14.4378],
+                ["Warsaw", 52.2297, 21.0122], ["Copenhagen", 55.6761, 12.5683], ["Stockholm", 59.3293, 18.0686],
+                ["Oslo", 59.9139, 10.7522], ["Helsinki", 60.1699, 24.9384], ["Athens", 37.9838, 23.7275],
+                ["Istanbul", 41.0082, 28.9784], ["Bucharest", 44.4268, 26.1025], ["Budapest", 47.4979, 19.0402],
+                ["Kyiv", 50.4501, 30.5234], ["Moscow", 55.7558, 37.6173], ["St Petersburg", 59.9343, 30.3351],
+                ["Casablanca", 33.5731, -7.5898], ["Marrakesh", 31.6295, -7.9811], ["Algiers", 36.7538, 3.0588],
+                ["Tunis", 36.8065, 10.1815], ["Cairo", 30.0444, 31.2357], ["Alexandria", 31.2001, 29.9187],
+                ["Lagos", 6.5244, 3.3792], ["Accra", 5.6037, -0.187], ["Abidjan", 5.36, -4.0083],
+                ["Dakar", 14.7167, -17.4677], ["Nairobi", -1.2921, 36.8219], ["Addis Ababa", 8.9806, 38.7578],
+                ["Kigali", -1.9441, 30.0619], ["Johannesburg", -26.2041, 28.0473], ["Cape Town", -33.9249, 18.4241],
+                ["Durban", -29.8587, 31.0218], ["Luanda", -8.839, 13.2894], ["Doha", 25.2854, 51.531],
+                ["Dubai", 25.2048, 55.2708], ["Abu Dhabi", 24.4539, 54.3773], ["Riyadh", 24.7136, 46.6753],
+                ["Jeddah", 21.4858, 39.1925], ["Kuwait City", 29.3759, 47.9774], ["Manama", 26.2235, 50.5876],
+                ["Muscat", 23.588, 58.3829], ["Tel Aviv", 32.0853, 34.7818], ["Jerusalem", 31.7683, 35.2137],
+                ["Amman", 31.9539, 35.9106], ["Beirut", 33.8938, 35.5018], ["Istanbul", 41.0082, 28.9784],
+                ["Tbilisi", 41.7151, 44.8271], ["Baku", 40.4093, 49.8671], ["Almaty", 43.222, 76.8512],
+                ["Tashkent", 41.2995, 69.2401], ["Karachi", 24.8607, 67.0011], ["Lahore", 31.5204, 74.3587],
+                ["Mumbai", 19.076, 72.8777], ["New Delhi", 28.6139, 77.209], ["Bengaluru", 12.9716, 77.5946],
+                ["Chennai", 13.0827, 80.2707], ["Kathmandu", 27.7172, 85.324], ["Dhaka", 23.8103, 90.4125],
+                ["Colombo", 6.9271, 79.8612], ["Bangkok", 13.7563, 100.5018], ["Phuket", 7.8804, 98.3923],
+                ["Hanoi", 21.0278, 105.8342], ["Ho Chi Minh City", 10.8231, 106.6297], ["Phnom Penh", 11.5564, 104.9282],
+                ["Kuala Lumpur", 3.139, 101.6869], ["Singapore", 1.3521, 103.8198], ["Jakarta", -6.2088, 106.8456],
+                ["Bali", -8.3405, 115.092], ["Manila", 14.5995, 120.9842], ["Taipei", 25.033, 121.5654],
+                ["Hong Kong", 22.3193, 114.1694], ["Shenzhen", 22.5431, 114.0579], ["Guangzhou", 23.1291, 113.2644],
+                ["Shanghai", 31.2304, 121.4737], ["Beijing", 39.9042, 116.4074], ["Chengdu", 30.5728, 104.0668],
+                ["Seoul", 37.5665, 126.978], ["Busan", 35.1796, 129.0756], ["Tokyo", 35.6762, 139.6503],
+                ["Osaka", 34.6937, 135.5023], ["Sapporo", 43.0618, 141.3545], ["Ulaanbaatar", 47.8864, 106.9057],
+                ["Perth", -31.9505, 115.8605], ["Adelaide", -34.9285, 138.6007], ["Melbourne", -37.8136, 144.9631],
+                ["Sydney", -33.8688, 151.2093], ["Brisbane", -27.4698, 153.0251], ["Auckland", -36.8509, 174.7645]
+            ];
+            const starField = Array.from({ length: 90 }, (_, index) => ({
+                x: (Math.sin(index * 11.73) + 1) * 0.5,
+                y: (Math.cos(index * 19.11) + 1) * 0.5,
+                size: 0.8 + (index % 3) * 0.55,
+                alpha: 0.18 + (index % 5) * 0.08
+            }));
+            const assets = {
+                ready: false,
+                texturePoints: [],
+                countryLines: [],
+                adminLines: []
+            };
+
+            const loadImage = (src) => new Promise((resolve, reject) => {
+                const image = new Image();
+                image.crossOrigin = "anonymous";
+                image.onload = () => resolve(image);
+                image.onerror = reject;
+                image.src = src;
+            });
+
+            const loadJson = async (url) => {
+                const response = await fetch(url);
+                if (!response.ok) {
+                    throw new Error(`Failed to load ${url}`);
+                }
+                return response.json();
+            };
+
+            const simplifyLine = (line, stride) => {
+                if (line.length <= 2) return line;
+                const simplified = [];
+                for (let index = 0; index < line.length; index += stride) {
+                    simplified.push(line[index]);
+                }
+                const lastPoint = line[line.length - 1];
+                const finalPoint = simplified[simplified.length - 1];
+                if (!finalPoint || finalPoint[0] !== lastPoint[0] || finalPoint[1] !== lastPoint[1]) {
+                    simplified.push(lastPoint);
+                }
+                return simplified;
+            };
+
+            const collectGeoLines = (geometry, stride, target) => {
+                if (!geometry) return;
+                if (geometry.type === "LineString") {
+                    target.push(simplifyLine(geometry.coordinates, stride));
+                    return;
+                }
+                if (geometry.type === "MultiLineString") {
+                    geometry.coordinates.forEach((line) => {
+                        target.push(simplifyLine(line, stride));
+                    });
+                }
+            };
+
+            const buildTexturePoints = (image) => {
+                const sampleCanvas = document.createElement("canvas");
+                sampleCanvas.width = 720;
+                sampleCanvas.height = 360;
+                const sampleCtx = sampleCanvas.getContext("2d", { willReadFrequently: true });
+                sampleCtx.drawImage(image, 0, 0, sampleCanvas.width, sampleCanvas.height);
+                const pixels = sampleCtx.getImageData(0, 0, sampleCanvas.width, sampleCanvas.height).data;
+                const points = [];
+                for (let lat = 82; lat >= -82; lat -= 2) {
+                    for (let lon = -180; lon < 180; lon += 2) {
+                        const x = Math.max(0, Math.min(sampleCanvas.width - 1, Math.round(((lon + 180) / 360) * (sampleCanvas.width - 1))));
+                        const y = Math.max(0, Math.min(sampleCanvas.height - 1, Math.round(((90 - lat) / 180) * (sampleCanvas.height - 1))));
+                        const offset = ((y * sampleCanvas.width) + x) * 4;
+                        const r = pixels[offset];
+                        const g = pixels[offset + 1];
+                        const b = pixels[offset + 2];
+                        const brightness = (r + g + b) / 3;
+                        const isWater = (b > g && b > r && brightness < 170);
+                        points.push({
+                            lat,
+                            lon,
+                            color: `rgb(${r}, ${g}, ${b})`,
+                            alpha: isWater ? 0.42 : 0.72,
+                            size: isWater ? 0.9 : 1.22
+                        });
+                    }
+                }
+                return points;
+            };
+
+            const prepareGlobeAssets = async () => {
+                try {
+                    if (globeSummary) {
+                        globeSummary.textContent = "正在加载开源卫星底图、国家边界与省州级行政区线。";
+                    }
+                    const [textureImage, countryGeoJson, adminGeoJson] = await Promise.all([
+                        loadImage(satelliteTextureUrl),
+                        loadJson(countryBoundaryUrl),
+                        loadJson(adminBoundaryUrl)
+                    ]);
+                    assets.texturePoints = buildTexturePoints(textureImage);
+                    countryGeoJson.features.forEach((feature) => {
+                        collectGeoLines(feature.geometry, 2, assets.countryLines);
+                    });
+                    adminGeoJson.features.forEach((feature) => {
+                        collectGeoLines(feature.geometry, 3, assets.adminLines);
+                    });
+                    assets.ready = true;
+                    if (globeSummary) {
+                        globeSummary.textContent = "卫星底图叠加国家边界与省/州级行政区线，红点代表主要城市当前在线管家。";
+                    }
+                    if (globeHint) {
+                        globeHint.textContent = "拖拽卫星地球查看国家与省州边界";
+                    }
+                } catch (error) {
+                    if (globeSummary) {
+                        globeSummary.textContent = "卫星与边界数据加载失败，当前保留基础地球与在线城市显示。";
+                    }
+                    console.error("Globe asset init error:", error);
+                }
+            };
+
+            const conciergePoints = citySeeds.flatMap(([name, lat, lon], index) => {
+                const clusterSize = 1 + (Math.abs(Math.round(lat + lon)) % 3);
+                return Array.from({ length: clusterSize }, (_, clusterIndex) => ({
+                    name,
+                    lat: lat + Math.sin((index + 1) * 1.73 + clusterIndex) * 0.7,
+                    lon: lon + Math.cos((index + 1) * 1.29 + clusterIndex) * 0.9,
+                    phase: (index * 0.43) + clusterIndex
+                }));
+            });
+
+            let displayedCount = 1286;
+            let targetCount = displayedCount;
+            let countJitter = 0;
+            setInterval(() => {
+                const base = 1180 + conciergePoints.length;
+                countJitter = (Math.random() - 0.5) * 12;
+                targetCount = Math.round(base + countJitter + (Math.sin(Date.now() * 0.001) * 18));
+            }, 1800);
+
+            const state = {
+                rotationY: -0.82,
+                rotationX: -0.28,
+                velocityY: 0.0028,
+                velocityX: 0.0004,
+                isDragging: false,
+                lastX: 0,
+                lastY: 0
+            };
+
+            const resizeCanvas = () => {
+                const rect = globeCanvas.getBoundingClientRect();
+                const dpr = window.devicePixelRatio || 1;
+                globeCanvas.width = rect.width * dpr;
+                globeCanvas.height = rect.height * dpr;
+                ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+            };
+
+            const projectPoint = (lat, lon, radius) => {
+                const latRad = lat * (Math.PI / 180);
+                const lonRad = lon * (Math.PI / 180);
+                const cosLat = Math.cos(latRad);
+                let x = cosLat * Math.sin(lonRad);
+                let y = Math.sin(latRad);
+                let z = cosLat * Math.cos(lonRad);
+
+                const cosY = Math.cos(state.rotationY);
+                const sinY = Math.sin(state.rotationY);
+                const rotatedX = (x * cosY) + (z * sinY);
+                const rotatedZ = (z * cosY) - (x * sinY);
+                x = rotatedX;
+                z = rotatedZ;
+
+                const cosX = Math.cos(state.rotationX);
+                const sinX = Math.sin(state.rotationX);
+                const rotatedY = (y * cosX) - (z * sinX);
+                const finalZ = (y * sinX) + (z * cosX);
+                y = rotatedY;
+                z = finalZ;
+
+                const perspective = 0.8 + ((z + 1) * 0.22);
+                return {
+                    x,
+                    y,
+                    z,
+                    screenX: x * radius * perspective,
+                    screenY: -y * radius * perspective,
+                    scale: perspective
+                };
+            };
+
+            const drawGeoLine = (line, cx, cy, radius) => {
+                ctx.beginPath();
+                let drawing = false;
+                for (let index = 0; index < line.length; index += 1) {
+                    const [lon, lat] = line[index];
+                    const point = projectPoint(lat, lon, radius);
+                    if (point.z > 0) {
+                        const drawX = cx + point.screenX;
+                        const drawY = cy + point.screenY;
+                        if (!drawing) {
+                            ctx.moveTo(drawX, drawY);
+                            drawing = true;
+                        } else {
+                            ctx.lineTo(drawX, drawY);
+                        }
+                    } else {
+                        drawing = false;
+                    }
+                }
+                ctx.stroke();
+            };
+
+            const renderGlobe = (time) => {
+                const width = globeCanvas.clientWidth;
+                const height = globeCanvas.clientHeight;
+                const cx = width / 2;
+                const cy = height / 2;
+                const radius = Math.min(width, height) * 0.31;
+                const darkMode = body.classList.contains("dark-mode");
+
+                if (!state.isDragging) {
+                    state.rotationY += state.velocityY;
+                    state.rotationX += state.velocityX;
+                    state.velocityY *= 0.998;
+                    state.velocityX *= 0.995;
+                    state.velocityY += (0.0022 - state.velocityY) * 0.008;
+                    state.rotationX = Math.max(-0.55, Math.min(0.55, state.rotationX));
+                }
+
+                displayedCount += (targetCount - displayedCount) * 0.06;
+                conciergeCount.textContent = Math.round(displayedCount).toLocaleString("zh-CN");
+
+                ctx.clearRect(0, 0, width, height);
+
+                starField.forEach((star) => {
+                    const twinkle = 0.55 + (Math.sin((time * 0.0014) + (star.x * 10)) * 0.45);
+                    ctx.beginPath();
+                    ctx.fillStyle = `rgba(255,255,255,${star.alpha * twinkle})`;
+                    ctx.arc(star.x * width, star.y * height, star.size, 0, Math.PI * 2);
+                    ctx.fill();
+                });
+
+                const outerGlow = ctx.createRadialGradient(cx, cy, radius * 0.6, cx, cy, radius * 1.85);
+                outerGlow.addColorStop(0, darkMode ? "rgba(82, 159, 230, 0.18)" : "rgba(49, 130, 206, 0.18)");
+                outerGlow.addColorStop(1, "rgba(49, 130, 206, 0)");
+                ctx.fillStyle = outerGlow;
+                ctx.beginPath();
+                ctx.arc(cx, cy, radius * 1.95, 0, Math.PI * 2);
+                ctx.fill();
+
+                ctx.save();
+                ctx.beginPath();
+                ctx.arc(cx, cy, radius, 0, Math.PI * 2);
+                ctx.clip();
+
+                const oceanGradient = ctx.createRadialGradient(cx - (radius * 0.34), cy - (radius * 0.45), radius * 0.2, cx, cy, radius * 1.15);
+                oceanGradient.addColorStop(0, darkMode ? "#2f7bc4" : "#4ba7e7");
+                oceanGradient.addColorStop(0.45, darkMode ? "#0e4876" : "#0f5b91");
+                oceanGradient.addColorStop(1, darkMode ? "#071425" : "#0b2137");
+                ctx.fillStyle = oceanGradient;
+                ctx.fillRect(cx - radius, cy - radius, radius * 2, radius * 2);
+
+                const shadowGradient = ctx.createLinearGradient(cx - radius, cy - radius * 0.2, cx + radius, cy + radius * 0.5);
+                shadowGradient.addColorStop(0, "rgba(255,255,255,0.08)");
+                shadowGradient.addColorStop(0.42, "rgba(255,255,255,0)");
+                shadowGradient.addColorStop(1, "rgba(0,0,0,0.34)");
+                ctx.fillStyle = shadowGradient;
+                ctx.fillRect(cx - radius, cy - radius, radius * 2, radius * 2);
+
+                if (assets.texturePoints.length) {
+                    assets.texturePoints.forEach((point) => {
+                        const projection = projectPoint(point.lat, point.lon, radius);
+                        if (projection.z <= -0.12) return;
+                        ctx.beginPath();
+                        ctx.fillStyle = point.color.replace("rgb(", "rgba(").replace(")", `, ${Math.max(0.16, point.alpha + (projection.z * 0.16))})`);
+                        ctx.arc(cx + projection.screenX, cy + projection.screenY, point.size * projection.scale, 0, Math.PI * 2);
+                        ctx.fill();
+                    });
+                } else {
+                    ctx.strokeStyle = darkMode ? "rgba(180, 210, 255, 0.15)" : "rgba(218, 240, 255, 0.18)";
+                    ctx.lineWidth = 1;
+                    for (let lat = -60; lat <= 60; lat += 30) {
+                        ctx.beginPath();
+                        let started = false;
+                        for (let lon = -180; lon <= 180; lon += 4) {
+                            const point = projectPoint(lat, lon, radius);
+                            if (point.z > 0) {
+                                const x = cx + point.screenX;
+                                const y = cy + point.screenY;
+                                if (!started) {
+                                    ctx.moveTo(x, y);
+                                    started = true;
+                                } else {
+                                    ctx.lineTo(x, y);
+                                }
+                            } else {
+                                started = false;
+                            }
+                        }
+                        ctx.stroke();
+                    }
+                }
+
+                if (assets.countryLines.length) {
+                    ctx.strokeStyle = darkMode ? "rgba(255, 234, 201, 0.78)" : "rgba(255, 247, 230, 0.86)";
+                    ctx.lineWidth = 1.1;
+                    assets.countryLines.forEach((line) => drawGeoLine(line, cx, cy, radius));
+                }
+
+                if (assets.adminLines.length) {
+                    ctx.strokeStyle = darkMode ? "rgba(156, 206, 255, 0.34)" : "rgba(205, 234, 255, 0.42)";
+                    ctx.lineWidth = 0.8;
+                    assets.adminLines.forEach((line) => drawGeoLine(line, cx, cy, radius));
+                }
+
+                conciergePoints
+                    .map((point) => ({ ...point, projection: projectPoint(point.lat, point.lon, radius) }))
+                    .filter((point) => point.projection.z > 0)
+                    .sort((a, b) => a.projection.z - b.projection.z)
+                    .forEach((point) => {
+                        const pulse = 0.7 + ((Math.sin((time * 0.0036) + point.phase) + 1) * 0.35);
+                        const baseRadius = 1.1 + (point.projection.scale * 1.55);
+                        const drawX = cx + point.projection.screenX;
+                        const drawY = cy + point.projection.screenY;
+                        ctx.beginPath();
+                        ctx.fillStyle = `rgba(255, 92, 92, ${0.16 * pulse})`;
+                        ctx.arc(drawX, drawY, baseRadius * (2.3 + pulse), 0, Math.PI * 2);
+                        ctx.fill();
+
+                        ctx.beginPath();
+                        ctx.fillStyle = `rgba(255, 104, 94, ${0.85 + (point.projection.z * 0.15)})`;
+                        ctx.arc(drawX, drawY, baseRadius, 0, Math.PI * 2);
+                        ctx.fill();
+                    });
+
+                ctx.restore();
+
+                ctx.beginPath();
+                ctx.strokeStyle = darkMode ? "rgba(112, 189, 255, 0.38)" : "rgba(115, 191, 255, 0.45)";
+                ctx.lineWidth = 3;
+                ctx.arc(cx, cy, radius + 1.5, 0, Math.PI * 2);
+                ctx.stroke();
+
+                requestAnimationFrame(renderGlobe);
+            };
+
+            const setPointer = (event) => {
+                const point = event.touches ? event.touches[0] : event;
+                return { x: point.clientX, y: point.clientY };
+            };
+
+            const beginDrag = (event) => {
+                const pointer = setPointer(event);
+                state.isDragging = true;
+                globeCanvas.classList.add("is-dragging");
+                state.lastX = pointer.x;
+                state.lastY = pointer.y;
+            };
+
+            const moveDrag = (event) => {
+                if (!state.isDragging) return;
+                if (event.cancelable) event.preventDefault();
+                const pointer = setPointer(event);
+                const deltaX = pointer.x - state.lastX;
+                const deltaY = pointer.y - state.lastY;
+                state.lastX = pointer.x;
+                state.lastY = pointer.y;
+                state.rotationY += deltaX * 0.0085;
+                state.rotationX += deltaY * 0.0065;
+                state.rotationX = Math.max(-0.75, Math.min(0.75, state.rotationX));
+                state.velocityY = deltaX * 0.00055;
+                state.velocityX = deltaY * 0.00035;
+            };
+
+            const endDrag = () => {
+                state.isDragging = false;
+                globeCanvas.classList.remove("is-dragging");
+            };
+
+            globeCanvas.addEventListener("pointerdown", beginDrag);
+            window.addEventListener("pointermove", moveDrag, { passive: false });
+            window.addEventListener("pointerup", endDrag);
+            window.addEventListener("resize", resizeCanvas);
+            resizeCanvas();
+            prepareGlobeAssets();
+            requestAnimationFrame(renderGlobe);
+        }
 
         window.addEventListener("load", () => {
             const observerOptions = { threshold: 0.1, rootMargin: "0px 0px -50px 0px" };
