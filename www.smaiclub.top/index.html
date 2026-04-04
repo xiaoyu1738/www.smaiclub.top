@@ -1386,7 +1386,7 @@
         if (globeCanvas && conciergeCount) {
             const globeSummary = document.querySelector(".globe-summary span");
             const globeHint = document.querySelector(".globe-drag-hint");
-            const threeModuleUrl = "https://assets.smaiclub.top/www/globe/three.module.js";
+            const threeModuleUrl = new URL("assets/globe/three.module.js", window.location.href).href;
             const satelliteTextureUrl = "https://assets.smaiclub.top/www/globe/earth_atmos_2048.jpg";
             const countryBoundaryUrl = "https://assets.smaiclub.top/www/globe/country-boundaries.geojson";
             const adminBoundaryUrl = "https://assets.smaiclub.top/www/globe/admin-boundaries.geojson";
