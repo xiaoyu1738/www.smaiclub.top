@@ -1441,6 +1441,8 @@
                 size: 0.8 + (index % 3) * 0.55,
                 alpha: 0.18 + (index % 5) * 0.08
             }));
+            const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+            const compactViewport = window.matchMedia("(max-width: 768px)").matches;
             const assets = {
                 ready: false,
                 texturePoints: [],
@@ -1493,14 +1495,16 @@
 
             const buildTexturePoints = (image) => {
                 const sampleCanvas = document.createElement("canvas");
-                sampleCanvas.width = 720;
-                sampleCanvas.height = 360;
+                sampleCanvas.width = 360;
+                sampleCanvas.height = 180;
                 const sampleCtx = sampleCanvas.getContext("2d", { willReadFrequently: true });
                 sampleCtx.drawImage(image, 0, 0, sampleCanvas.width, sampleCanvas.height);
                 const pixels = sampleCtx.getImageData(0, 0, sampleCanvas.width, sampleCanvas.height).data;
                 const points = [];
-                for (let lat = 82; lat >= -82; lat -= 2) {
-                    for (let lon = -180; lon < 180; lon += 2) {
+                const latStep = compactViewport ? 5 : 4;
+                const lonStep = compactViewport ? 5 : 4;
+                for (let lat = 82; lat >= -82; lat -= latStep) {
+                    for (let lon = -180; lon < 180; lon += lonStep) {
                         const x = Math.max(0, Math.min(sampleCanvas.width - 1, Math.round(((lon + 180) / 360) * (sampleCanvas.width - 1))));
                         const y = Math.max(0, Math.min(sampleCanvas.height - 1, Math.round(((90 - lat) / 180) * (sampleCanvas.height - 1))));
                         const offset = ((y * sampleCanvas.width) + x) * 4;
@@ -1513,8 +1517,8 @@
                             lat,
                             lon,
                             color: `rgb(${r}, ${g}, ${b})`,
-                            alpha: isWater ? 0.42 : 0.72,
-                            size: isWater ? 0.9 : 1.22
+                            alpha: isWater ? 0.38 : 0.68,
+                            size: isWater ? 0.82 : 1.08
                         });
                     }
                 }
@@ -1532,11 +1536,13 @@
                         loadJson(adminBoundaryUrl)
                     ]);
                     assets.texturePoints = buildTexturePoints(textureImage);
+                    const countryStride = compactViewport ? 4 : 3;
+                    const adminStride = compactViewport ? 9 : 7;
                     countryGeoJson.features.forEach((feature) => {
-                        collectGeoLines(feature.geometry, 2, assets.countryLines);
+                        collectGeoLines(feature.geometry, countryStride, assets.countryLines);
                     });
                     adminGeoJson.features.forEach((feature) => {
-                        collectGeoLines(feature.geometry, 3, assets.adminLines);
+                        collectGeoLines(feature.geometry, adminStride, assets.adminLines);
                     });
                     assets.ready = true;
                     if (globeSummary) {
@@ -1578,6 +1584,8 @@
                 velocityY: 0.0028,
                 velocityX: 0.0004,
                 isDragging: false,
+                isVisible: true,
+                lastRenderTime: 0,
                 lastX: 0,
                 lastY: 0
             };
@@ -1646,6 +1654,17 @@
             };
 
             const renderGlobe = (time) => {
+                requestAnimationFrame(renderGlobe);
+                if (!state.isVisible) {
+                    return;
+                }
+
+                const frameBudget = state.isDragging ? 1000 / 36 : (reducedMotion ? 1000 / 6 : 1000 / 12);
+                if (time - state.lastRenderTime < frameBudget) {
+                    return;
+                }
+                state.lastRenderTime = time;
+
                 const width = globeCanvas.clientWidth;
                 const height = globeCanvas.clientHeight;
                 const cx = width / 2;
@@ -1775,8 +1794,6 @@
                 ctx.lineWidth = 3;
                 ctx.arc(cx, cy, radius + 1.5, 0, Math.PI * 2);
                 ctx.stroke();
-
-                requestAnimationFrame(renderGlobe);
             };
 
             const setPointer = (event) => {
@@ -1816,6 +1833,11 @@
             window.addEventListener("pointermove", moveDrag, { passive: false });
             window.addEventListener("pointerup", endDrag);
             window.addEventListener("resize", resizeCanvas);
+            new IntersectionObserver((entries) => {
+                entries.forEach((entry) => {
+                    state.isVisible = entry.isIntersecting;
+                });
+            }, { threshold: 0.08 }).observe(globeCanvas);
             resizeCanvas();
             prepareGlobeAssets();
             requestAnimationFrame(renderGlobe);
