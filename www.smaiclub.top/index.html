@@ -1386,10 +1386,11 @@
         if (globeCanvas && conciergeCount) {
             const globeSummary = document.querySelector(".globe-summary span");
             const globeHint = document.querySelector(".globe-drag-hint");
-            const threeModuleUrl = new URL("assets/globe/three.module.js", window.location.href).href;
-            const satelliteTextureUrl = "https://assets.smaiclub.top/www/globe/earth_atmos_2048.jpg";
-            const countryBoundaryUrl = "https://assets.smaiclub.top/www/globe/country-boundaries.geojson";
-            const adminBoundaryUrl = "https://assets.smaiclub.top/www/globe/admin-boundaries.geojson";
+            const globeAssetVersion = "20260404b";
+            const threeModuleUrl = `https://assets.smaiclub.top/www/globe/three.module.js?v=${globeAssetVersion}`;
+            const satelliteTextureUrl = `https://assets.smaiclub.top/www/globe/earth_atmos_2048.jpg?v=${globeAssetVersion}`;
+            const countryBoundaryUrl = `https://assets.smaiclub.top/www/globe/country-boundaries.geojson?v=${globeAssetVersion}`;
+            const adminBoundaryUrl = `https://assets.smaiclub.top/www/globe/admin-boundaries.geojson?v=${globeAssetVersion}`;
             const citySeeds = [
                 ["Vancouver", 49.2827, -123.1207], ["Seattle", 47.6062, -122.3321], ["San Francisco", 37.7749, -122.4194],
                 ["Los Angeles", 34.0522, -118.2437], ["Las Vegas", 36.1699, -115.1398], ["Dallas", 32.7767, -96.797],
