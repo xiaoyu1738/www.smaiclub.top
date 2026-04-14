@@ -261,8 +261,9 @@ export class ChatRoom {
                 if (msg.type === 'auth') {
                     if (isAuthorized) return;
                     const signature = typeof msg.signature === 'string' ? msg.signature : '';
+                    const legacyAccessSignature = typeof msg.legacyAccessSignature === 'string' ? msg.legacyAccessSignature : '';
                     const legacySignature = typeof msg.legacySignature === 'string' ? msg.legacySignature : '';
-                    if (await this.isAuthorizedSignature(storedAccessHash, storedHash, authNonce, signature, legacySignature)) {
+                    if (await this.isAuthorizedSignature(storedAccessHash, storedHash, authNonce, signature, legacyAccessSignature, legacySignature)) {
                         isAuthorized = true;
                         await startAuthorizedSession();
                         const authorizedRoomId = await this.state.storage.get("roomId");
@@ -552,9 +553,10 @@ export class ChatRoom {
         else this.ipConnections.set(ip, next);
     }
 
-    async isAuthorizedSignature(storedAccessHash, legacyStoredHash, nonce, suppliedSignature, legacySignature) {
+    async isAuthorizedSignature(storedAccessHash, legacyStoredHash, nonce, suppliedSignature, legacyAccessSignature, legacySignature) {
         if (storedAccessHash) {
-            return timingSafeEqualHex(await hmacSha256Hex(storedAccessHash, nonce), suppliedSignature);
+            const expected = await hmacSha256Hex(storedAccessHash, nonce);
+            return timingSafeEqualHex(expected, suppliedSignature) || timingSafeEqualHex(expected, legacyAccessSignature);
         }
 
         if (legacyStoredHash) {

@@ -223,7 +223,7 @@ export function htmlTemplate() {
 
             <div class="error" id="change-pass-error"></div>
             <input type="hidden" id="cp-user">
-            <input type="hidden" id="cp-old-pass">
+            <input type="hidden" id="cp-token">
 
             <div class="form-group">
                 <label>新密码</label>
@@ -388,7 +388,7 @@ export function htmlTemplate() {
                     cpForm.style.animation = 'fadeIn 0.5s ease-out';
 
                     document.getElementById('cp-user').value = user;
-                    document.getElementById('cp-old-pass').value = pass;
+                    document.getElementById('cp-token').value = data.changeToken || '';
                     return;
                 }
 
@@ -438,7 +438,7 @@ export function htmlTemplate() {
 
         async function handleChangePass() {
             const user = document.getElementById('cp-user').value;
-            const oldPass = document.getElementById('cp-old-pass').value;
+            const changeToken = document.getElementById('cp-token').value;
             const newPass = document.getElementById('cp-new-pass').value;
             const confirmPass = document.getElementById('cp-confirm-pass').value;
             const errorDiv = document.getElementById('change-pass-error');
@@ -459,7 +459,7 @@ export function htmlTemplate() {
                 const res = await fetch(API_BASE + '/change-password', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ username: user, oldPassword: oldPass, newPassword: newPass })
+                    body: JSON.stringify({ username: user, changeToken, newPassword: newPass })
                 });
                 const data = await res.json();
                 if (res.ok) {

@@ -26,13 +26,39 @@ export function validateCustomKey(key) {
   return /^[a-zA-Z0-9]+$/.test(key);
 }
 
-export async function hashAccessVerifier(roomKey) {
-  return sha256Hex(`SMAICLUB_CHAT_ACCESS:${roomKey}`);
+export async function hashAccessVerifier(roomKey, salt, iterations) {
+  return pbkdf2Hex(`SMAICLUB_CHAT_ACCESS:${roomKey}`, salt, iterations);
 }
 
 export async function sha256Hex(value) {
   const buffer = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(value));
   return Array.from(new Uint8Array(buffer)).map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+async function pbkdf2Hex(value, salt, iterations) {
+  const enc = new TextEncoder();
+  const keyMaterial = await crypto.subtle.importKey(
+    "raw",
+    enc.encode(value),
+    "PBKDF2",
+    false,
+    ["deriveBits"]
+  );
+  const bits = await crypto.subtle.deriveBits(
+    { name: "PBKDF2", salt: saltToBytes(salt), iterations, hash: "SHA-256" },
+    keyMaterial,
+    256
+  );
+  return Array.from(new Uint8Array(bits)).map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+function saltToBytes(salt) {
+  if (typeof salt !== 'string') return salt;
+  if (/^(?:[0-9a-fA-F]{2})+$/.test(salt)) {
+    const match = salt.match(/.{2}/g) || [];
+    return new Uint8Array(match.map(byte => parseInt(byte, 16)));
+  }
+  return new TextEncoder().encode(salt);
 }
 
 // --- Log Encryption ---

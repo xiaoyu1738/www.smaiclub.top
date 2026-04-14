@@ -5,6 +5,7 @@ const PASSWORD_REGEX = /^(?=.*[A-Za-z])(?=.*\d).{8,}$/;
 const USERNAME_REGEX = /^[A-Za-z0-9_]{3,32}$/;
 const DISPLAY_NAME_REGEX = /^[\p{L}\p{N}_\-\s]{1,32}$/u;
 const SESSION_MAX_AGE_MS = 24 * 60 * 60 * 1000;
+const CHANGE_PASSWORD_TOKEN_TTL_MS = 10 * 60 * 1000;
 const LOGIN_LOCK_MS = 15 * 60 * 1000;
 const LOGIN_MAX_FAILURES = 5;
 const ROLE_LEVELS = { user: 0, vip: 1, svip1: 2, svip2: 3, admin: 10, owner: 100, banned: -1 };
@@ -217,7 +218,12 @@ export default {
                 }
 
                 if (!PASSWORD_REGEX.test(password)) {
-                    return jsonResp({ error: "WEAK_PASSWORD", message: "您的密码过于简单，为了安全请立即修改" }, 403, responseHeaders);
+                    const changeToken = await createPasswordChangeToken(username, env);
+                    return jsonResp({
+                        error: "WEAK_PASSWORD",
+                        message: "您的密码过于简单，为了安全请立即修改",
+                        changeToken
+                    }, 403, responseHeaders);
                 }
 
                 let sessionRole = normalizedRole;
@@ -269,20 +275,38 @@ export default {
 
             // --- 修改密码 ---
             if (url.pathname === "/api/change-password") {
-                let { username, oldPassword, newPassword } = body;
+                let { username, oldPassword, newPassword, changeToken } = body;
 
                 let user;
                 if (username) {
+                    const rateLimit = await checkLoginRateLimit(env, request, username);
+                    if (rateLimit.limited) {
+                        return jsonResp({
+                            error: "TOO_MANY_ATTEMPTS",
+                            message: `验证失败次数过多，请 ${rateLimit.retryAfterMinutes} 分钟后再试`
+                        }, 429, responseHeaders);
+                    }
+
                     user = await env.DB.prepare('SELECT * FROM users WHERE username = ?').bind(username).first();
+                    if (!user) {
+                        await recordLoginFailure(env, request, username);
+                        return jsonResp({ error: "用户不存在或未登录" }, 404, responseHeaders);
+                    }
+
+                    const tokenCheck = await verifyPasswordChangeToken(changeToken, username, env, user);
+                    if (!tokenCheck.ok) {
+                        await recordLoginFailure(env, request, username);
+                        return jsonResp({ error: "验证已过期，请重新登录后再修改密码" }, 401, responseHeaders);
+                    }
                 } else {
                     user = await getUserFromCookie(request, env);
                     if (user) username = user.username;
+
+                    if (!user) return jsonResp({ error: "用户不存在或未登录" }, 404, responseHeaders);
+
+                    const passwordCheck = await verifyStoredPassword(user, oldPassword, env);
+                    if (!passwordCheck.ok) return jsonResp({ error: "旧密码错误" }, 401, responseHeaders);
                 }
-
-                if (!user) return jsonResp({ error: "用户不存在或未登录" }, 404, responseHeaders);
-
-                const passwordCheck = await verifyStoredPassword(user, oldPassword, env);
-                if (!passwordCheck.ok) return jsonResp({ error: "旧密码错误" }, 401, responseHeaders);
 
                 if (!PASSWORD_REGEX.test(newPassword)) return jsonResp({ error: "新密码强度不足" }, 400, responseHeaders);
 
@@ -292,6 +316,7 @@ export default {
                 await env.DB.prepare(
                     "UPDATE users SET password = ?, password_salt = ?, password_algo = 'pbkdf2', session_invalid_before = ? WHERE username = ?"
                 ).bind(newHashed.hash, newHashed.salt, Date.now(), username).run();
+                await clearLoginFailures(env, request, username);
 
                 // Log Password Change
                 ctx.waitUntil(sendLog(env, 'change_password', username, { action: 'change_password' }, request.headers.get("CF-Connecting-IP"), request.headers.get("Cookie")));
@@ -917,6 +942,35 @@ async function clearLoginFailures(env, request, username) {
     const normalizedUsername = normalizeUsername(username).toLowerCase();
     if (!normalizedUsername) return;
     await env.DB.prepare("DELETE FROM login_attempts WHERE key = ?").bind(`user:${normalizedUsername}`).run();
+}
+
+async function createPasswordChangeToken(username, env) {
+    const payload = JSON.stringify({
+        purpose: "weak_password_change",
+        username,
+        issuedAt: Date.now()
+    });
+    return encryptData(payload, env.SECRET_KEY, "SESSION_SALT");
+}
+
+async function verifyPasswordChangeToken(token, username, env, user = null) {
+    if (typeof token !== "string" || !token) {
+        return { ok: false };
+    }
+
+    try {
+        const raw = await decryptData(token, env.SECRET_KEY, "SESSION_SALT");
+        const payload = JSON.parse(raw);
+        const issuedAt = Number(payload.issuedAt);
+        const expectedUsername = normalizeUsername(username);
+        const tokenUsername = normalizeUsername(payload.username);
+        const isFresh = Number.isFinite(issuedAt) && Date.now() - issuedAt <= CHANGE_PASSWORD_TOKEN_TTL_MS;
+        const isNotInvalidated = !user?.session_invalid_before || issuedAt > user.session_invalid_before;
+        const ok = payload.purpose === "weak_password_change" && isFresh && isNotInvalidated && tokenUsername === expectedUsername;
+        return { ok };
+    } catch {
+        return { ok: false };
+    }
 }
 
 async function hashPassword(password) {

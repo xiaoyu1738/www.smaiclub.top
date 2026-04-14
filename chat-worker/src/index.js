@@ -152,7 +152,7 @@ export default {
                 const salt = generateSalt();
                 const iterations = 100000;
 
-                const accessHash = await hashAccessVerifier(roomKey);
+                const accessHash = await hashAccessVerifier(roomKey, salt, iterations);
 
                 // Find unused ID
                 let roomId = null;

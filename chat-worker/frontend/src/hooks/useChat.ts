@@ -94,13 +94,16 @@ export function useChat({ roomId, roomKey, username, role, avatarUrl }: UseChatP
                     if (data.type === 'handshake') {
                         const { salt, iterations, nonce } = data;
                         const key = await runWorkerTask('deriveKey', { password: roomKey, salt, iterations }) as CryptoKey;
-                        const accessHash = await runWorkerTask('sha256', { content: `SMAICLUB_CHAT_ACCESS:${roomKey}` }) as string;
+                        const verifierInput = `SMAICLUB_CHAT_ACCESS:${roomKey}`;
+                        const accessHash = await runWorkerTask('pbkdf2Hex', { password: verifierInput, salt, iterations }) as string;
+                        const legacyAccessHash = await runWorkerTask('sha256', { content: verifierInput }) as string;
                         const legacyKeyHash = await runWorkerTask('sha256', { content: roomKey }) as string;
                         const signature = await runWorkerTask('hmacSha256', { secretHex: accessHash, content: nonce }) as string;
+                        const legacyAccessSignature = await runWorkerTask('hmacSha256', { secretHex: legacyAccessHash, content: nonce }) as string;
                         const legacySignature = await runWorkerTask('hmacSha256', { secretHex: legacyKeyHash, content: nonce }) as string;
                         setDerivedKey(key);
                         keyRef.current = key;
-                        ws.send(JSON.stringify({ type: 'auth', signature, legacySignature }));
+                        ws.send(JSON.stringify({ type: 'auth', signature, legacyAccessSignature, legacySignature }));
                         return;
                     }
 
