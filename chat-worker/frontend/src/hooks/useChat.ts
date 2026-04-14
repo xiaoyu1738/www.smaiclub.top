@@ -17,6 +17,23 @@ export function useChat({ roomId, roomKey, username, role, avatarUrl }: UseChatP
     const keyRef = useRef<CryptoKey | null>(null);
     const socketRef = useRef<WebSocket | null>(null);
     const workerRef = useRef<Worker | null>(null);
+
+    const runWorkerTask = useCallback((type: string, payload: unknown) => {
+        const worker = workerRef.current;
+        if (!worker) return Promise.reject(new Error("Crypto worker is not ready"));
+
+        const id = `${type}_${Date.now()}_${Math.random()}`;
+        return new Promise((resolve, reject) => {
+            const handleMessage = (e: MessageEvent) => {
+                if (e.data.id !== id) return;
+                worker.removeEventListener('message', handleMessage);
+                if (e.data.success) resolve(e.data.result);
+                else reject(new Error(e.data.error || "Crypto worker failed"));
+            };
+            worker.addEventListener('message', handleMessage);
+            worker.postMessage({ id, type, payload });
+        });
+    }, []);
     
     // Load initial messages from DB
     useEffect(() => {
@@ -61,13 +78,12 @@ export function useChat({ roomId, roomKey, username, role, avatarUrl }: UseChatP
             }
 
             const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-            const wsUrl = `${protocol}//${window.location.host}/api/rooms/${roomId}/websocket?key=${encodeURIComponent(roomKey)}&username=${encodeURIComponent(username)}&role=${encodeURIComponent(role)}&avatarUrl=${encodeURIComponent(avatarUrl)}&since=${since}`;
+            const wsUrl = `${protocol}//${window.location.host}/api/rooms/${roomId}/websocket?since=${since}`;
             
             const ws = new WebSocket(wsUrl);
             socketRef.current = ws;
 
             ws.onopen = () => {
-                console.log('WebSocket Connected');
                 setStatus('connecting'); // Wait for handshake
             };
 
@@ -76,97 +92,75 @@ export function useChat({ roomId, roomKey, username, role, avatarUrl }: UseChatP
                     const data = JSON.parse(event.data);
 
                     if (data.type === 'handshake') {
-                        const { salt, iterations } = data;
-                        worker.postMessage({
-                            id: 'deriveKey',
-                            type: 'deriveKey',
-                            payload: { password: roomKey, salt, iterations }
-                        });
-                        
-                        const handleKey = (e: MessageEvent) => {
-                            if (e.data.id === 'deriveKey' && e.data.success) {
-                                const key = e.data.result;
-                                setDerivedKey(key);
-                                keyRef.current = key;
-                                setStatus('connected');
-                                worker.removeEventListener('message', handleKey);
-                            }
-                        };
-                        worker.addEventListener('message', handleKey);
+                        const { salt, iterations, nonce } = data;
+                        const key = await runWorkerTask('deriveKey', { password: roomKey, salt, iterations }) as CryptoKey;
+                        const verifierInput = `SMAICLUB_CHAT_ACCESS:${roomKey}`;
+                        const accessHash = await runWorkerTask('pbkdf2Hex', { password: verifierInput, salt, iterations }) as string;
+                        const legacyAccessHash = await runWorkerTask('sha256', { content: verifierInput }) as string;
+                        const legacyKeyHash = await runWorkerTask('sha256', { content: roomKey }) as string;
+                        const signature = await runWorkerTask('hmacSha256', { secretHex: accessHash, content: nonce }) as string;
+                        const legacyAccessSignature = await runWorkerTask('hmacSha256', { secretHex: legacyAccessHash, content: nonce }) as string;
+                        const legacySignature = await runWorkerTask('hmacSha256', { secretHex: legacyKeyHash, content: nonce }) as string;
+                        setDerivedKey(key);
+                        keyRef.current = key;
+                        ws.send(JSON.stringify({ type: 'auth', signature, legacyAccessSignature, legacySignature }));
+                        return;
+                    }
+
+                    if (data.type === 'auth_ok') {
+                        setStatus('connected');
                         return;
                     }
 
                     // eslint-disable-next-line @typescript-eslint/no-explicit-any
                     const processMessage = (msgData: any) => {
-                        const tryProcess = () => {
+                        const maxKeyWaitRetries = 100;
+                        const tryProcess = async (retryCount = 0) => {
                             const key = keyRef.current;
                             if (!key) {
-                                setTimeout(tryProcess, 50);
+                                if (retryCount >= maxKeyWaitRetries) {
+                                    setStatus('error');
+                                    return;
+                                }
+                                setTimeout(() => tryProcess(retryCount + 1), 50);
                                 return;
                             }
 
-                            const decryptionId = `decrypt_${Date.now()}_${Math.random()}`;
-                            worker.postMessage({
-                                id: decryptionId,
-                                type: 'decrypt',
-                                payload: { key, iv: msgData.iv, content: msgData.content }
-                            });
+                            const decryptedContent = await runWorkerTask('decrypt', { key, iv: msgData.iv, content: msgData.content }) as string;
+                            let sender = String(msgData.sender || "unknown");
+                            // Older rows may have encrypted sender values; new messages store plaintext usernames.
+                            if (!/^[A-Za-z0-9_]{3,32}$/.test(sender) && msgData.sender) {
+                                sender = await runWorkerTask('decrypt', { key, iv: msgData.iv, content: msgData.sender }) as string;
+                            }
 
-                            const handleDecryption = (e: MessageEvent) => {
-                                if (e.data.id === decryptionId) {
-                                    if (e.data.success) {
-                                        const decryptedContent = e.data.result;
-                                        
-                                        const senderDecryptionId = `decrypt_sender_${Date.now()}_${Math.random()}`;
-                                        worker.postMessage({
-                                            id: senderDecryptionId,
-                                            type: 'decrypt',
-                                            payload: { key, iv: msgData.iv, content: msgData.sender }
-                                        });
-
-                                        const handleSender = (ev: MessageEvent) => {
-                                            if (ev.data.id === senderDecryptionId && ev.data.success) {
-                                                const decryptedSender = ev.data.result;
-                                                
-                                                const newMessage: ChatMessage = {
-                                                    id: msgData.timestamp || Date.now(),
-                                                    roomId,
-                                                    content: decryptedContent,
-                                                    sender: decryptedSender,
-                                                    senderRole: msgData.senderRole,
-                                                    senderAvatar: msgData.senderAvatar,
-                                                    isMine: decryptedSender === username,
-                                                    timestamp: msgData.timestamp || Date.now(),
-                                                    tempId: msgData.tempId // Pass tempId if available
-                                                };
-
-                                                setMessages(prev => {
-                                                    // Deduplication logic using tempId
-                                                    if (msgData.tempId) {
-                                                        const existingIndex = prev.findIndex(m => m.tempId === msgData.tempId);
-                                                        if (existingIndex !== -1) {
-                                                            // Replace the temporary message with the confirmed one
-                                                            const newMessages = [...prev];
-                                                            newMessages[existingIndex] = { ...newMessage, pending: false };
-                                                            return newMessages.sort((a, b) => a.timestamp - b.timestamp);
-                                                        }
-                                                    }
-                                                    
-                                                    if (prev.some(m => m.id === newMessage.id)) return prev;
-                                                    return [...prev, newMessage].sort((a, b) => a.timestamp - b.timestamp);
-                                                });
-                                                saveMessage(newMessage);
-                                                worker.removeEventListener('message', handleSender);
-                                            }
-                                        };
-                                        worker.addEventListener('message', handleSender);
-                                    }
-                                    worker.removeEventListener('message', handleDecryption);
-                                }
+                            const newMessage: ChatMessage = {
+                                id: msgData.timestamp || Date.now(),
+                                roomId,
+                                content: decryptedContent,
+                                sender,
+                                senderRole: msgData.senderRole,
+                                senderAvatar: msgData.senderAvatar,
+                                isMine: sender === username,
+                                timestamp: msgData.timestamp || Date.now(),
+                                tempId: msgData.tempId
                             };
-                            worker.addEventListener('message', handleDecryption);
+
+                            setMessages(prev => {
+                                if (msgData.tempId) {
+                                    const existingIndex = prev.findIndex(m => m.tempId === msgData.tempId);
+                                    if (existingIndex !== -1) {
+                                        const newMessages = [...prev];
+                                        newMessages[existingIndex] = { ...newMessage, pending: false };
+                                        return newMessages.sort((a, b) => a.timestamp - b.timestamp);
+                                    }
+                                }
+
+                                if (prev.some(m => m.id === newMessage.id)) return prev;
+                                return [...prev, newMessage].sort((a, b) => a.timestamp - b.timestamp);
+                            });
+                            saveMessage(newMessage);
                         };
-                        tryProcess();
+                        tryProcess().catch(console.error);
                     };
 
                     if (data.type === 'history' || data.type === 'history_incremental') {
@@ -201,7 +195,6 @@ export function useChat({ roomId, roomKey, username, role, avatarUrl }: UseChatP
             ws.onclose = () => {
                 if (isUnmounting) return;
                 setStatus('disconnected');
-                console.log('WebSocket Disconnected, retrying in 3s...');
                 reconnectTimer = setTimeout(connect, 3000);
             };
 
@@ -220,7 +213,7 @@ export function useChat({ roomId, roomKey, username, role, avatarUrl }: UseChatP
             worker.terminate();
             workerRef.current = null;
         };
-    }, [roomId, roomKey, username, role, avatarUrl]);
+    }, [roomId, roomKey, username, role, avatarUrl, runWorkerTask]);
 
     const sendMessage = useCallback(async (content: string) => {
         if (!socketRef.current || status !== 'connected' || !derivedKey) return;
@@ -239,13 +232,14 @@ export function useChat({ roomId, roomKey, username, role, avatarUrl }: UseChatP
 
         setMessages(prev => [...prev, message]);
 
-        // Just send plaintext
-         socketRef.current?.send(JSON.stringify({
-            content: content,
+        const encrypted = await runWorkerTask('encrypt', { key: derivedKey, content }) as { iv: string; content: string };
+        socketRef.current?.send(JSON.stringify({
+            iv: encrypted.iv,
+            content: encrypted.content,
             tempId: tempId
         }));
 
-    }, [status, derivedKey, roomId, username]);
+    }, [status, derivedKey, roomId, username, runWorkerTask]);
 
     return { messages, sendMessage, status, loadMoreMessages };
 }

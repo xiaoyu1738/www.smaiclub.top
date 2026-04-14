@@ -201,7 +201,11 @@ export function htmlTemplate() {
 
             <div class="form-group">
                 <label>用户名</label>
-                <input type="text" id="reg-user" placeholder="设置用户名" required>
+                <input type="text" id="reg-user" placeholder="3-32位字母、数字或下划线" required>
+            </div>
+            <div class="form-group">
+                <label>昵称</label>
+                <input type="text" id="reg-display-name" placeholder="支持中文，1-32位" required>
             </div>
             <div class="form-group">
                 <label>密码</label>
@@ -219,7 +223,7 @@ export function htmlTemplate() {
 
             <div class="error" id="change-pass-error"></div>
             <input type="hidden" id="cp-user">
-            <input type="hidden" id="cp-old-pass">
+            <input type="hidden" id="cp-token">
 
             <div class="form-group">
                 <label>新密码</label>
@@ -314,9 +318,22 @@ export function htmlTemplate() {
         }
 
         async function handleRegister() {
-            const user = document.getElementById('reg-user').value;
+            const username = document.getElementById('reg-user').value.trim();
+            const displayName = document.getElementById('reg-display-name').value.normalize('NFKC').trim().replace(/\\s+/g, ' ');
             const pass = document.getElementById('reg-pass').value;
             const errorDiv = document.getElementById('register-error');
+
+            if (!/^[A-Za-z0-9_]{3,32}$/.test(username)) {
+                errorDiv.textContent = "用户名仅支持 3-32 位英文字母、数字和下划线";
+                errorDiv.style.display = 'block';
+                return;
+            }
+
+            if (!/^[\\p{L}\\p{N}_\\-\\s]{1,32}$/u.test(displayName)) {
+                errorDiv.textContent = "昵称仅支持 1-32 位中文、字母、数字、空格、下划线和短横线";
+                errorDiv.style.display = 'block';
+                return;
+            }
 
             if (pass.length < 8 || !/[A-Za-z]/.test(pass) || !/\\d/.test(pass)) {
                 errorDiv.textContent = "密码必须大于8位且包含字母和数字";
@@ -328,7 +345,7 @@ export function htmlTemplate() {
                 const res = await fetch(API_BASE + '/register', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ username: user, password: pass })
+                    body: JSON.stringify({ username, displayName, password: pass })
                 });
                 const data = await res.json();
                 if (res.ok) {
@@ -371,13 +388,13 @@ export function htmlTemplate() {
                     cpForm.style.animation = 'fadeIn 0.5s ease-out';
 
                     document.getElementById('cp-user').value = user;
-                    document.getElementById('cp-old-pass').value = pass;
+                    document.getElementById('cp-token').value = data.changeToken || '';
                     return;
                 }
 
                 // 处理 VIP 许可证强制要求 (LICENSE_REQUIRED)
                 if (res.status === 403 && (data.error === 'LICENSE_REQUIRED' || data.error === 'LICENSE_INVALID')) {
-                     errorDiv.innerHTML = data.message + '<br><small style="opacity:0.8">请在下方输入框填写许可证</small>';
+                     errorDiv.textContent = data.message || '请填写许可证';
                      errorDiv.style.display = 'block';
 
                      // 高亮显示许可证输入框
@@ -421,7 +438,7 @@ export function htmlTemplate() {
 
         async function handleChangePass() {
             const user = document.getElementById('cp-user').value;
-            const oldPass = document.getElementById('cp-old-pass').value;
+            const changeToken = document.getElementById('cp-token').value;
             const newPass = document.getElementById('cp-new-pass').value;
             const confirmPass = document.getElementById('cp-confirm-pass').value;
             const errorDiv = document.getElementById('change-pass-error');
@@ -442,7 +459,7 @@ export function htmlTemplate() {
                 const res = await fetch(API_BASE + '/change-password', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ username: user, oldPassword: oldPass, newPassword: newPass })
+                    body: JSON.stringify({ username: user, changeToken, newPassword: newPass })
                 });
                 const data = await res.json();
                 if (res.ok) {

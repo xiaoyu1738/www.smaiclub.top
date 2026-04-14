@@ -1,6 +1,6 @@
 import { ChatRoom } from './ChatRoom.js';
 import { htmlTemplate, cryptoWorkerScript } from './htmlTemplate.js';
-import { generateRoomKey, generateSalt, validateCustomKey, getUserFromRequest, getEffectiveRole, getTierLimits, encryptLogData, decryptLogData, isUserBanned } from './utils.js';
+import { generateRoomKey, generateSalt, validateCustomKey, getUserFromRequest, getEffectiveRole, getTierLimits, encryptLogData, decryptLogData, isUserBanned, hashAccessVerifier } from './utils.js';
 
 export { ChatRoom };
 
@@ -142,7 +142,7 @@ export default {
                 let roomKey;
                 if (body.customKey) {
                     if (!validateCustomKey(body.customKey)) {
-                        return new Response(JSON.stringify({ error: "自定义密钥无效。必须为8-20位的字母或数字。" }), { status: 400, headers: corsHeaders });
+                        return new Response(JSON.stringify({ error: "自定义密钥无效。必须为12-32位的字母或数字。" }), { status: 400, headers: corsHeaders });
                     }
                     roomKey = body.customKey;
                 } else {
@@ -152,13 +152,7 @@ export default {
                 const salt = generateSalt();
                 const iterations = 100000;
 
-                // Calculate Hash of Key for storage/verification
-                // Note: We hash the key itself for simple verification, but actual encryption uses PBKDF2 with salt/iterations
-                const enc = new TextEncoder();
-                const keyData = enc.encode(roomKey);
-                const hashBuffer = await crypto.subtle.digest("SHA-256", keyData);
-                const hashArray = Array.from(new Uint8Array(hashBuffer));
-                const keyHash = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+                const accessHash = await hashAccessVerifier(roomKey, salt, iterations);
 
                 // Find unused ID
                 let roomId = null;
@@ -190,6 +184,21 @@ export default {
                      }), { status: 503, headers: corsHeaders });
                 }
 
+                // 5. Initialize DO (Store access verifier & ID)
+                const id = env.CHAT_ROOM.idFromName(roomId.toString());
+                const stub = env.CHAT_ROOM.get(id);
+
+                const initResponse = await stub.fetch(new Request("http://internal/init", {
+                    method: "POST",
+                    body: JSON.stringify({ accessHash, roomId, salt, iterations })
+                }));
+
+                if (!initResponse.ok) {
+                    await env.CHAT_DB.prepare("DELETE FROM room_members WHERE room_id = ?").bind(roomId).run();
+                    await env.CHAT_DB.prepare("DELETE FROM rooms WHERE id = ?").bind(roomId).run();
+                    throw new Error("Room initialization failed");
+                }
+
                 // Log Room Creation
                 try {
                     const logDetails = await encryptLogData({
@@ -202,15 +211,6 @@ export default {
                         "INSERT INTO activity_logs (event_type, user_id, details, ip_address, created_at) VALUES (?, ?, ?, ?, ?)"
                     ).bind('create_room', user.username, logDetails, request.headers.get('CF-Connecting-IP') || 'unknown', Date.now()).run();
                 } catch (e) { console.error("Logging failed", e); }
-
-                // 5. Initialize DO (Store KeyHash & ID)
-                const id = env.CHAT_ROOM.idFromName(roomId.toString());
-                const stub = env.CHAT_ROOM.get(id);
-
-                await stub.fetch(new Request("http://internal/init", {
-                    method: "POST",
-                    body: JSON.stringify({ keyHash, roomId, salt, iterations })
-                }));
 
                 return new Response(JSON.stringify({
                     success: true,
@@ -231,8 +231,6 @@ export default {
             const match = url.pathname.match(/\/api\/rooms\/(\d+)\/websocket/);
             if (match) {
                 const roomId = match[1];
-                const key = url.searchParams.get("key");
-
                 // Auth Check
                 const user = await getUserFromRequest(request, env);
                 if (!user) return new Response(JSON.stringify({ error: "Unauthorized", message: "请先登录" }), { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
@@ -268,6 +266,7 @@ export default {
                 doUrl.searchParams.set("username", user.username);
                 doUrl.searchParams.set("role", getEffectiveRole(user));
                 doUrl.searchParams.set("avatarUrl", user.avatarUrl || '');
+                doUrl.searchParams.set("ip", request.headers.get("CF-Connecting-IP") || "unknown");
                 
                 if (room) {
                     doUrl.searchParams.set("salt", room.salt || 'SMAICLUB_CHAT_SALT');

@@ -10,6 +10,7 @@ interface ChatRoomProps {
     roomName: string;
     user: {
         username: string;
+        displayName: string;
         role: string;
         avatarUrl: string;
     };
@@ -178,7 +179,7 @@ export const ChatRoom: React.FC<ChatRoomProps> = ({ roomId, roomKey, roomName, u
                             <img src={user.avatarUrl} alt="" className="w-8 h-8 rounded-full object-cover" />
                         ) : (
                             <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-blue-400 to-purple-500 flex items-center justify-center text-white text-xs font-bold">
-                                {user.username.charAt(0).toUpperCase()}
+                                {(user.displayName || user.username).charAt(0).toUpperCase()}
                             </div>
                         )}
                     </div>

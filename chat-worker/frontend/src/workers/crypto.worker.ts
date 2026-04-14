@@ -15,6 +15,15 @@ self.onmessage = async (e: MessageEvent) => {
             case 'decrypt':
                 result = await decryptMessage(payload.key, payload.iv, payload.content);
                 break;
+            case 'sha256':
+                result = await sha256Hex(payload.content);
+                break;
+            case 'hmacSha256':
+                result = await hmacSha256Hex(payload.secretHex, payload.content);
+                break;
+            case 'pbkdf2Hex':
+                result = await pbkdf2Hex(payload.password, payload.salt, payload.iterations);
+                break;
             default:
                 throw new Error(`Unknown operation: ${type}`);
         }
@@ -35,19 +44,7 @@ async function deriveKey(password: string, salt: string | Uint8Array, iterations
         ["deriveKey"]
     );
 
-    let saltBuffer: Uint8Array;
-    if (typeof salt === 'string') {
-        // Hex string to Uint8Array check
-        const match = salt.match(/.{1,2}/g);
-        if (match && /^[0-9a-fA-F]+$/.test(salt)) {
-             saltBuffer = new Uint8Array(match.map(byte => parseInt(byte, 16)));
-        } else {
-             // Legacy string salt
-             saltBuffer = enc.encode(salt);
-        }
-    } else {
-        saltBuffer = salt;
-    }
+    const saltBuffer = saltToBytes(salt);
 
     return await crypto.subtle.deriveKey(
         {
@@ -61,6 +58,23 @@ async function deriveKey(password: string, salt: string | Uint8Array, iterations
         false,
         ["encrypt", "decrypt"]
     );
+}
+
+async function pbkdf2Hex(password: string, salt: string | Uint8Array, iterations: number): Promise<string> {
+    const enc = new TextEncoder();
+    const keyMaterial = await crypto.subtle.importKey(
+        "raw",
+        enc.encode(password),
+        "PBKDF2",
+        false,
+        ["deriveBits"]
+    );
+    const bits = await crypto.subtle.deriveBits(
+        { name: "PBKDF2", salt: saltToBytes(salt) as BufferSource, iterations, hash: "SHA-256" },
+        keyMaterial,
+        256
+    );
+    return bytesToHex(new Uint8Array(bits));
 }
 
 async function encryptMessage(key: CryptoKey, content: string) {
@@ -95,6 +109,43 @@ async function decryptMessage(key: CryptoKey, ivB64: string, contentB64: string)
         console.error("Decryption failed", e);
         return "[Decryption Failed]";
     }
+}
+
+async function sha256Hex(content: string): Promise<string> {
+    const buffer = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(content));
+    return bytesToHex(new Uint8Array(buffer));
+}
+
+async function hmacSha256Hex(secretHex: string, content: string): Promise<string> {
+    const key = await crypto.subtle.importKey(
+        "raw",
+        hexToBytes(secretHex) as BufferSource,
+        { name: "HMAC", hash: "SHA-256" },
+        false,
+        ["sign"]
+    );
+    const signature = await crypto.subtle.sign("HMAC", key, new TextEncoder().encode(content));
+    return bytesToHex(new Uint8Array(signature));
+}
+
+function hexToBytes(hex: string): Uint8Array {
+    if (!/^(?:[0-9a-fA-F]{2})+$/.test(hex)) {
+        throw new Error("Invalid hex input");
+    }
+    const match = hex.match(/.{2}/g) ?? [];
+    return new Uint8Array(match.map(byte => parseInt(byte, 16)));
+}
+
+function saltToBytes(salt: string | Uint8Array): Uint8Array {
+    if (typeof salt !== 'string') return salt;
+    if (/^(?:[0-9a-fA-F]{2})+$/.test(salt)) {
+        return hexToBytes(salt);
+    }
+    return new TextEncoder().encode(salt);
+}
+
+function bytesToHex(bytes: Uint8Array): string {
+    return Array.from(bytes).map(b => b.toString(16).padStart(2, '0')).join('');
 }
 
 export {}; // Make this a module

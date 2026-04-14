@@ -17,3 +17,4 @@ hall-worker/node_modules/*
 hall-worker/.wrangler/*
 .nexus-map/*
 .codex
+backups/*
