@@ -318,18 +318,18 @@ export function htmlTemplate() {
         }
 
         async function handleRegister() {
-            const user = document.getElementById('reg-user').value;
-            const displayName = document.getElementById('reg-display-name').value;
+            const username = document.getElementById('reg-user').value.trim();
+            const displayName = document.getElementById('reg-display-name').value.normalize('NFKC').trim().replace(/\\s+/g, ' ');
             const pass = document.getElementById('reg-pass').value;
             const errorDiv = document.getElementById('register-error');
 
-            if (!/^[A-Za-z0-9_]{3,32}$/.test(user.trim())) {
+            if (!/^[A-Za-z0-9_]{3,32}$/.test(username)) {
                 errorDiv.textContent = "用户名仅支持 3-32 位英文字母、数字和下划线";
                 errorDiv.style.display = 'block';
                 return;
             }
 
-            if (!/^[\\p{L}\\p{N}_\\-\\s]{1,32}$/u.test(displayName.normalize('NFKC').trim().replace(/\\s+/g, ' '))) {
+            if (!/^[\\p{L}\\p{N}_\\-\\s]{1,32}$/u.test(displayName)) {
                 errorDiv.textContent = "昵称仅支持 1-32 位中文、字母、数字、空格、下划线和短横线";
                 errorDiv.style.display = 'block';
                 return;
@@ -345,7 +345,7 @@ export function htmlTemplate() {
                 const res = await fetch(API_BASE + '/register', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ username: user, displayName, password: pass })
+                    body: JSON.stringify({ username, displayName, password: pass })
                 });
                 const data = await res.json();
                 if (res.ok) {

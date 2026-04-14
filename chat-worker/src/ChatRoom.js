@@ -600,8 +600,11 @@ async function hmacSha256Hex(secretHex, value) {
 
 function hexToBytes(hex) {
     const normalized = typeof hex === 'string' ? hex : '';
-    const match = normalized.match(/.{1,2}/g);
-    return new Uint8Array(match ? match.map(byte => parseInt(byte, 16)) : []);
+    if (!/^(?:[0-9a-fA-F]{2})+$/.test(normalized)) {
+        throw new Error("Invalid hex input");
+    }
+    const match = normalized.match(/.{2}/g) || [];
+    return new Uint8Array(match.map(byte => parseInt(byte, 16)));
 }
 
 function timingSafeEqualHex(a, b) {

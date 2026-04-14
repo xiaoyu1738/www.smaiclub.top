@@ -121,8 +121,11 @@ async function hmacSha256Hex(secretHex: string, content: string): Promise<string
 }
 
 function hexToBytes(hex: string): Uint8Array {
-    const match = hex.match(/.{1,2}/g);
-    return new Uint8Array(match ? match.map(byte => parseInt(byte, 16)) : []);
+    if (!/^(?:[0-9a-fA-F]{2})+$/.test(hex)) {
+        throw new Error("Invalid hex input");
+    }
+    const match = hex.match(/.{2}/g) ?? [];
+    return new Uint8Array(match.map(byte => parseInt(byte, 16)));
 }
 
 export {}; // Make this a module

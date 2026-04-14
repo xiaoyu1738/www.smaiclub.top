@@ -727,37 +727,50 @@ export default {
 async function ensureSecuritySchema(env) {
     if (!schemaReadyPromise) {
         schemaReadyPromise = (async () => {
-            await env.DB.prepare(`
-                CREATE TABLE IF NOT EXISTS login_attempts (
-                    key TEXT PRIMARY KEY,
-                    username TEXT,
-                    ip TEXT,
-                    failure_count INTEGER NOT NULL DEFAULT 0,
-                    locked_until INTEGER,
-                    updated_at INTEGER NOT NULL
-                )
-            `).run();
-            await env.DB.prepare(`
-                CREATE TABLE IF NOT EXISTS banned_ips (
-                    ip TEXT PRIMARY KEY,
-                    banned_until INTEGER NOT NULL,
-                    reason TEXT,
-                    created_at INTEGER NOT NULL
-                )
-            `).run();
+            const requiredTables = new Set(["login_attempts", "banned_ips"]);
+            const existingTables = await env.DB.prepare(`
+                SELECT name FROM sqlite_master
+                WHERE type = 'table' AND name IN ('login_attempts', 'banned_ips')
+            `).all();
+            for (const row of existingTables.results || []) {
+                requiredTables.delete(row.name);
+            }
 
-            for (const statement of [
-                "ALTER TABLE users ADD COLUMN display_name TEXT",
-                "ALTER TABLE users ADD COLUMN password_algo TEXT",
-                "ALTER TABLE users ADD COLUMN password_salt TEXT",
-                "ALTER TABLE users ADD COLUMN session_invalid_before INTEGER"
-            ]) {
-                try {
+            if (requiredTables.has("login_attempts")) {
+                await env.DB.prepare(`
+                    CREATE TABLE IF NOT EXISTS login_attempts (
+                        key TEXT PRIMARY KEY,
+                        username TEXT,
+                        ip TEXT,
+                        failure_count INTEGER NOT NULL DEFAULT 0,
+                        locked_until INTEGER,
+                        updated_at INTEGER NOT NULL
+                    )
+                `).run();
+            }
+            if (requiredTables.has("banned_ips")) {
+                await env.DB.prepare(`
+                    CREATE TABLE IF NOT EXISTS banned_ips (
+                        ip TEXT PRIMARY KEY,
+                        banned_until INTEGER NOT NULL,
+                        reason TEXT,
+                        created_at INTEGER NOT NULL
+                    )
+                `).run();
+            }
+
+            const usersInfo = await env.DB.prepare("PRAGMA table_info(users)").all();
+            const userColumns = new Set((usersInfo.results || []).map(column => column.name));
+            const requiredColumns = [
+                ["display_name", "ALTER TABLE users ADD COLUMN display_name TEXT"],
+                ["password_algo", "ALTER TABLE users ADD COLUMN password_algo TEXT"],
+                ["password_salt", "ALTER TABLE users ADD COLUMN password_salt TEXT"],
+                ["session_invalid_before", "ALTER TABLE users ADD COLUMN session_invalid_before INTEGER"]
+            ];
+
+            for (const [column, statement] of requiredColumns) {
+                if (!userColumns.has(column)) {
                     await env.DB.prepare(statement).run();
-                } catch (e) {
-                    if (!String(e?.message || e).toLowerCase().includes("duplicate column")) {
-                        console.warn("Schema migration skipped:", statement, e?.message || e);
-                    }
                 }
             }
         })();
@@ -901,9 +914,9 @@ async function recordLoginFailure(env, request, username) {
 }
 
 async function clearLoginFailures(env, request, username) {
-    for (const key of getLoginAttemptKeys(request, username)) {
-        await env.DB.prepare("DELETE FROM login_attempts WHERE key = ?").bind(key).run();
-    }
+    const normalizedUsername = normalizeUsername(username).toLowerCase();
+    if (!normalizedUsername) return;
+    await env.DB.prepare("DELETE FROM login_attempts WHERE key = ?").bind(`user:${normalizedUsername}`).run();
 }
 
 async function hashPassword(password) {
@@ -923,7 +936,8 @@ async function verifyStoredPassword(user, password, env) {
     }
 
     const decryptedPassword = await decryptData(user.password, env.SECRET_KEY, user.salt);
-    return { ok: password === decryptedPassword, needsMigration: password === decryptedPassword };
+    const ok = timingSafeEqualString(password, decryptedPassword);
+    return { ok, needsMigration: ok };
 }
 
 async function verifyPbkdf2Password(password, storedHash, passwordSalt) {
@@ -970,6 +984,11 @@ function timingSafeEqual(a, b) {
         diff |= (a[i] || 0) ^ (b[i] || 0);
     }
     return diff === 0;
+}
+
+function timingSafeEqualString(a, b) {
+    const enc = new TextEncoder();
+    return timingSafeEqual(enc.encode(String(a || "")), enc.encode(String(b || "")));
 }
 
 function bytesToBase64(bytes) {

@@ -184,6 +184,21 @@ export default {
                      }), { status: 503, headers: corsHeaders });
                 }
 
+                // 5. Initialize DO (Store access verifier & ID)
+                const id = env.CHAT_ROOM.idFromName(roomId.toString());
+                const stub = env.CHAT_ROOM.get(id);
+
+                const initResponse = await stub.fetch(new Request("http://internal/init", {
+                    method: "POST",
+                    body: JSON.stringify({ accessHash, roomId, salt, iterations })
+                }));
+
+                if (!initResponse.ok) {
+                    await env.CHAT_DB.prepare("DELETE FROM room_members WHERE room_id = ?").bind(roomId).run();
+                    await env.CHAT_DB.prepare("DELETE FROM rooms WHERE id = ?").bind(roomId).run();
+                    throw new Error("Room initialization failed");
+                }
+
                 // Log Room Creation
                 try {
                     const logDetails = await encryptLogData({
@@ -196,15 +211,6 @@ export default {
                         "INSERT INTO activity_logs (event_type, user_id, details, ip_address, created_at) VALUES (?, ?, ?, ?, ?)"
                     ).bind('create_room', user.username, logDetails, request.headers.get('CF-Connecting-IP') || 'unknown', Date.now()).run();
                 } catch (e) { console.error("Logging failed", e); }
-
-                // 5. Initialize DO (Store access verifier & ID)
-                const id = env.CHAT_ROOM.idFromName(roomId.toString());
-                const stub = env.CHAT_ROOM.get(id);
-
-                await stub.fetch(new Request("http://internal/init", {
-                    method: "POST",
-                    body: JSON.stringify({ accessHash, roomId, salt, iterations })
-                }));
 
                 return new Response(JSON.stringify({
                     success: true,

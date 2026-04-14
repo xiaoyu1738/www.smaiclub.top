@@ -111,15 +111,21 @@ export function useChat({ roomId, roomKey, username, role, avatarUrl }: UseChatP
 
                     // eslint-disable-next-line @typescript-eslint/no-explicit-any
                     const processMessage = (msgData: any) => {
-                        const tryProcess = async () => {
+                        const maxKeyWaitRetries = 100;
+                        const tryProcess = async (retryCount = 0) => {
                             const key = keyRef.current;
                             if (!key) {
-                                setTimeout(tryProcess, 50);
+                                if (retryCount >= maxKeyWaitRetries) {
+                                    setStatus('error');
+                                    return;
+                                }
+                                setTimeout(() => tryProcess(retryCount + 1), 50);
                                 return;
                             }
 
                             const decryptedContent = await runWorkerTask('decrypt', { key, iv: msgData.iv, content: msgData.content }) as string;
                             let sender = String(msgData.sender || "unknown");
+                            // Older rows may have encrypted sender values; new messages store plaintext usernames.
                             if (!/^[A-Za-z0-9_]{3,32}$/.test(sender) && msgData.sender) {
                                 sender = await runWorkerTask('decrypt', { key, iv: msgData.iv, content: msgData.sender }) as string;
                             }
