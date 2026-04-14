@@ -78,8 +78,8 @@ function App() {
     }, []);
 
     return (
-        <div className="relative h-screen flex flex-col items-center justify-center p-4">
-            <div className="absolute top-6 right-6 z-50">
+        <div className="app-shell relative flex flex-col items-center justify-center p-4">
+            <div className={`app-auth absolute top-6 right-6 z-50 ${view === 'chat' ? 'hidden sm:block' : ''}`}>
                 <AuthControl />
             </div>
 

@@ -131,7 +131,7 @@ export const ChatRoom: React.FC<ChatRoomProps> = ({ roomId, roomKey, roomName, u
         }
 
         return (
-            <div className={`flex ${message.isMine ? 'justify-end' : 'justify-start'} mb-4 gap-2 px-4`}>
+            <div className={`chat-message-row flex ${message.isMine ? 'justify-end' : 'justify-start'} mb-4 gap-2 px-4`}>
                 {!message.isMine && (
                     <div className="flex-shrink-0 mt-5">
                         {message.senderAvatar ? (
@@ -144,7 +144,7 @@ export const ChatRoom: React.FC<ChatRoomProps> = ({ roomId, roomKey, roomName, u
                     </div>
                 )}
                 
-                <div className={`max-w-[70%] flex flex-col ${message.isMine ? 'items-end' : 'items-start'}`}>
+                <div className={`chat-message-stack max-w-[70%] flex flex-col ${message.isMine ? 'items-end' : 'items-start'}`}>
                     {!message.isMine && (
                          <div className="flex items-center gap-1.5 mb-1 ml-1">
                             <span className="text-[10px] text-gray-500">{message.sender}</span>
@@ -156,7 +156,7 @@ export const ChatRoom: React.FC<ChatRoomProps> = ({ roomId, roomKey, roomName, u
                          </div>
                     )}
                     
-                    <div className={`px-4 py-2.5 rounded-2xl text-sm leading-relaxed break-words shadow-sm ${
+                    <div className={`chat-bubble px-4 py-2.5 rounded-2xl text-sm leading-relaxed break-words shadow-sm ${
                         message.isMine 
                         ? 'bg-blue-600 text-white rounded-br-none' 
                         : 'bg-[#2a2a2c] text-gray-100 rounded-bl-none border border-white/5'
@@ -188,27 +188,27 @@ export const ChatRoom: React.FC<ChatRoomProps> = ({ roomId, roomKey, roomName, u
     };
 
     return (
-        <div className="glass w-full max-w-4xl h-[85vh] rounded-2xl shadow-2xl flex flex-col overflow-hidden bg-black/40 backdrop-blur-md border border-white/10">
+        <div className="chat-shell glass w-full max-w-4xl h-[85vh] rounded-2xl shadow-2xl flex flex-col overflow-hidden bg-black/40 backdrop-blur-md border border-white/10">
             {/* Header */}
-            <div className="h-16 bg-white/5 border-b border-white/10 flex items-center justify-between px-6 shrink-0">
-                <div className="flex items-center gap-4">
+            <div className="chat-header h-16 bg-white/5 border-b border-white/10 flex items-center justify-between px-6 shrink-0">
+                <div className="chat-title-group flex items-center gap-4 min-w-0">
                     <div className="relative">
                         <div className={`w-3 h-3 rounded-full ${status === 'connected' ? 'bg-green-500 shadow-[0_0_10px_#22c55e]' : 'bg-red-500'}`}></div>
                     </div>
-                    <div>
-                        <h2 className="font-bold text-lg leading-tight text-white">{roomName} <span className="text-xs font-normal text-gray-500 ml-2">ID: {roomId}</span></h2>
+                    <div className="min-w-0">
+                        <h2 className="chat-title font-bold text-lg leading-tight text-white">{roomName} <span className="chat-room-id text-xs font-normal text-gray-500 ml-2">ID: {roomId}</span></h2>
                         <div className="text-xs text-gray-400">
                             {status === 'connected' ? 'Secure Connection' : status === 'connecting' ? 'Connecting...' : 'Disconnected'}
                         </div>
                     </div>
                 </div>
-                <button onClick={onLeave} className="px-4 py-2 bg-red-500/10 hover:bg-red-500/20 text-red-400 text-sm rounded-lg transition border border-red-500/20">
+                <button onClick={onLeave} className="chat-leave-button px-4 py-2 bg-red-500/10 hover:bg-red-500/20 text-red-400 text-sm rounded-lg transition border border-red-500/20">
                     离开
                 </button>
             </div>
 
             {/* Messages Area with Virtual Scroll */}
-            <div className="flex-1 bg-black/20">
+            <div className="chat-messages flex-1 min-h-0 bg-black/20">
                 <Virtuoso
                     ref={virtuosoRef}
                     data={messages}
@@ -225,8 +225,8 @@ export const ChatRoom: React.FC<ChatRoomProps> = ({ roomId, roomKey, roomName, u
             </div>
 
             {/* Input Area */}
-            <div className="p-4 bg-white/5 border-t border-white/10 shrink-0">
-                <form onSubmit={handleSend} className="flex gap-3">
+            <div className="chat-input-wrap p-4 bg-white/5 border-t border-white/10 shrink-0">
+                <form onSubmit={handleSend} className="chat-input-form flex gap-3">
                     <input 
                         type="text" 
                         value={input} 

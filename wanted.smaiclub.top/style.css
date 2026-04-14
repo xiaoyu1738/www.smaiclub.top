@@ -1,164 +1,499 @@
-/* --- 基本样式 --- */
-body {
-    font-family: 'Times New Roman', 'SimHei', 'Microsoft YaHei', 'Noto Sans SC', serif; /* 更像旧报纸/海报的字体 */
-    max-width: 800px;
-    margin: 50px auto;
-    padding: 40px;
-    border: 15px solid #3e2723; /* 深棕色木纹质感边框 */
-    background-color: #fdf5e6; /* 老旧纸张颜色 */
-    background-image: url("data:image/svg+xml,%3Csvg width='100' height='100' viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M11 18c3.866 0 7-3.134 7-7s-3.134-7-7-7-7 3.134-7 7 3.134 7 7 7zm48 25c3.866 0 7-3.134 7-7s-3.134-7-7-7-7 3.134-7 7 3.134 7 7 7zm-43-7c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zm63 31c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zM34 90c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zm56-76c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zM12 86c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm28-65c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm23-11c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm-6 60c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm29 22c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zM32 63c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm57-13c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm-9-21c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM60 91c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM35 41c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM12 60c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2z' fill='%23d7ccc8' fill-opacity='0.4' fill-rule='evenodd'/%3E%3C/svg%3E");
-    box-shadow: 0 10px 30px rgba(0,0,0,0.5), inset 0 0 60px rgba(0,0,0,0.1);
-    position: relative;
+:root {
+    --ink: #201713;
+    --muted: #6c5a4c;
+    --paper: #f3dfb8;
+    --paper-deep: #d9b16c;
+    --red: #9a1616;
+    --red-dark: #520f0f;
+    --shadow: rgba(32, 23, 19, 0.42);
+    --line: rgba(79, 42, 25, 0.28);
 }
 
-/* 钉子效果 */
+* {
+    box-sizing: border-box;
+}
+
+html {
+    min-height: 100%;
+}
+
+body {
+    margin: 0;
+    min-height: 100vh;
+    color: var(--ink);
+    font-family: "Noto Serif SC", "Songti SC", "SimSun", serif;
+    background:
+        linear-gradient(90deg, rgba(0, 0, 0, 0.24), transparent 12%, transparent 88%, rgba(0, 0, 0, 0.24)),
+        radial-gradient(circle at 50% 0%, rgba(255, 232, 166, 0.72), transparent 34rem),
+        repeating-linear-gradient(90deg, rgba(74, 37, 21, 0.17) 0 1px, transparent 1px 96px),
+        linear-gradient(180deg, #2b1b16 0%, #5c3423 38%, #160f0c 100%);
+    overflow-x: hidden;
+}
+
+body::before,
+body::after {
+    content: "";
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+}
+
 body::before {
-    content: '';
+    background:
+        radial-gradient(circle at 20% 12%, rgba(255, 220, 137, 0.18), transparent 16rem),
+        radial-gradient(circle at 82% 20%, rgba(255, 180, 97, 0.16), transparent 18rem),
+        linear-gradient(115deg, transparent 0 38%, rgba(255, 244, 199, 0.12) 39% 44%, transparent 45% 100%);
+}
+
+body::after {
+    opacity: 0.28;
+    background-image:
+        linear-gradient(rgba(255, 237, 190, 0.10) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255, 237, 190, 0.08) 1px, transparent 1px);
+    background-size: 24px 24px;
+    mix-blend-mode: overlay;
+}
+
+.wanted-hall {
+    position: relative;
+    z-index: 1;
+    width: min(1180px, calc(100% - 32px));
+    margin: 0 auto;
+    padding: 56px 0 40px;
+}
+
+.hero {
+    position: relative;
+    padding: 44px 28px 34px;
+    text-align: center;
+    border: 1px solid rgba(255, 231, 173, 0.24);
+    border-radius: 34px 34px 12px 12px;
+    background:
+        linear-gradient(180deg, rgba(70, 36, 21, 0.86), rgba(23, 14, 10, 0.92)),
+        repeating-linear-gradient(90deg, transparent 0 68px, rgba(255, 220, 150, 0.10) 69px 70px);
+    box-shadow: 0 28px 80px rgba(0, 0, 0, 0.42), inset 0 0 70px rgba(255, 206, 116, 0.10);
+    color: #ffe6b2;
+    overflow: hidden;
+}
+
+.hero::before,
+.hero::after {
+    content: "";
     position: absolute;
-    top: -25px;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 20px;
-    height: 20px;
-    border-radius: 50%;
-    background: radial-gradient(circle at 30% 30%, #90a4ae, #37474f);
-    box-shadow: 0 2px 4px rgba(0,0,0,0.4);
-    z-index: 10;
+    top: 0;
+    bottom: 0;
+    width: 120px;
+    border-left: 1px solid rgba(255, 221, 158, 0.16);
+    border-right: 1px solid rgba(255, 221, 158, 0.16);
+    background: linear-gradient(90deg, rgba(255, 228, 166, 0.10), transparent);
+}
+
+.hero::before {
+    left: 8%;
+}
+
+.hero::after {
+    right: 8%;
+    transform: scaleX(-1);
+}
+
+.eyebrow {
+    position: relative;
+    z-index: 1;
+    margin: 0 0 10px;
+    font-family: "Oswald", "Noto Serif SC", sans-serif;
+    font-size: 0.88rem;
+    letter-spacing: 0.36em;
+    text-transform: uppercase;
+    color: #d8a84f;
 }
 
 h1 {
-    text-align: center;
-    color: #8a0000;
-    font-size: 5rem;
-    margin: 0 0 30px 0;
-    font-weight: 900;
-    text-transform: uppercase;
-    letter-spacing: 10px;
-    font-family: 'Impact', 'Charcoal', 'SimHei', 'Microsoft YaHei', 'Noto Sans SC', sans-serif;
-    text-shadow: 2px 2px 0px rgba(0,0,0,0.2);
-    border-bottom: 4px solid #3e2723;
-    padding-bottom: 20px;
-}
-
-.poster-content {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 30px;
-}
-
-.image-container {
     position: relative;
-    padding: 15px;
-    background: #fff;
-    border: 1px solid #ddd;
-    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-    transform: rotate(-1deg);
+    z-index: 1;
+    margin: 0;
+    font-family: "ZCOOL XiaoWei", "Noto Serif SC", serif;
+    font-size: clamp(3.8rem, 10vw, 9rem);
+    line-height: 0.95;
+    letter-spacing: 0.08em;
+    text-shadow: 0 8px 22px rgba(0, 0, 0, 0.48);
 }
 
-/* 胶带效果 */
-.image-container::after {
-    content: '';
+.hero-copy {
+    position: relative;
+    z-index: 1;
+    max-width: 650px;
+    margin: 22px auto 0;
+    color: rgba(255, 238, 199, 0.80);
+    font-size: clamp(1rem, 2vw, 1.18rem);
+    line-height: 1.8;
+}
+
+.hall-board {
+    position: relative;
+    margin-top: 22px;
+    padding: clamp(18px, 4vw, 42px);
+    border: 1px solid rgba(255, 225, 166, 0.24);
+    border-radius: 14px 14px 36px 36px;
+    background:
+        linear-gradient(90deg, rgba(37, 21, 15, 0.94), rgba(103, 58, 34, 0.82), rgba(37, 21, 15, 0.94)),
+        repeating-linear-gradient(90deg, transparent 0 110px, rgba(255, 232, 166, 0.08) 111px 112px);
+    box-shadow: 0 32px 80px rgba(0, 0, 0, 0.48), inset 0 1px 0 rgba(255, 238, 192, 0.20);
+}
+
+.hall-board::before {
+    content: "";
     position: absolute;
-    top: -15px;
+    left: 24px;
+    right: 24px;
+    top: 22px;
+    height: 3px;
+    border-radius: 999px;
+    background: linear-gradient(90deg, transparent, rgba(255, 218, 142, 0.72), transparent);
+}
+
+.hall-metrics {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 14px;
+    margin-bottom: 26px;
+}
+
+.hall-metrics article {
+    padding: 16px 18px;
+    border: 1px solid rgba(255, 220, 150, 0.22);
+    border-radius: 18px;
+    background: rgba(22, 12, 9, 0.42);
+    color: #f4d89b;
+}
+
+.hall-metrics span {
+    display: block;
+    margin-bottom: 8px;
+    color: rgba(255, 238, 198, 0.62);
+    font-size: 0.82rem;
+}
+
+.hall-metrics strong {
+    display: block;
+    overflow-wrap: anywhere;
+    font-family: "Oswald", "Noto Serif SC", sans-serif;
+    font-size: clamp(1.35rem, 3vw, 2.15rem);
+    letter-spacing: 0.08em;
+}
+
+.wanted-card {
+    position: relative;
+    display: grid;
+    grid-template-columns: minmax(250px, 0.78fr) minmax(0, 1.22fr);
+    gap: clamp(18px, 4vw, 42px);
+    align-items: stretch;
+    padding: clamp(20px, 4vw, 44px);
+    border: 10px solid rgba(44, 25, 16, 0.86);
+    outline: 1px solid rgba(255, 231, 167, 0.42);
+    outline-offset: -18px;
+    border-radius: 10px;
+    background:
+        linear-gradient(135deg, rgba(255, 248, 217, 0.88), rgba(232, 187, 111, 0.88)),
+        radial-gradient(circle at 20% 12%, rgba(255, 255, 255, 0.86), transparent 18rem),
+        var(--paper);
+    box-shadow: 0 28px 70px var(--shadow), inset 0 0 70px rgba(77, 35, 18, 0.16);
+    overflow: hidden;
+    animation: riseIn 700ms ease both;
+}
+
+.wanted-card::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background:
+        radial-gradient(circle at 25% 18%, rgba(87, 45, 26, 0.12) 0 2px, transparent 3px),
+        radial-gradient(circle at 80% 70%, rgba(87, 45, 26, 0.10) 0 2px, transparent 3px);
+    background-size: 42px 42px, 54px 54px;
+    mix-blend-mode: multiply;
+    opacity: 0.44;
+    pointer-events: none;
+}
+
+.case-number {
+    position: absolute;
+    top: 22px;
+    right: -48px;
+    z-index: 2;
+    width: 190px;
+    padding: 8px 0;
+    transform: rotate(35deg);
+    background: var(--red);
+    color: #ffe8b7;
+    font-family: "Oswald", "Noto Serif SC", sans-serif;
+    font-size: 0.8rem;
+    letter-spacing: 0.18em;
+    text-align: center;
+    box-shadow: 0 10px 18px rgba(82, 15, 15, 0.24);
+}
+
+.portrait-wing,
+.profile-wing {
+    position: relative;
+    z-index: 1;
+}
+
+.portrait-wing {
+    display: grid;
+    align-content: center;
+    justify-items: center;
+    min-height: 420px;
+    border-right: 1px solid var(--line);
+    padding-right: clamp(8px, 3vw, 34px);
+}
+
+.portrait-frame {
+    position: relative;
+    width: min(100%, 330px);
+    aspect-ratio: 3 / 4;
+    display: grid;
+    place-items: center;
+    padding: 32px;
+    border: 1px solid rgba(82, 42, 24, 0.48);
+    background:
+        linear-gradient(145deg, rgba(255, 250, 230, 0.86), rgba(166, 104, 55, 0.20)),
+        repeating-linear-gradient(45deg, transparent 0 14px, rgba(95, 47, 24, 0.07) 15px 16px);
+    box-shadow: inset 0 0 26px rgba(64, 32, 18, 0.22), 0 20px 36px rgba(63, 34, 20, 0.22);
+    overflow: hidden;
+}
+
+.portrait-frame::before {
+    content: "";
+    position: absolute;
+    inset: 14px;
+    border: 2px solid rgba(154, 22, 22, 0.34);
+}
+
+.portrait-frame::after {
+    content: "";
+    position: absolute;
+    top: 22px;
+    bottom: 22px;
     left: 50%;
-    transform: translateX(-50%);
-    width: 100px;
-    height: 35px;
-    background-color: rgba(255, 255, 255, 0.4);
-    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-    border: 1px solid rgba(255,255,255,0.2);
+    width: 1px;
+    background: rgba(79, 42, 25, 0.18);
+    box-shadow: -68px 0 rgba(79, 42, 25, 0.10), 68px 0 rgba(79, 42, 25, 0.10);
 }
 
 .suspect-image {
-    max-width: 100%;
-    width: 350px;
-    height: auto;
-    filter: sepia(30%) contrast(110%); /* 复古滤镜 */
-    display: block;
+    position: relative;
+    z-index: 1;
+    width: 72px;
+    image-rendering: pixelated;
+    filter: sepia(0.52) contrast(1.22) saturate(0.85);
+    transform: scale(3.1);
+    transform-origin: center;
 }
 
-.dead-or-alive {
-    font-family: 'Impact', 'SimHei', 'Microsoft YaHei', 'Noto Sans SC', sans-serif;
-    font-size: 2.5rem;
-    text-align: center;
-    color: #3e2723;
-    text-transform: uppercase;
-    letter-spacing: 2px;
-    margin: -10px 0 10px 0;
+.seal {
+    margin: -18px 0 0;
+    padding: 10px 22px;
+    transform: rotate(-4deg);
+    border: 4px double var(--red);
+    color: var(--red);
+    font-family: "Oswald", "Noto Serif SC", sans-serif;
+    font-size: clamp(2rem, 6vw, 4.3rem);
+    font-weight: 700;
+    letter-spacing: 0.16em;
+    line-height: 1;
+    mix-blend-mode: multiply;
 }
 
-.info-section {
-    width: 100%;
-    background-color: rgba(255,255,255,0.3);
-    padding: 20px;
-    border: 2px dashed #8d6e63;
+.profile-wing {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    min-width: 0;
 }
 
-.info-section dl {
+.status {
+    width: fit-content;
+    margin: 0 0 12px;
+    padding: 6px 12px;
+    border: 1px solid rgba(154, 22, 22, 0.38);
+    border-radius: 999px;
+    color: var(--red-dark);
+    font-size: 0.92rem;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+}
+
+h2 {
+    margin: 0;
+    color: var(--red-dark);
+    font-family: "ZCOOL XiaoWei", "Noto Serif SC", serif;
+    font-size: clamp(3.6rem, 8vw, 7.4rem);
+    line-height: 1;
+    letter-spacing: 0.08em;
+}
+
+.charge-summary {
+    margin: 20px 0 28px;
+    max-width: 680px;
+    color: #33231a;
+    font-size: clamp(1.12rem, 2.3vw, 1.58rem);
+    font-weight: 700;
+    line-height: 1.75;
+}
+
+.info-grid {
     display: grid;
-    grid-template-columns: min-content 1fr;
-    gap: 15px 25px;
-    margin: 0;
-    font-size: 1.2rem;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 14px;
+    margin: 0 0 24px;
 }
 
-.info-section dt {
-    font-weight: bold;
-    color: #3e2723;
-    text-align: right;
-    white-space: nowrap;
+.info-grid div {
+    min-width: 0;
+    padding: 16px;
+    border: 1px solid var(--line);
+    background: rgba(255, 246, 213, 0.48);
+}
+
+.info-grid dt {
+    margin-bottom: 8px;
+    color: var(--muted);
+    font-family: "Oswald", "Noto Serif SC", sans-serif;
+    font-size: 0.82rem;
+    letter-spacing: 0.18em;
     text-transform: uppercase;
-    font-family: 'Courier New', 'SimHei', 'Microsoft YaHei', 'Noto Sans SC', monospace;
 }
 
-.info-section dd {
-    color: #1a1a1a;
+.info-grid dd {
     margin: 0;
-    font-weight: 500;
-    font-family: 'Courier New', 'SimHei', 'Microsoft YaHei', 'Noto Sans SC', monospace;
+    color: var(--ink);
+    font-size: 1.08rem;
+    font-weight: 700;
+    line-height: 1.55;
 }
 
-/* 强调赏金 */
-.info-section dt:nth-last-child(4),
-.info-section dd:nth-last-child(3) {
-    font-size: 1.5rem;
-    color: #b71c1c;
-    font-weight: 800;
-    border-top: 2px solid #3e2723;
-    padding-top: 15px;
-    margin-top: 5px;
+.bounty-strip {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 18px 20px;
+    border: 2px solid rgba(154, 22, 22, 0.58);
+    background:
+        linear-gradient(90deg, rgba(154, 22, 22, 0.14), rgba(255, 235, 180, 0.55)),
+        rgba(255, 246, 213, 0.62);
+    color: var(--red-dark);
+}
+
+.bounty-strip span {
+    flex: 0 0 auto;
+    font-family: "Oswald", "Noto Serif SC", sans-serif;
+    font-size: 0.9rem;
+    letter-spacing: 0.2em;
+}
+
+.bounty-strip strong {
+    min-width: 0;
+    overflow-wrap: anywhere;
+    font-family: "Oswald", "Noto Serif SC", sans-serif;
+    font-size: clamp(1.24rem, 3.2vw, 2.4rem);
+    letter-spacing: 0.02em;
 }
 
 footer {
+    position: relative;
+    z-index: 1;
+    width: min(1180px, calc(100% - 32px));
+    margin: 0 auto 34px;
+    color: rgba(255, 231, 181, 0.62);
+    font-family: "Oswald", "Noto Serif SC", sans-serif;
+    font-size: 0.82rem;
+    letter-spacing: 0.14em;
     text-align: center;
-    margin-top: 40px;
-    padding-top: 15px;
-    border-top: 1px solid #8d6e63;
-    font-size: 0.9em;
-    color: #5d4037;
-    font-family: 'Courier New', monospace;
-    font-weight: bold;
 }
 
-@media (max-width: 600px) {
-    body {
-        margin: 0;
-        border-width: 8px;
-        padding: 20px;
+@keyframes riseIn {
+    from {
+        opacity: 0;
+        transform: translateY(22px) scale(0.985);
     }
-    h1 {
-        font-size: 3rem;
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
     }
-    .info-section dl {
+}
+
+@media (max-width: 820px) {
+    .wanted-hall {
+        width: min(100% - 20px, 680px);
+        padding-top: 18px;
+    }
+
+    .hero {
+        padding: 32px 18px 28px;
+    }
+
+    .hall-metrics,
+    .wanted-card,
+    .info-grid {
         grid-template-columns: 1fr;
-        gap: 5px;
     }
-    .info-section dt {
-        text-align: left;
-        margin-top: 10px;
+
+    .wanted-card {
+        border-width: 7px;
+        outline-offset: -12px;
     }
+
+    .portrait-wing {
+        min-height: auto;
+        border-right: 0;
+        border-bottom: 1px solid var(--line);
+        padding-right: 0;
+        padding-bottom: 28px;
+    }
+
+    .portrait-frame {
+        width: min(100%, 280px);
+    }
+
     .suspect-image {
-        width: 100%;
+        transform: scale(2.7);
+    }
+
+    .bounty-strip {
+        display: block;
+    }
+
+    .bounty-strip span {
+        display: block;
+        margin-bottom: 8px;
+    }
+}
+
+@media (max-width: 520px) {
+    .eyebrow {
+        letter-spacing: 0.22em;
+    }
+
+    h1 {
+        letter-spacing: 0.03em;
+    }
+
+    .hall-board {
+        padding: 14px;
+    }
+
+    .wanted-card {
+        padding: 18px;
+    }
+
+    .portrait-frame {
+        aspect-ratio: 1 / 1.22;
+        padding: 22px;
+    }
+
+    .seal {
+        margin-top: -10px;
+        letter-spacing: 0.08em;
     }
 }
