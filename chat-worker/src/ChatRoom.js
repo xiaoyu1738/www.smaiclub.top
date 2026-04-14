@@ -1,4 +1,6 @@
-import { encryptMessage, importRoomKey, getTierLimits, getEffectiveRole, encryptLogData } from './utils.js';
+import { getTierLimits, encryptLogData } from './utils.js';
+
+const MAX_CONNECTIONS_PER_IP_PER_ROOM = 20;
 
 export class ChatRoom {
     constructor(state, env) {
@@ -6,6 +8,7 @@ export class ChatRoom {
         this.env = env;
         this.sessions = new Set();
         this.rateLimits = new Map(); // username -> { count, startTime, history: [] }
+        this.ipConnections = new Map(); // ip -> count
     }
 
     async fetch(request) {
@@ -13,10 +16,10 @@ export class ChatRoom {
 
         // WebSocket upgrade
         if (request.headers.get("Upgrade") === "websocket") {
-            const roomKey = url.searchParams.get("key");
             const username = url.searchParams.get("username");
             const role = url.searchParams.get("role");
             const avatarUrl = url.searchParams.get("avatarUrl") || '';
+            const ip = url.searchParams.get("ip") || 'unknown';
             const sinceParam = url.searchParams.get("since");
             const sinceTimestamp = sinceParam ? parseInt(sinceParam, 10) : 0;
 
@@ -24,14 +27,14 @@ export class ChatRoom {
             const salt = url.searchParams.get("salt") || 'SMAICLUB_CHAT_SALT';
             const iterations = parseInt(url.searchParams.get("iterations") || '10000', 10);
 
-            if (!roomKey) return new Response("Missing Room Key", { status: 400 });
             if (!username) return new Response("Unauthorized", { status: 401 });
+            if (!this.canAcceptIp(ip)) return new Response("Too many connections", { status: 429 });
 
             const pair = new WebSocketPair();
             const [client, server] = Object.values(pair);
 
             // Handle Session (awaiting not strictly necessary for handshake but good for flow)
-            await this.handleSession(server, username, role, roomKey, sinceTimestamp, avatarUrl, salt, iterations);
+            await this.handleSession(server, username, role, sinceTimestamp, avatarUrl, salt, iterations, ip);
 
             return new Response(null, { status: 101, webSocket: client });
         }
@@ -39,9 +42,10 @@ export class ChatRoom {
         // Internal API to initialize room (called by Worker on creation)
         if (url.pathname === "/init") {
             if (request.method === "POST") {
-                const { keyHash, roomId, salt, iterations } = await request.json();
-                // Store roomId, keyHash, salt, iterations
-                await this.state.storage.put("keyHash", keyHash);
+                const { accessHash, keyHash, roomId, salt, iterations } = await request.json();
+                // Store roomId, access verifier, salt, iterations
+                if (accessHash) await this.state.storage.put("accessHash", accessHash);
+                if (keyHash) await this.state.storage.put("keyHash", keyHash);
                 await this.state.storage.put("roomId", roomId);
                 if (salt) await this.state.storage.put("salt", salt);
                 if (iterations) await this.state.storage.put("iterations", iterations);
@@ -125,39 +129,14 @@ export class ChatRoom {
         return new Response("Not found", { status: 404 });
     }
 
-    async handleSession(webSocket, username, role, clientKey, sinceTimestamp = 0, avatarUrl = '', salt = 'SMAICLUB_CHAT_SALT', iterations = 10000) {
+    async handleSession(webSocket, username, role, sinceTimestamp = 0, avatarUrl = '', salt = 'SMAICLUB_CHAT_SALT', iterations = 10000, ip = 'unknown') {
         webSocket.accept();
         this.sessions.add(webSocket);
+        this.incrementIp(ip);
 
-        // Verify Key Hash (Strict Mode)
+        const authNonce = crypto.randomUUID();
+        const storedAccessHash = await this.state.storage.get("accessHash");
         const storedHash = await this.state.storage.get("keyHash");
-        let isAuthorized = false;
-
-        if (storedHash) {
-            // Normal verification
-            const enc = new TextEncoder();
-            const data = enc.encode(clientKey);
-            const hashBuffer = await crypto.subtle.digest("SHA-256", data);
-            const hashArray = Array.from(new Uint8Array(hashBuffer));
-            const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
-
-            if (hashHex === storedHash) {
-                isAuthorized = true;
-            }
-        } else {
-            // Fallback for Emergency Room (Room 1)
-            if (clientKey === 'smaiclub_issues') {
-                await this.state.storage.put("roomId", 1);
-                isAuthorized = true;
-            }
-        }
-
-        if (!isAuthorized) {
-            webSocket.send(JSON.stringify({ error: "Invalid Room Key" }));
-            webSocket.close(1008, "Invalid Room Key");
-            this.sessions.delete(webSocket);
-            return;
-        }
 
         // Try to get salt/iterations from storage if not passed correctly (redundancy)
         const storedSalt = await this.state.storage.get("salt");
@@ -170,37 +149,19 @@ export class ChatRoom {
         webSocket.send(JSON.stringify({
             type: 'handshake',
             salt: finalSalt,
-            iterations: finalIterations
+            iterations: finalIterations,
+            requiresAuth: true,
+            nonce: authNonce
         }));
 
         const storedRoomId = await this.state.storage.get("roomId");
         const roomId = storedRoomId || 0;
-
-        // --- Session Tracking: Start ---
+        let isAuthorized = false;
         let sessionId = null;
-        try {
-            const res = await this.env.CHAT_DB.prepare(
-                "INSERT INTO chat_sessions (room_id, user_id, start_time) VALUES (?, ?, ?) RETURNING id"
-            ).bind(roomId, username, Date.now()).first();
-            sessionId = res.id;
-        } catch (e) {
-            console.error("Session start failed", e);
-        }
 
-        // --- Log Login Event ---
-        try {
-            const logDetails = await encryptLogData({
-                action: 'login',
-                roomId: roomId,
-                sessionId: sessionId
-            });
-            await this.env.CHAT_DB.prepare(
-                "INSERT INTO activity_logs (event_type, user_id, details, ip_address, created_at) VALUES (?, ?, ?, ?, ?)"
-            ).bind('login', username, logDetails, 'websocket', Date.now()).run();
-        } catch (e) { console.error("Logging failed", e); }
-
-        // --- Load History ---
-        try {
+        const loadHistory = async () => {
+            try {
+            const historyRoomId = await this.state.storage.get("roomId") || roomId;
             let messages;
             if (sinceTimestamp > 0) {
                 // Incremental sync: only fetch messages after the given timestamp
@@ -210,7 +171,7 @@ export class ChatRoom {
                  WHERE room_id = ? AND created_at > ?
                  ORDER BY created_at ASC
                  LIMIT 500`
-                ).bind(roomId, sinceTimestamp).all();
+                ).bind(historyRoomId, sinceTimestamp).all();
 
                 if (messages.results && messages.results.length > 0) {
                     webSocket.send(JSON.stringify({
@@ -234,7 +195,7 @@ export class ChatRoom {
                  WHERE room_id = ?
                  ORDER BY created_at DESC
                  LIMIT 100`
-                ).bind(roomId).all();
+                ).bind(historyRoomId).all();
 
                 if (messages.results && messages.results.length > 0) {
                     // Reverse to get chronological order (oldest first)
@@ -245,13 +206,44 @@ export class ChatRoom {
                     }));
                 }
             }
-        } catch (e) {
-            console.error("History load failed", e);
-        }
+            } catch (e) {
+                console.error("History load failed", e);
+            }
+        };
+
+        const startAuthorizedSession = async () => {
+            if (sessionId) return sessionId;
+            const authorizedRoomId = await this.state.storage.get("roomId") || roomId;
+            try {
+                const res = await this.env.CHAT_DB.prepare(
+                    "INSERT INTO chat_sessions (room_id, user_id, start_time) VALUES (?, ?, ?) RETURNING id"
+                ).bind(authorizedRoomId, username, Date.now()).first();
+                sessionId = res.id;
+            } catch (e) {
+                console.error("Session start failed", e);
+            }
+
+            try {
+                const logDetails = await encryptLogData({
+                    action: 'login',
+                    roomId: authorizedRoomId,
+                    sessionId: sessionId
+                });
+                await this.env.CHAT_DB.prepare(
+                    "INSERT INTO activity_logs (event_type, user_id, details, ip_address, created_at) VALUES (?, ?, ?, ?, ?)"
+                ).bind('login', username, logDetails, 'websocket', Date.now()).run();
+            } catch (e) { console.error("Logging failed", e); }
+
+            return sessionId;
+        };
 
 
         // Rate Limit Setup
-        const limits = getTierLimits(role);
+        const tierLimits = getTierLimits(role);
+        const limits = {
+            ...tierLimits,
+            rateLimit: { ...tierLimits.rateLimit }
+        };
 
         // Emergency Room Override
         if (storedRoomId == 1) {
@@ -265,6 +257,31 @@ export class ChatRoom {
         webSocket.addEventListener("message", async (event) => {
             try {
                 const msg = JSON.parse(event.data);
+
+                if (msg.type === 'auth') {
+                    if (isAuthorized) return;
+                    const signature = typeof msg.signature === 'string' ? msg.signature : '';
+                    const legacySignature = typeof msg.legacySignature === 'string' ? msg.legacySignature : '';
+                    if (await this.isAuthorizedSignature(storedAccessHash, storedHash, authNonce, signature, legacySignature)) {
+                        isAuthorized = true;
+                        await startAuthorizedSession();
+                        const authorizedRoomId = await this.state.storage.get("roomId");
+                        if (authorizedRoomId == 1 && !['admin', 'owner'].includes(role)) {
+                            limits.rateLimit = { count: 1, window: 3600 * 1000 };
+                        }
+                        webSocket.send(JSON.stringify({ type: 'auth_ok' }));
+                        await loadHistory();
+                    } else {
+                        webSocket.send(JSON.stringify({ error: "Invalid Room Key" }));
+                        webSocket.close(1008, "Invalid Room Key");
+                    }
+                    return;
+                }
+
+                if (!isAuthorized) {
+                    webSocket.send(JSON.stringify({ error: "AUTH_REQUIRED", message: "请先完成房间密钥验证" }));
+                    return;
+                }
 
                 // Rate Limit Check
                 if (!this.checkRateLimit(username, limits.rateLimit)) {
@@ -285,18 +302,11 @@ export class ChatRoom {
                     return;
                 }
 
-                // Validate Key (Encryption Test)
-                let cryptoKey;
-                try {
-                    // Use the correct salt/iterations for this room (handles special cases internally in importRoomKey)
-                    cryptoKey = await importRoomKey(clientKey, finalSalt, finalIterations);
-                } catch (e) {
-                    webSocket.send(JSON.stringify({ error: "Invalid Key Format" }));
+                const encrypted = normalizeEncryptedMessage(msg);
+                if (!encrypted) {
+                    webSocket.send(JSON.stringify({ error: "INVALID_MESSAGE", message: "消息格式无效" }));
                     return;
                 }
-
-                // Encrypt
-                const encrypted = await encryptMessage(cryptoKey, msg.content, username);
 
                 // Retrieve Room ID
                 const intId = await this.state.storage.get("roomId") || 0;
@@ -334,7 +344,7 @@ export class ChatRoom {
                     const timestamp = Date.now();
                     const result = await this.env.CHAT_DB.prepare(
                         `INSERT INTO messages (room_id, iv, content, sender, sender_role, sender_avatar, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)`
-                    ).bind(intId, encrypted.iv, encrypted.content, encrypted.sender, role, avatarUrl || null, timestamp).run();
+                    ).bind(intId, encrypted.iv, encrypted.content, username, role, avatarUrl || null, timestamp).run();
 
                     if (!result.success) throw new Error("DB Write Failed");
 
@@ -362,8 +372,8 @@ export class ChatRoom {
                     const logDetails = await encryptLogData({
                         action: 'message',
                         roomId: intId,
-                        contentLength: msg.content.length,
-                        encryptedContent: encrypted.content // Store encrypted content for audit
+                        contentLength: encrypted.content.length,
+                        encryptedContent: encrypted.content
                     });
                     await this.env.CHAT_DB.prepare(
                         "INSERT INTO activity_logs (event_type, user_id, details, ip_address, created_at) VALUES (?, ?, ?, ?, ?)"
@@ -374,7 +384,7 @@ export class ChatRoom {
                 const broadcastPayload = JSON.stringify({
                     iv: encrypted.iv,
                     content: encrypted.content,
-                    sender: encrypted.sender,
+                    sender: username,
                     senderRole: role, // Include sender's role for badge display
                     senderAvatar: avatarUrl || null, // Include sender's avatar URL
                     timestamp: Date.now(),
@@ -394,6 +404,7 @@ export class ChatRoom {
 
         webSocket.addEventListener("close", async () => {
             this.sessions.delete(webSocket);
+            this.decrementIp(ip);
             // --- Session Tracking: End ---
             if (sessionId) {
                 try {
@@ -526,4 +537,79 @@ export class ChatRoom {
         record.history.push(now);
         return true;
     }
+
+    canAcceptIp(ip) {
+        return (this.ipConnections.get(ip) || 0) < MAX_CONNECTIONS_PER_IP_PER_ROOM;
+    }
+
+    incrementIp(ip) {
+        this.ipConnections.set(ip, (this.ipConnections.get(ip) || 0) + 1);
+    }
+
+    decrementIp(ip) {
+        const next = (this.ipConnections.get(ip) || 1) - 1;
+        if (next <= 0) this.ipConnections.delete(ip);
+        else this.ipConnections.set(ip, next);
+    }
+
+    async isAuthorizedSignature(storedAccessHash, legacyStoredHash, nonce, suppliedSignature, legacySignature) {
+        if (storedAccessHash) {
+            return timingSafeEqualHex(await hmacSha256Hex(storedAccessHash, nonce), suppliedSignature);
+        }
+
+        if (legacyStoredHash) {
+            return timingSafeEqualHex(await hmacSha256Hex(legacyStoredHash, nonce), legacySignature);
+        }
+
+        const emergencyAccessHash = await sha256Hex('SMAICLUB_CHAT_ACCESS:smaiclub_issues');
+        if (timingSafeEqualHex(await hmacSha256Hex(emergencyAccessHash, nonce), suppliedSignature)) {
+            await this.state.storage.put("roomId", 1);
+            return true;
+        }
+        return false;
+    }
+}
+
+function normalizeEncryptedMessage(msg) {
+    if (!msg || typeof msg.iv !== 'string' || typeof msg.content !== 'string') return null;
+    if (!isBase64(msg.iv) || !isBase64(msg.content)) return null;
+    if (msg.iv.length > 256 || msg.content.length > 20000) return null;
+    return { iv: msg.iv, content: msg.content };
+}
+
+function isBase64(value) {
+    return /^[A-Za-z0-9+/]+={0,2}$/.test(value);
+}
+
+async function sha256Hex(value) {
+    const buffer = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(value));
+    return Array.from(new Uint8Array(buffer)).map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+async function hmacSha256Hex(secretHex, value) {
+    const key = await crypto.subtle.importKey(
+        "raw",
+        hexToBytes(secretHex),
+        { name: "HMAC", hash: "SHA-256" },
+        false,
+        ["sign"]
+    );
+    const signature = await crypto.subtle.sign("HMAC", key, new TextEncoder().encode(value));
+    return Array.from(new Uint8Array(signature)).map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+function hexToBytes(hex) {
+    const normalized = typeof hex === 'string' ? hex : '';
+    const match = normalized.match(/.{1,2}/g);
+    return new Uint8Array(match ? match.map(byte => parseInt(byte, 16)) : []);
+}
+
+function timingSafeEqualHex(a, b) {
+    if (typeof a !== 'string' || typeof b !== 'string') return false;
+    let diff = a.length ^ b.length;
+    const length = Math.max(a.length, b.length);
+    for (let i = 0; i < length; i++) {
+        diff |= (a.charCodeAt(i) || 0) ^ (b.charCodeAt(i) || 0);
+    }
+    return diff === 0;
 }

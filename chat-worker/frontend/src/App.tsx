@@ -52,6 +52,7 @@ function App() {
                 if (data.loggedIn) {
                     const userData: User = {
                         username: data.username,
+                        displayName: data.displayName || data.username,
                         role: data.role,
                         isBanned: data.isBanned,
                         bannedUntil: data.bannedUntil,

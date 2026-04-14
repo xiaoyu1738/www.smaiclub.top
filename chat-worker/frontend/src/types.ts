@@ -1,5 +1,6 @@
 export interface User {
     username: string;
+    displayName: string;
     role: string;
     isBanned: boolean;
     bannedUntil?: number;

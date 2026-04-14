@@ -2,7 +2,13 @@ import { htmlTemplate } from './htmlTemplate.js';
 
 // 密码强度校验正则：至少8位，包含字母和数字，允许特殊字符
 const PASSWORD_REGEX = /^(?=.*[A-Za-z])(?=.*\d).{8,}$/;
+const USERNAME_REGEX = /^[A-Za-z0-9_]{3,32}$/;
+const DISPLAY_NAME_REGEX = /^[\p{L}\p{N}_\-\s]{1,32}$/u;
+const SESSION_MAX_AGE_MS = 24 * 60 * 60 * 1000;
+const LOGIN_LOCK_MS = 15 * 60 * 1000;
+const LOGIN_MAX_FAILURES = 5;
 const ROLE_LEVELS = { user: 0, vip: 1, svip1: 2, svip2: 3, admin: 10, owner: 100, banned: -1 };
+let schemaReadyPromise;
 
 // 通用头部，允许跨域访问
 const corsHeaders = {
@@ -29,6 +35,10 @@ export default {
 
         if (request.method === "OPTIONS") {
             return new Response(null, { headers: responseHeaders });
+        }
+
+        if (env.DB) {
+            await ensureSecuritySchema(env);
         }
 
         // 1. common-auth.js
@@ -67,6 +77,7 @@ export default {
                 return new Response(JSON.stringify({
                     loggedIn: true,
                     username: user.username,
+                    displayName: getDisplayName(user),
                     role: isBanned ? 'banned' : user.role,
                     originalRole: user.originalRole,
                     effectiveRole: effectiveRole,
@@ -93,7 +104,7 @@ export default {
                 const offset = parseInt(url.searchParams.get('offset') || '0');
                 const search = url.searchParams.get('search');
 
-                let query = "SELECT username, role, banned_until, createdAt FROM users";
+                let query = "SELECT username, display_name, role, banned_until, createdAt FROM users";
                 let params = [];
 
                 if (search) {
@@ -117,8 +128,18 @@ export default {
 
             // --- 注册 ---
             if (url.pathname === "/api/register") {
-                const { username, password } = body;
+                const { username: rawUsername, password, displayName: rawDisplayName } = body;
+                const username = normalizeUsername(rawUsername);
+                const displayName = normalizeDisplayName(rawDisplayName) || username;
                 if (!username || !password) return jsonResp({ error: "请输入用户名和密码" }, 400, responseHeaders);
+
+                if (!USERNAME_REGEX.test(username)) {
+                    return jsonResp({ error: "用户名仅支持 3-32 位英文字母、数字和下划线" }, 400, responseHeaders);
+                }
+
+                if (!isValidDisplayName(displayName)) {
+                    return jsonResp({ error: "昵称仅支持 1-32 位中文、字母、数字、空格、下划线和短横线" }, 400, responseHeaders);
+                }
 
                 // Check IP Ban
                 const ip = request.headers.get("CF-Connecting-IP");
@@ -135,22 +156,14 @@ export default {
                 const exists = await env.DB.prepare('SELECT 1 FROM users WHERE username = ?').bind(username).first();
                 if (exists) return jsonResp({ error: "用户已存在" }, 409, responseHeaders);
 
-                const salt = crypto.randomUUID();
-                const encryptedPassword = await encryptData(password, env.SECRET_KEY, salt);
+                const dataSalt = crypto.randomUUID();
+                const hashed = await hashPassword(password);
                 const now = Date.now();
 
                 // D1 插入用户
                 await env.DB.prepare(
-                    'INSERT INTO users (username, password, salt, role, createdAt) VALUES (?, ?, ?, ?, ?)'
-                ).bind(username, encryptedPassword, salt, 'user', now).run();
-
-                // Auto-migrate special users to admin roles
-                // This is a simple hook to ensure roles are correct on registration or login if they were reset
-                if (username === 'smaiclubadmin') {
-                    await env.DB.prepare("UPDATE users SET role = 'owner' WHERE username = ?").bind(username).run();
-                } else if (username === 'fish') {
-                    await env.DB.prepare("UPDATE users SET role = 'admin' WHERE username = ?").bind(username).run();
-                }
+                    'INSERT INTO users (username, display_name, password, salt, password_salt, password_algo, role, createdAt) VALUES (?, ?, ?, ?, ?, ?, ?, ?)'
+                ).bind(username, displayName, hashed.hash, dataSalt, hashed.salt, 'pbkdf2', 'user', now).run();
 
                 // Log Registration
                 ctx.waitUntil(sendLog(env, 'register', username, { action: 'register' }, request.headers.get("CF-Connecting-IP"), request.headers.get("Cookie")));
@@ -160,7 +173,8 @@ export default {
 
             // --- 登录 ---
             if (url.pathname === "/api/login") {
-                const { username, password, licenseKey, redirect: redirectParam } = body;
+                const { username: rawUsername, password, licenseKey, redirect: redirectParam } = body;
+                const username = normalizeUsername(rawUsername);
 
                 // 验证 redirect 参数安全性（仅允许 *.smaiclub.top 域名）
                 let safeRedirect = "https://www.smaiclub.top";
@@ -175,18 +189,32 @@ export default {
                     }
                 }
 
+                const rateLimit = await checkLoginRateLimit(env, request, username);
+                if (rateLimit.limited) {
+                    return jsonResp({
+                        error: "TOO_MANY_ATTEMPTS",
+                        message: `登录失败次数过多，请 ${rateLimit.retryAfterMinutes} 分钟后再试`
+                    }, 429, responseHeaders);
+                }
+
                 // D1 获取用户
                 const user = await env.DB.prepare('SELECT * FROM users WHERE username = ?').bind(username).first();
 
-                if (!user) return jsonResp({ error: "用户不存在" }, 404, responseHeaders);
+                if (!user) {
+                    await recordLoginFailure(env, request, username);
+                    return jsonResp({ error: "用户不存在" }, 404, responseHeaders);
+                }
 
                 // 应用过期逻辑
                 applyExpiration(user);
                 const normalizedRole = normalizeRole(user.role);
                 user.role = normalizedRole;
 
-                const decryptedPassword = await decryptData(user.password, env.SECRET_KEY, user.salt);
-                if (password !== decryptedPassword) return jsonResp({ error: "密码错误" }, 401, responseHeaders);
+                const passwordCheck = await verifyStoredPassword(user, password, env);
+                if (!passwordCheck.ok) {
+                    await recordLoginFailure(env, request, username);
+                    return jsonResp({ error: "密码错误" }, 401, responseHeaders);
+                }
 
                 if (!PASSWORD_REGEX.test(password)) {
                     return jsonResp({ error: "WEAK_PASSWORD", message: "您的密码过于简单，为了安全请立即修改" }, 403, responseHeaders);
@@ -194,15 +222,6 @@ export default {
 
                 let sessionRole = normalizedRole;
                 let warning = null;
-
-                // Enforce Role Migration on Login
-                if (username === 'smaiclubadmin' && user.role !== 'owner') {
-                    await env.DB.prepare("UPDATE users SET role = 'owner' WHERE username = ?").bind(username).run();
-                    sessionRole = 'owner';
-                } else if (username === 'fish' && user.role !== 'admin') {
-                    await env.DB.prepare("UPDATE users SET role = 'admin' WHERE username = ?").bind(username).run();
-                    sessionRole = 'admin';
-                }
 
                 // VIP 验证逻辑
                 const requiresVipLicense = isVipRole(user.role) || isVipRole(sessionRole);
@@ -229,7 +248,15 @@ export default {
                     licenseVerified: requiresVipLicense
                 });
                 const sessionToken = await encryptData(sessionData, env.SECRET_KEY, "SESSION_SALT");
-                const cookie = `auth_token=${sessionToken}; Path=/; Domain=.smaiclub.top; Secure; SameSite=None; Max-Age=86400`;
+                const cookie = `auth_token=${sessionToken}; Path=/; Domain=.smaiclub.top; Secure; HttpOnly; SameSite=None; Max-Age=86400`;
+
+                await clearLoginFailures(env, request, username);
+                if (passwordCheck.needsMigration) {
+                    const migrated = await hashPassword(password);
+                    await env.DB.prepare(
+                        "UPDATE users SET password = ?, password_salt = ?, password_algo = 'pbkdf2' WHERE username = ?"
+                    ).bind(migrated.hash, migrated.salt, username).run();
+                }
 
                 return new Response(JSON.stringify({ success: true, redirect: safeRedirect, warning }), {
                     headers: {
@@ -254,20 +281,36 @@ export default {
 
                 if (!user) return jsonResp({ error: "用户不存在或未登录" }, 404, responseHeaders);
 
-                const decryptedOld = await decryptData(user.password, env.SECRET_KEY, user.salt);
-                if (oldPassword !== decryptedOld) return jsonResp({ error: "旧密码错误" }, 401, responseHeaders);
+                const passwordCheck = await verifyStoredPassword(user, oldPassword, env);
+                if (!passwordCheck.ok) return jsonResp({ error: "旧密码错误" }, 401, responseHeaders);
 
                 if (!PASSWORD_REGEX.test(newPassword)) return jsonResp({ error: "新密码强度不足" }, 400, responseHeaders);
 
-                const newEncrypted = await encryptData(newPassword, env.SECRET_KEY, user.salt);
+                const newHashed = await hashPassword(newPassword);
 
                 // D1 更新密码
-                await env.DB.prepare('UPDATE users SET password = ? WHERE username = ?').bind(newEncrypted, username).run();
+                await env.DB.prepare(
+                    "UPDATE users SET password = ?, password_salt = ?, password_algo = 'pbkdf2', session_invalid_before = ? WHERE username = ?"
+                ).bind(newHashed.hash, newHashed.salt, Date.now(), username).run();
 
                 // Log Password Change
                 ctx.waitUntil(sendLog(env, 'change_password', username, { action: 'change_password' }, request.headers.get("CF-Connecting-IP"), request.headers.get("Cookie")));
 
                 return jsonResp({ success: true }, 200, responseHeaders);
+            }
+
+            // --- 设置昵称 ---
+            if (url.pathname === "/api/set-display-name") {
+                const user = await getUserFromCookie(request, env);
+                if (!user) return jsonResp({ error: "请先登录" }, 401, responseHeaders);
+
+                const displayName = normalizeDisplayName(body.displayName);
+                if (!isValidDisplayName(displayName)) {
+                    return jsonResp({ error: "昵称仅支持 1-32 位中文、字母、数字、空格、下划线和短横线" }, 400, responseHeaders);
+                }
+
+                await env.DB.prepare("UPDATE users SET display_name = ? WHERE username = ?").bind(displayName, user.username).run();
+                return jsonResp({ success: true, displayName }, 200, responseHeaders);
             }
 
             // --- 购买会员 ---
@@ -335,7 +378,7 @@ export default {
                 ).bind(encryptedLicense, Date.now(), user.username).run();
 
                 // 设置完成后，自动清除当前 session 强制用户重登以应用新权限
-                const cookie = `auth_token=; Path=/; Domain=.smaiclub.top; Max-Age=0; Secure; SameSite=None`;
+                const cookie = `auth_token=; Path=/; Domain=.smaiclub.top; Max-Age=0; Secure; HttpOnly; SameSite=None`;
                 return new Response(JSON.stringify({ success: true }), {
                     headers: { "Content-Type": "application/json", "Set-Cookie": cookie, ...responseHeaders }
                 });
@@ -373,7 +416,7 @@ export default {
                 ).bind(encryptedLicense, now, user.username).run();
 
                 // 修改成功后，强制重登
-                const cookie = `auth_token=; Path=/; Domain=.smaiclub.top; Max-Age=0; Secure; SameSite=None`;
+                const cookie = `auth_token=; Path=/; Domain=.smaiclub.top; Max-Age=0; Secure; HttpOnly; SameSite=None`;
 
                 // Log License Update
                 ctx.waitUntil(sendLog(env, 'update_license', user.username, { action: 'update_license' }, request.headers.get("CF-Connecting-IP"), request.headers.get("Cookie")));
@@ -437,7 +480,7 @@ export default {
 
             // --- 退出登录 ---
             if (url.pathname === "/api/logout") {
-                const cookie = `auth_token=; Path=/; Domain=.smaiclub.top; Max-Age=0; Secure; SameSite=None`;
+                const cookie = `auth_token=; Path=/; Domain=.smaiclub.top; Max-Age=0; Secure; HttpOnly; SameSite=None`;
                 return new Response(JSON.stringify({ success: true }), {
                     headers: { "Content-Type": "application/json", "Set-Cookie": cookie, ...responseHeaders }
                 });
@@ -457,8 +500,8 @@ export default {
                 const { password, licenseKey } = body;
                 if (!password) return jsonResp({ error: "请输入密码以确认注销" }, 400, responseHeaders);
 
-                const decryptedPassword = await decryptData(user.password, env.SECRET_KEY, user.salt);
-                if (password !== decryptedPassword) return jsonResp({ error: "密码错误" }, 401, responseHeaders);
+                const passwordCheck = await verifyStoredPassword(user, password, env);
+                if (!passwordCheck.ok) return jsonResp({ error: "密码错误" }, 401, responseHeaders);
 
                 // If user is VIP/SVIP, require license key
                 if (isVipRole(user.role)) {
@@ -493,7 +536,7 @@ export default {
                 // Log Account Deletion
                 ctx.waitUntil(sendLog(env, 'delete_account', user.username, { action: 'delete_account' }, request.headers.get("CF-Connecting-IP"), request.headers.get("Cookie")));
 
-                const cookie = `auth_token=; Path=/; Domain=.smaiclub.top; Max-Age=0; Secure; SameSite=None`;
+                const cookie = `auth_token=; Path=/; Domain=.smaiclub.top; Max-Age=0; Secure; HttpOnly; SameSite=None`;
                 return new Response(JSON.stringify({ success: true, message: "账号已注销" }), {
                     headers: { "Content-Type": "application/json", "Set-Cookie": cookie, ...responseHeaders }
                 });
@@ -511,7 +554,7 @@ export default {
                     return jsonResp({ error: "Invalid role" }, 400, responseHeaders);
                 }
 
-                await env.DB.prepare("UPDATE users SET role = ? WHERE username = ?").bind(role, username).run();
+                await env.DB.prepare("UPDATE users SET role = ?, session_invalid_before = ? WHERE username = ?").bind(role, Date.now(), username).run();
                 return jsonResp({ success: true }, 200, responseHeaders);
             }
 
@@ -558,7 +601,7 @@ export default {
                 }
 
                 // Apply Ban
-                await env.DB.prepare("UPDATE users SET banned_until = ? WHERE username = ?").bind(banUntil, username).run();
+                await env.DB.prepare("UPDATE users SET banned_until = ?, session_invalid_before = ? WHERE username = ?").bind(banUntil, Date.now(), username).run();
 
                 // Ban IP if requested
                 if (banIp) {
@@ -610,7 +653,7 @@ export default {
                     return jsonResp({ error: "Forbidden" }, 403, responseHeaders);
                 }
                 const { username } = body;
-                await env.DB.prepare("UPDATE users SET banned_until = NULL WHERE username = ?").bind(username).run();
+                await env.DB.prepare("UPDATE users SET banned_until = NULL, session_invalid_before = ? WHERE username = ?").bind(Date.now(), username).run();
 
                 // Notify Chat Worker
                 ctx.waitUntil(fetch('https://chat.smaiclub.top/api/internal/handle-ban', {
@@ -681,6 +724,47 @@ export default {
 
 // --- 辅助函数 ---
 
+async function ensureSecuritySchema(env) {
+    if (!schemaReadyPromise) {
+        schemaReadyPromise = (async () => {
+            await env.DB.prepare(`
+                CREATE TABLE IF NOT EXISTS login_attempts (
+                    key TEXT PRIMARY KEY,
+                    username TEXT,
+                    ip TEXT,
+                    failure_count INTEGER NOT NULL DEFAULT 0,
+                    locked_until INTEGER,
+                    updated_at INTEGER NOT NULL
+                )
+            `).run();
+            await env.DB.prepare(`
+                CREATE TABLE IF NOT EXISTS banned_ips (
+                    ip TEXT PRIMARY KEY,
+                    banned_until INTEGER NOT NULL,
+                    reason TEXT,
+                    created_at INTEGER NOT NULL
+                )
+            `).run();
+
+            for (const statement of [
+                "ALTER TABLE users ADD COLUMN display_name TEXT",
+                "ALTER TABLE users ADD COLUMN password_algo TEXT",
+                "ALTER TABLE users ADD COLUMN password_salt TEXT",
+                "ALTER TABLE users ADD COLUMN session_invalid_before INTEGER"
+            ]) {
+                try {
+                    await env.DB.prepare(statement).run();
+                } catch (e) {
+                    if (!String(e?.message || e).toLowerCase().includes("duplicate column")) {
+                        console.warn("Schema migration skipped:", statement, e?.message || e);
+                    }
+                }
+            }
+        })();
+    }
+    return schemaReadyPromise;
+}
+
 // 检查并应用过期逻辑 (1年有效期)
 function applyExpiration(user) {
     user.role = normalizeRole(user.role);
@@ -711,9 +795,16 @@ async function getUserFromCookie(request, env, options = {}) {
     try {
         const sessionStr = await decryptData(token, env.SECRET_KEY, "SESSION_SALT");
         const session = JSON.parse(sessionStr);
+        if (!session.username || !session.loginTime || Date.now() - session.loginTime > SESSION_MAX_AGE_MS) {
+            return null;
+        }
         // D1 获取用户
         const user = await env.DB.prepare('SELECT * FROM users WHERE username = ?').bind(session.username).first();
         if (!user) return null;
+
+        if (user.session_invalid_before && session.loginTime <= user.session_invalid_before) {
+            return null;
+        }
 
         // 应用过期逻辑
         applyExpiration(user);
@@ -746,6 +837,147 @@ async function getUserFromCookie(request, env, options = {}) {
     } catch (e) {
         return null;
     }
+}
+
+function normalizeUsername(username) {
+    return typeof username === "string" ? username.trim() : "";
+}
+
+function normalizeDisplayName(displayName) {
+    if (typeof displayName !== "string") return "";
+    return displayName.normalize("NFKC").trim().replace(/\s+/g, " ");
+}
+
+function isValidDisplayName(displayName) {
+    return typeof displayName === "string" && DISPLAY_NAME_REGEX.test(displayName);
+}
+
+function getDisplayName(user) {
+    return normalizeDisplayName(user?.display_name) || user?.username || "";
+}
+
+function getClientIp(request) {
+    return request.headers.get("CF-Connecting-IP") || request.headers.get("X-Forwarded-For") || "unknown";
+}
+
+function getLoginAttemptKeys(request, username) {
+    const normalizedUsername = normalizeUsername(username).toLowerCase();
+    const keys = [`ip:${getClientIp(request)}`];
+    if (normalizedUsername) keys.push(`user:${normalizedUsername}`);
+    return keys;
+}
+
+async function checkLoginRateLimit(env, request, username) {
+    const now = Date.now();
+    const keys = getLoginAttemptKeys(request, username);
+    for (const key of keys) {
+        const row = await env.DB.prepare("SELECT failure_count, locked_until FROM login_attempts WHERE key = ?").bind(key).first();
+        if (row?.locked_until && row.locked_until > now) {
+            return { limited: true, retryAfterMinutes: Math.ceil((row.locked_until - now) / 60000) };
+        }
+    }
+    return { limited: false };
+}
+
+async function recordLoginFailure(env, request, username) {
+    const ip = getClientIp(request);
+    const now = Date.now();
+    for (const key of getLoginAttemptKeys(request, username)) {
+        const row = await env.DB.prepare("SELECT failure_count, locked_until FROM login_attempts WHERE key = ?").bind(key).first();
+        const currentCount = row?.locked_until && row.locked_until > now ? row.failure_count : (row?.failure_count || 0);
+        const failureCount = currentCount + 1;
+        const lockedUntil = failureCount >= LOGIN_MAX_FAILURES ? now + LOGIN_LOCK_MS : null;
+        await env.DB.prepare(`
+            INSERT INTO login_attempts (key, username, ip, failure_count, locked_until, updated_at)
+            VALUES (?, ?, ?, ?, ?, ?)
+            ON CONFLICT(key) DO UPDATE SET
+                username = excluded.username,
+                ip = excluded.ip,
+                failure_count = excluded.failure_count,
+                locked_until = excluded.locked_until,
+                updated_at = excluded.updated_at
+        `).bind(key, username || null, ip, failureCount, lockedUntil, now).run();
+    }
+}
+
+async function clearLoginFailures(env, request, username) {
+    for (const key of getLoginAttemptKeys(request, username)) {
+        await env.DB.prepare("DELETE FROM login_attempts WHERE key = ?").bind(key).run();
+    }
+}
+
+async function hashPassword(password) {
+    const saltBytes = crypto.getRandomValues(new Uint8Array(16));
+    const salt = bytesToBase64(saltBytes);
+    const hash = await pbkdf2(password, saltBytes, 310000);
+    return {
+        salt,
+        hash: `pbkdf2$310000$${bytesToBase64(hash)}`
+    };
+}
+
+async function verifyStoredPassword(user, password, env) {
+    if (typeof user.password === "string" && user.password.startsWith("pbkdf2$")) {
+        const check = await verifyPbkdf2Password(password, user.password, user.password_salt);
+        return { ok: check.ok, needsMigration: check.ok && check.needsMigration };
+    }
+
+    const decryptedPassword = await decryptData(user.password, env.SECRET_KEY, user.salt);
+    return { ok: password === decryptedPassword, needsMigration: password === decryptedPassword };
+}
+
+async function verifyPbkdf2Password(password, storedHash, passwordSalt) {
+    const parts = storedHash.split("$");
+    if ((parts.length !== 3 && parts.length !== 4) || parts[0] !== "pbkdf2") {
+        return { ok: false, needsMigration: false };
+    }
+    const iterations = Number(parts[1]);
+    if (!Number.isInteger(iterations) || iterations < 100000) {
+        return { ok: false, needsMigration: false };
+    }
+
+    const usesEmbeddedSalt = parts.length === 4;
+    const saltValue = usesEmbeddedSalt ? parts[2] : passwordSalt;
+    const hashValue = usesEmbeddedSalt ? parts[3] : parts[2];
+    if (!saltValue || !hashValue) {
+        return { ok: false, needsMigration: false };
+    }
+
+    const salt = base64ToBytes(saltValue);
+    const expected = base64ToBytes(hashValue);
+    const actual = await pbkdf2(password, salt, iterations);
+    const ok = timingSafeEqual(actual, expected);
+    return { ok, needsMigration: ok && usesEmbeddedSalt };
+}
+
+async function pbkdf2(password, salt, iterations) {
+    const enc = new TextEncoder();
+    const keyMaterial = await crypto.subtle.importKey("raw", enc.encode(password), "PBKDF2", false, ["deriveBits"]);
+    const bits = await crypto.subtle.deriveBits(
+        { name: "PBKDF2", salt, iterations, hash: "SHA-256" },
+        keyMaterial,
+        256
+    );
+    return new Uint8Array(bits);
+}
+
+function timingSafeEqual(a, b) {
+    if (!(a instanceof Uint8Array)) a = new Uint8Array(a);
+    if (!(b instanceof Uint8Array)) b = new Uint8Array(b);
+    let diff = a.length ^ b.length;
+    const length = Math.max(a.length, b.length);
+    for (let i = 0; i < length; i++) {
+        diff |= (a[i] || 0) ^ (b[i] || 0);
+    }
+    return diff === 0;
+}
+
+function bytesToBase64(bytes) {
+    return btoa(String.fromCharCode(...bytes));
+}
+
+function base64ToBytes(value) {
+    return Uint8Array.from(atob(value), c => c.charCodeAt(0));
 }
 
 function parseCookies(cookieHeader) {
@@ -994,6 +1226,20 @@ async function generateCommonScript() {
         \`;
         document.body.insertAdjacentHTML('beforeend', changePassModalHtml);
 
+        const displayNameModalHtml = \`
+            <div id="smai-displayname-modal" class="smai-modal-overlay">
+                <div class="smai-modal">
+                    <h3>修改昵称</h3>
+                    <input type="text" id="smai-display-name" placeholder="支持中文，1-32位" />
+                    <div class="smai-modal-btns">
+                        <button class="smai-btn smai-btn-cancel" onclick="closeDisplayNameModal()">取消</button>
+                        <button class="smai-btn smai-btn-confirm" onclick="updateDisplayNameSmai()">确认修改</button>
+                    </div>
+                </div>
+            </div>
+        \`;
+        document.body.insertAdjacentHTML('beforeend', displayNameModalHtml);
+
         const deleteAccountModalHtml = \`
             <div id="smai-delete-account-modal" class="smai-modal-overlay">
                 <div class="smai-modal">
@@ -1038,7 +1284,9 @@ async function generateCommonScript() {
             svg = '<svg class="smai-notif-icon" viewBox="0 0 24 24" fill="none" stroke="#0a84ff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>';
         }
         
-        el.innerHTML = svg + '<span>' + message + '</span>';
+        el.innerHTML = svg + '<span></span>';
+        const textEl = el.querySelector('span');
+        if (textEl) textEl.textContent = message;
         
         // Show
         requestAnimationFrame(() => {
@@ -1056,6 +1304,26 @@ async function generateCommonScript() {
     window.CommonAuth = {
         init: initAuth
     };
+
+    function escapeSmaiHtml(value) {
+        return String(value).replace(/[&<>"']/g, function(char) {
+            return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[char];
+        });
+    }
+
+    function escapeSmaiAttr(value) {
+        return escapeSmaiHtml(value).replace(new RegExp(String.fromCharCode(96), 'g'), '&#96;');
+    }
+
+    function isSafeHttpUrl(value) {
+        if (!value) return false;
+        try {
+            const url = new URL(value);
+            return url.protocol === 'https:' || url.protocol === 'http:';
+        } catch(e) {
+            return false;
+        }
+    }
 
     async function initAuth(containerId) {
         injectModals();
@@ -1100,8 +1368,11 @@ async function generateCommonScript() {
                 const roleMap = { 'vip': 'VIP', 'svip1': 'SVIP I', 'svip2': 'SVIP II', 'user': '普通用户' };
                 const roleName = roleMap[data.role] || data.role.toUpperCase();
                 const isVip = data.role.startsWith('vip') || data.role.startsWith('svip');
-                const avatarChar = data.username.charAt(0).toUpperCase();
-                const avatarUrl = data.avatarUrl;
+                const safeUsername = escapeSmaiHtml(data.username || '');
+                const safeDisplayName = escapeSmaiHtml(data.displayName || data.username || '');
+                const safeRoleName = escapeSmaiHtml(roleName);
+                const avatarChar = escapeSmaiHtml((data.displayName || data.username || '?').charAt(0).toUpperCase());
+                const avatarUrl = isSafeHttpUrl(data.avatarUrl) ? escapeSmaiAttr(data.avatarUrl) : '';
                 
                 // 头像显示：如果有URL则显示图片，否则显示首字母
                 const avatarHtml = avatarUrl
@@ -1114,19 +1385,21 @@ async function generateCommonScript() {
                 wrapper.innerHTML = \`
                     <div class="smai-auth-btn" onclick="toggleSmaiMenu(event)">
                         \${avatarHtml}
-                        <span>\${isVip ? roleName : data.username}</span>
+                        <span>\${isVip ? safeRoleName : safeDisplayName}</span>
                         <i class="fas fa-caret-down" style="font-size:10px"></i>
                     </div>
                     <div class="smai-auth-dropdown" id="smai-user-menu">
                         <div class="smai-drop-header" style="display: flex; align-items: center; gap: 12px;">
                             \${avatarHtmlLarge}
                             <div>
-                                <div class="smai-drop-user">\${data.username}</div>
-                                <span class="smai-drop-role \${isVip ? 'smai-role-vip' : ''}">\${roleName}</span>
+                                <div class="smai-drop-user">\${safeDisplayName}</div>
+                                <div style="font-size:11px; color:#86868b; margin-top:2px;">@\${safeUsername}</div>
+                                <span class="smai-drop-role \${isVip ? 'smai-role-vip' : ''}">\${safeRoleName}</span>
                             </div>
                         </div>
                         \${!isVip ? '<a href="https://www.smaiclub.top/shop/" class="smai-drop-item">💎 升级会员</a>' : ''}
                         \${isVip ? '<div class="smai-drop-item" onclick="showLicenseModal()">🔑 修改许可证</div>' : ''}
+                        <div class="smai-drop-item" onclick="showDisplayNameModal()">修改昵称</div>
                         <div class="smai-drop-item" onclick="showChangePassModal()">🔒 修改密码</div>
                         <div class="smai-drop-item smai-drop-danger" onclick="deleteAccountSmai()">⚠️ 注销账号</div>
                         <div class="smai-drop-item" onclick="logoutSmai()">退出登录</div>
@@ -1237,6 +1510,45 @@ async function generateCommonScript() {
         document.getElementById('smai-old-pass').value = '';
         document.getElementById('smai-new-pass').value = '';
         document.getElementById('smai-confirm-pass').value = '';
+    };
+
+    window.showDisplayNameModal = function() {
+        const current = document.querySelector('.smai-drop-user');
+        const input = document.getElementById('smai-display-name');
+        if (input && current) input.value = current.textContent || '';
+        document.getElementById('smai-displayname-modal').classList.add('show');
+        const menu = document.getElementById('smai-user-menu');
+        if (menu) menu.classList.remove('show');
+    };
+
+    window.closeDisplayNameModal = function() {
+        document.getElementById('smai-displayname-modal').classList.remove('show');
+    };
+
+    window.updateDisplayNameSmai = async function() {
+        const input = document.getElementById('smai-display-name');
+        const displayName = input.value.normalize('NFKC').trim().replace(/\\s+/g, ' ');
+        if (!/^[\\p{L}\\p{N}_\\-\\s]{1,32}$/u.test(displayName)) {
+            return showSmaiNotification("昵称仅支持 1-32 位中文、字母、数字、空格、下划线和短横线", "error");
+        }
+
+        try {
+            const res = await fetch('https://login.smaiclub.top/api/set-display-name', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
+                body: JSON.stringify({ displayName })
+            });
+            const data = await res.json();
+            if (res.ok) {
+                showSmaiNotification("昵称已更新", "success");
+                setTimeout(() => window.location.reload(), 800);
+            } else {
+                showSmaiNotification(data.error || "修改失败", "error");
+            }
+        } catch(e) {
+            showSmaiNotification("网络错误", "error");
+        }
     };
 
     window.changePasswordSmai = async function() {

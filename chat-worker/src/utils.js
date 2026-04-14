@@ -3,11 +3,11 @@
 // --- Encryption (AES-GCM) ---
 
 export async function generateRoomKey() {
-  const chars = '0123456789abcdefghijklmnopqrstuvwxyz';
+  const chars = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
   let result = '';
-  const randomValues = new Uint8Array(10);
+  const randomValues = new Uint8Array(24);
   crypto.getRandomValues(randomValues);
-  for (let i = 0; i < 10; i++) {
+  for (let i = 0; i < randomValues.length; i++) {
     result += chars[randomValues[i] % chars.length];
   }
   return result;
@@ -21,75 +21,18 @@ export function generateSalt() {
 
 export function validateCustomKey(key) {
   if (!key) return false;
-  if (key.length < 8 || key.length > 20) return false;
+  if (key.length < 12 || key.length > 32) return false;
   // Allow numbers and letters (upper and lower), no symbols
   return /^[a-zA-Z0-9]+$/.test(key);
 }
 
-export async function importRoomKey(password, salt = "SMAICLUB_CHAT_SALT", iterations = 10000) {
-  try {
-    const enc = new TextEncoder();
-    const keyMaterial = await crypto.subtle.importKey(
-      "raw",
-      enc.encode(password),
-      "PBKDF2",
-      false,
-      ["deriveKey"]
-    );
-
-    // Support both string salt (legacy) and hex string salt (new)
-    let saltBuffer;
-    if (salt === "SMAICLUB_CHAT_SALT" || salt === "SALT_FOR_ISSUES") {
-      saltBuffer = enc.encode(salt);
-    } else {
-      // Hex string to Uint8Array
-      const match = salt.match(/.{1,2}/g);
-      if (match) {
-        saltBuffer = new Uint8Array(match.map(byte => parseInt(byte, 16)));
-      } else {
-        saltBuffer = enc.encode(salt); // Fallback
-      }
-    }
-
-    return await crypto.subtle.deriveKey(
-      {
-        name: "PBKDF2",
-        salt: saltBuffer,
-        iterations: iterations,
-        hash: "SHA-256"
-      },
-      keyMaterial,
-      { name: "AES-GCM", length: 256 },
-      false,
-      ["encrypt", "decrypt"]
-    );
-  } catch (e) {
-    console.error("Key Import Error:", e);
-    throw new Error("Invalid Room Key");
-  }
+export async function hashAccessVerifier(roomKey) {
+  return sha256Hex(`SMAICLUB_CHAT_ACCESS:${roomKey}`);
 }
 
-export async function encryptMessage(key, content, sender) {
-  const iv = crypto.getRandomValues(new Uint8Array(12));
-  const enc = new TextEncoder();
-
-  const encryptedContent = await crypto.subtle.encrypt(
-    { name: "AES-GCM", iv },
-    key,
-    enc.encode(content)
-  );
-
-  const encryptedSender = await crypto.subtle.encrypt(
-    { name: "AES-GCM", iv },
-    key,
-    enc.encode(sender)
-  );
-
-  return {
-    iv: btoa(String.fromCharCode(...iv)),
-    content: btoa(String.fromCharCode(...new Uint8Array(encryptedContent))),
-    sender: btoa(String.fromCharCode(...new Uint8Array(encryptedSender)))
-  };
+export async function sha256Hex(value) {
+  const buffer = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(value));
+  return Array.from(new Uint8Array(buffer)).map(b => b.toString(16).padStart(2, '0')).join('');
 }
 
 // --- Log Encryption ---
@@ -253,6 +196,7 @@ export async function getUserFromRequest(request, env) {
     // 返回用户信息，格式与之前兼容
     return {
       username: data.username,
+      displayName: data.displayName || data.username,
       role: data.effectiveRole || data.role || 'user',
       lastPurchase: data.lastPurchase || 0,
       avatarUrl: data.avatarUrl || null,

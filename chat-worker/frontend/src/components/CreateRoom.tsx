@@ -63,7 +63,7 @@ export function CreateRoom({ onBack, onCreated }: CreateRoomProps) {
               <label className="block text-xs font-medium text-gray-400 mb-1.5 uppercase tracking-wide">自定义密钥 (可选)</label>
               <input type="text" value={customKey} onChange={e => setCustomKey(e.target.value)}
                  className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-blue-500 transition font-mono text-sm"
-                 placeholder="留空随机生成 (8-20位字母数字)" />
+                 placeholder="留空随机生成 (12-32位字母数字)" />
             </div>
 
             <button disabled={loading} type="submit" className="w-full py-3.5 btn-gradient rounded-xl font-medium text-white flex items-center justify-center gap-2 mt-4 disabled:opacity-50">

@@ -15,6 +15,12 @@ self.onmessage = async (e: MessageEvent) => {
             case 'decrypt':
                 result = await decryptMessage(payload.key, payload.iv, payload.content);
                 break;
+            case 'sha256':
+                result = await sha256Hex(payload.content);
+                break;
+            case 'hmacSha256':
+                result = await hmacSha256Hex(payload.secretHex, payload.content);
+                break;
             default:
                 throw new Error(`Unknown operation: ${type}`);
         }
@@ -95,6 +101,28 @@ async function decryptMessage(key: CryptoKey, ivB64: string, contentB64: string)
         console.error("Decryption failed", e);
         return "[Decryption Failed]";
     }
+}
+
+async function sha256Hex(content: string): Promise<string> {
+    const buffer = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(content));
+    return Array.from(new Uint8Array(buffer)).map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+async function hmacSha256Hex(secretHex: string, content: string): Promise<string> {
+    const key = await crypto.subtle.importKey(
+        "raw",
+        hexToBytes(secretHex) as BufferSource,
+        { name: "HMAC", hash: "SHA-256" },
+        false,
+        ["sign"]
+    );
+    const signature = await crypto.subtle.sign("HMAC", key, new TextEncoder().encode(content));
+    return Array.from(new Uint8Array(signature)).map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+function hexToBytes(hex: string): Uint8Array {
+    const match = hex.match(/.{1,2}/g);
+    return new Uint8Array(match ? match.map(byte => parseInt(byte, 16)) : []);
 }
 
 export {}; // Make this a module
