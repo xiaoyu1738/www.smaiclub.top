@@ -542,7 +542,7 @@ export default {
                 // We do this before deleting the user to ensure the user still exists for validation if needed,
                 // although the chat worker will handle the logic based on the username.
                 try {
-                    await fetch('https://chat.smaiclub.top/api/internal/transfer-ownership', {
+                    await fetch('https://chat-api.smaiclub.top/api/internal/transfer-ownership', {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',
@@ -650,7 +650,7 @@ export default {
                 }
 
                 // Notify Chat Worker to handle ban side effects (transfer rooms, etc.)
-                ctx.waitUntil(fetch('https://chat.smaiclub.top/api/internal/handle-ban', {
+                ctx.waitUntil(fetch('https://chat-api.smaiclub.top/api/internal/handle-ban', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -681,7 +681,7 @@ export default {
                 await env.DB.prepare("UPDATE users SET banned_until = NULL, session_invalid_before = ? WHERE username = ?").bind(Date.now(), username).run();
 
                 // Notify Chat Worker
-                ctx.waitUntil(fetch('https://chat.smaiclub.top/api/internal/handle-ban', {
+                ctx.waitUntil(fetch('https://chat-api.smaiclub.top/api/internal/handle-ban', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -720,7 +720,7 @@ export default {
                 }
 
                 try {
-                    await fetch('https://chat.smaiclub.top/api/internal/transfer-ownership', {
+                    await fetch('https://chat-api.smaiclub.top/api/internal/transfer-ownership', {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',
@@ -1095,7 +1095,7 @@ async function sendLog(env, eventType, userId, details, ip, cookieHeader) {
         if (!cookieHeader) {
             return;
         }
-        await fetch('https://chat.smaiclub.top/api/internal/log', {
+        await fetch('https://chat-api.smaiclub.top/api/internal/log', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',

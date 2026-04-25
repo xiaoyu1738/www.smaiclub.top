@@ -428,7 +428,7 @@
                 setLoading(true);
                 setError(null);
                 try {
-                    let url = `https://chat.smaiclub.top/api/admin/logs?limit=${limit}&offset=${page * limit}`;
+                    let url = `https://chat-api.smaiclub.top/api/admin/logs?limit=${limit}&offset=${page * limit}`;
                     if (filter) url += `&type=${filter}`;
                     
                     const res = await fetch(url, { credentials: 'include' });

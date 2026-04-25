@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "build": "cd frontend && npm install && npm run build && cd .. && node build-template.js",
+    "build": "node --check src/index.js && node --check src/ChatRoom.js && node --check src/utils.js",
     "deploy": "wrangler deploy"
   },
   "devDependencies": {
