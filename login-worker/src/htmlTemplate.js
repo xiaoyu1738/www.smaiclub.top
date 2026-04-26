@@ -471,7 +471,7 @@ export function htmlTemplate() {
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ username: user, changeToken, newPassword: newPass })
                 });
-                const data = await res.json();
+                const data = await parseApiResponse(res);
                 if (res.ok) {
                     showNotification("密码修改成功，请使用新密码重新登录", "success");
                     setTimeout(() => location.reload(), 1500);
