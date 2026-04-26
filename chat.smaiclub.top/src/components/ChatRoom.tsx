@@ -300,7 +300,7 @@ export const ChatRoom: React.FC<ChatRoomProps> = ({ roomId, roomKey, roomName, u
             <div className="chat-messages custom-scroll" ref={messagesRef} onScroll={handleMessagesScroll}>
                 {loadingMore && <div className="history-loader">Loading history...</div>}
                 {messages.map(message => (
-                    <MessageItem key={`${message.id}-${message.tempId || ''}`} message={message} currentUser={user} />
+                    <MessageItem key={message.tempId || message.id} message={message} currentUser={user} />
                 ))}
             </div>
 

@@ -564,7 +564,11 @@ export class ChatRoom {
         }
 
         const emergencyAccessHash = await sha256Hex('SMAICLUB_CHAT_ACCESS:smaiclub_issues');
-        if (timingSafeEqualHex(await hmacSha256Hex(emergencyAccessHash, nonce), suppliedSignature)) {
+        const expectedEmergencySignature = await hmacSha256Hex(emergencyAccessHash, nonce);
+        if (
+            timingSafeEqualHex(expectedEmergencySignature, suppliedSignature) ||
+            timingSafeEqualHex(expectedEmergencySignature, legacyAccessSignature)
+        ) {
             await this.state.storage.put("roomId", 1);
             return true;
         }

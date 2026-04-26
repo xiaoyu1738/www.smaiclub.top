@@ -9,6 +9,7 @@ import { RoomSidebar } from './RoomSidebar';
 
 interface LandingProps {
     rooms: { owned: Room[]; joined: Room[] };
+    joinRoomDraft: Pick<Room, 'id' | 'name'> | null;
     panel: LandingPanel;
     onPanelChange: (panel: LandingPanel) => void;
     onEnterRoom: (room: Room) => void;
@@ -19,7 +20,7 @@ interface LandingProps {
 
 export type LandingPanel = 'home' | 'create' | 'join';
 
-export function Landing({ rooms, panel, onPanelChange, onEnterRoom, onRoomsChange, onCreated, onJoined }: LandingProps) {
+export function Landing({ rooms, joinRoomDraft, panel, onPanelChange, onEnterRoom, onRoomsChange, onCreated, onJoined }: LandingProps) {
     const [loading, setLoading] = useState(!IS_DEMO_MODE);
 
     useEffect(() => {
@@ -66,7 +67,12 @@ export function Landing({ rooms, panel, onPanelChange, onEnterRoom, onRoomsChang
                     <CreateRoom onBack={() => onPanelChange('home')} onCreated={onCreated} />
                 )}
                 {panel === 'join' && (
-                    <JoinRoom initialRoomId="" initialRoomName="" onBack={() => onPanelChange('home')} onJoined={onJoined} />
+                    <JoinRoom
+                        initialRoomId={joinRoomDraft ? String(joinRoomDraft.id) : ""}
+                        initialRoomName={joinRoomDraft?.name || ""}
+                        onBack={() => onPanelChange('home')}
+                        onJoined={onJoined}
+                    />
                 )}
                 {panel === 'home' && (
                     <div className="telegram-empty-state">

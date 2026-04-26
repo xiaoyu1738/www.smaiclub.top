@@ -7,7 +7,7 @@ import { useTheme } from './hooks/useTheme';
 import type { User, Room } from './types';
 import { apiUrl, IS_DEMO_MODE } from './config/api';
 import { demoRooms, demoUser } from './config/demo';
-import { formatRoomName } from './utils/roomDisplay';
+import { formatRoomId, formatRoomName } from './utils/roomDisplay';
 import './App.css';
 
 function BannedModal({ user, onEmergency }: { user: User, onEmergency: () => void }) {
@@ -140,6 +140,14 @@ function bumpRoomToFront(rooms: RoomGroups, roomId: string | number) {
     };
 }
 
+function getRoomKeyStorageKey(roomId: string | number) {
+    return `room_key_${formatRoomId(roomId)}`;
+}
+
+function readSavedRoomKey(roomId: string | number) {
+    return localStorage.getItem(getRoomKeyStorageKey(roomId)) || localStorage.getItem(`room_key_${roomId}`);
+}
+
 function App() {
     const { theme, toggle: toggleTheme } = useTheme();
     const [view, setView] = useState<ViewState>(IS_DEMO_MODE ? "landing" : "loading");
@@ -150,37 +158,44 @@ function App() {
     const [isAppMenuOpen, setIsAppMenuOpen] = useState(false);
     const [showSettings, setShowSettings] = useState(false);
     const [landingPanel, setLandingPanel] = useState<LandingPanel>('home');
+    const [joinRoomDraft, setJoinRoomDraft] = useState<Pick<Room, 'id' | 'name'> | null>(null);
 
     const enterRoom = useCallback((targetRoom: Room) => {
-        const savedKey = localStorage.getItem(`room_key_${targetRoom.id}`);
+        const savedKey = readSavedRoomKey(targetRoom.id);
         const roomKey = targetRoom.key || savedKey;
         if (!roomKey) {
+            setJoinRoomDraft({ id: targetRoom.id, name: formatRoomName(targetRoom) });
             setRoom(null);
+            setLandingPanel('join');
             setView('landing');
             return;
         }
         const roomWithKey = { ...targetRoom, key: roomKey };
-        localStorage.setItem(`room_key_${roomWithKey.id}`, roomWithKey.key);
+        localStorage.setItem(getRoomKeyStorageKey(roomWithKey.id), roomWithKey.key);
+        setJoinRoomDraft(null);
         setRoom(roomWithKey);
         setKnownRooms(prev => mergeRoomList(prev, roomWithKey));
         setView('chat');
     }, []);
 
     const handleCreatedRoom = useCallback((createdRoom: Room) => {
-        localStorage.setItem(`room_key_${createdRoom.id}`, createdRoom.key);
+        localStorage.setItem(getRoomKeyStorageKey(createdRoom.id), createdRoom.key);
+        setJoinRoomDraft(null);
         setKnownRooms(prev => mergeRoomList(prev, createdRoom, 'owned'));
         setRoom(createdRoom);
         setView('chat');
     }, []);
 
     const handleJoinedRoom = useCallback((joinedRoom: Room) => {
-        localStorage.setItem(`room_key_${joinedRoom.id}`, joinedRoom.key);
+        localStorage.setItem(getRoomKeyStorageKey(joinedRoom.id), joinedRoom.key);
+        setJoinRoomDraft(null);
         setKnownRooms(prev => mergeRoomList(prev, joinedRoom, 'joined'));
         setRoom(joinedRoom);
         setView('chat');
     }, []);
 
     const openLandingPanel = useCallback((panel: LandingPanel) => {
+        setJoinRoomDraft(null);
         setLandingPanel(panel);
         setRoom(null);
         setView('landing');
@@ -317,16 +332,14 @@ function App() {
             {view === 'banned' && user && (
                 <BannedModal
                     user={user}
-                    onEmergency={() => {
-                        setRoom({ id: '000001', key: 'smaiclub_issues', name: 'room 1' });
-                        setView('chat');
-                    }}
+                    onEmergency={enterEmergencyRoom}
                 />
             )}
 
             {view === 'landing' && user && (
                 <Landing
                     rooms={knownRooms}
+                    joinRoomDraft={joinRoomDraft}
                     panel={landingPanel}
                     onPanelChange={setLandingPanel}
                     onEnterRoom={enterRoom}

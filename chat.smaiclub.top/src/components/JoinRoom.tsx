@@ -14,10 +14,15 @@ export function JoinRoom({ onBack, onJoined, initialRoomId, initialRoomName }: J
     const [roomId, setRoomId] = useState(initialRoomId || "");
     const [roomKey, setRoomKey] = useState("");
 
+    useEffect(() => {
+        setRoomId(initialRoomId || "");
+        setRoomKey("");
+    }, [initialRoomId]);
+
     // Load saved key when mounting or when roomId changes, but only if key is empty (to avoid overwriting user input if they type)
     useEffect(() => {
         if (roomId && !roomKey) {
-            const savedKey = localStorage.getItem(`room_key_${roomId}`);
+            const savedKey = localStorage.getItem(`room_key_${formatRoomId(roomId)}`) || localStorage.getItem(`room_key_${roomId}`);
             if (savedKey) setRoomKey(savedKey);
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -28,7 +33,7 @@ export function JoinRoom({ onBack, onJoined, initialRoomId, initialRoomName }: J
         const normalizedRoomId = roomId.trim();
         const normalizedRoomKey = roomKey.trim();
         if(!normalizedRoomId || !normalizedRoomKey) return;
-        localStorage.setItem(`room_key_${normalizedRoomId}`, normalizedRoomKey);
+        localStorage.setItem(`room_key_${formatRoomId(normalizedRoomId)}`, normalizedRoomKey);
         onJoined({ id: normalizedRoomId, key: normalizedRoomKey, name: initialRoomName || (`room ${formatRoomId(normalizedRoomId)}`) });
     };
 
