@@ -261,7 +261,7 @@ export function htmlTemplate() {
         document.addEventListener('DOMContentLoaded', async () => {
             try {
                 const res = await fetch(API_BASE + '/me', { credentials: 'include' });
-                const data = await res.json();
+                const data = await parseApiResponse(res);
                 if (data.loggedIn) {
                     const redirectTo = getRedirectParam();
                     showNotification("您已登录，正在跳转...", "success");
@@ -317,6 +317,16 @@ export function htmlTemplate() {
             }, 3000);
         }
 
+        async function parseApiResponse(res) {
+            const text = await res.text();
+            if (!text) return {};
+            try {
+                return JSON.parse(text);
+            } catch (e) {
+                return { error: res.ok ? '' : '服务器返回异常，请稍后再试' };
+            }
+        }
+
         async function handleRegister() {
             const username = document.getElementById('reg-user').value.trim();
             const displayName = document.getElementById('reg-display-name').value.normalize('NFKC').trim().replace(/\\s+/g, ' ');
@@ -347,12 +357,12 @@ export function htmlTemplate() {
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ username, displayName, password: pass })
                 });
-                const data = await res.json();
+                const data = await parseApiResponse(res);
                 if (res.ok) {
                     showNotification('注册成功，请登录', 'success');
                     toggleForm('login');
                 } else {
-                    errorDiv.textContent = data.error;
+                    errorDiv.textContent = data.message || data.error || "注册失败";
                     errorDiv.style.display = 'block';
                 }
             } catch (e) {
@@ -379,7 +389,7 @@ export function htmlTemplate() {
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ username: user, password: pass, licenseKey: license, redirect: redirectParam })
                 });
-                const data = await res.json();
+                const data = await parseApiResponse(res);
 
                 if (res.status === 403 && data.error === 'WEAK_PASSWORD') {
                     document.getElementById('login-form').style.display = 'none';
@@ -422,7 +432,7 @@ export function htmlTemplate() {
                         window.location.href = data.redirect || 'https://www.smaiclub.top';
                     }
                 } else {
-                    errorDiv.textContent = data.error || "登录失败";
+                    errorDiv.textContent = data.message || data.error || "登录失败";
                     errorDiv.style.display = 'block';
                     btn.disabled = false;
                     btn.textContent = "立即登录";
@@ -461,12 +471,12 @@ export function htmlTemplate() {
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ username: user, changeToken, newPassword: newPass })
                 });
-                const data = await res.json();
+                const data = await parseApiResponse(res);
                 if (res.ok) {
                     showNotification("密码修改成功，请使用新密码重新登录", "success");
                     setTimeout(() => location.reload(), 1500);
                 } else {
-                    errorDiv.textContent = data.error;
+                    errorDiv.textContent = data.message || data.error || "修改失败";
                     errorDiv.style.display = 'block';
                 }
             } catch (e) {
