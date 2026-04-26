@@ -1,6 +1,8 @@
 import { useState } from 'react';
+import { ArrowLeft, Plus } from 'lucide-react';
 import type { Room } from '../types';
 import { apiUrl, IS_DEMO_MODE } from '../config/api';
+import { formatRoomId } from '../utils/roomDisplay';
 
 interface CreateRoomProps {
     onBack: () => void;
@@ -12,9 +14,22 @@ export function CreateRoom({ onBack, onCreated }: CreateRoomProps) {
     const [customKey, setCustomKey] = useState("");
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [keyError, setKeyError] = useState<string | null>(null);
+
+    const validateCustomKey = (value: string) => {
+        const key = value.trim();
+        if (!key) return null;
+        if (!/^[A-Za-z0-9]+$/.test(key)) return "密钥只能使用英文字母和数字。";
+        if (key.length < 12 || key.length > 32) return "密钥长度需要在 12 到 32 位之间。";
+        return null;
+    };
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+        const nextKeyError = validateCustomKey(customKey);
+        setKeyError(nextKeyError);
+        if (nextKeyError) return;
+
         setLoading(true);
         setError(null);
         try {
@@ -24,7 +39,7 @@ export function CreateRoom({ onBack, onCreated }: CreateRoomProps) {
              onCreated({
                id: roomId,
                key: customKey.trim() || "previewroomkey99",
-               name: name.trim() || `Room ${roomId}`
+               name: name.trim() || `room ${formatRoomId(roomId)}`
              });
              return;
            }
@@ -43,7 +58,7 @@ export function CreateRoom({ onBack, onCreated }: CreateRoomProps) {
            const data = await res.json();
            if (!res.ok) throw new Error(data.message || data.error || "Failed to create");
            
-           onCreated({ id: data.roomId, key: data.roomKey, name: name || ('Room ' + data.roomId) });
+           onCreated({ id: data.roomId, key: data.roomKey, name: name || (`room ${formatRoomId(data.roomId)}`) });
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         } catch (err: any) {
            setError(err.message);
@@ -56,7 +71,9 @@ export function CreateRoom({ onBack, onCreated }: CreateRoomProps) {
         <main className="form-shell">
           <div className="form-card">
             <div className="form-head">
-              <button type="button" onClick={onBack} className="button button-quiet compact-button">返回</button>
+              <button type="button" onClick={onBack} className="button button-quiet compact-button" aria-label="返回">
+                <ArrowLeft size={18} />
+              </button>
               <div>
                 <p className="eyebrow">New Room</p>
                 <h2>创建新房间</h2>
@@ -65,7 +82,7 @@ export function CreateRoom({ onBack, onCreated }: CreateRoomProps) {
 
             {error && <div className="alert alert-danger">{error}</div>}
 
-            <form onSubmit={handleSubmit} className="stack-form">
+            <form onSubmit={handleSubmit} className="stack-form" noValidate>
             <label className="field">
               <span>房间名称 (可选)</span>
               <input type="text" value={name} onChange={e => setName(e.target.value)}
@@ -75,15 +92,19 @@ export function CreateRoom({ onBack, onCreated }: CreateRoomProps) {
 
             <label className="field">
               <span>自定义密钥 (可选)</span>
-              <input type="text" value={customKey} onChange={e => setCustomKey(e.target.value)}
-                 minLength={12}
+              <input type="text" value={customKey} onChange={e => {
+                    setCustomKey(e.target.value);
+                    setKeyError(validateCustomKey(e.target.value));
+                 }}
                  maxLength={32}
-                 pattern="[A-Za-z0-9]{12,32}"
+                 aria-invalid={Boolean(keyError)}
+                 aria-describedby={keyError ? "create-room-key-error" : undefined}
                  placeholder="留空随机生成 (12-32位字母数字)" />
+              {keyError && <em id="create-room-key-error" className="field-error">{keyError}</em>}
             </label>
 
             <button disabled={loading} type="submit" className="button button-primary button-full">
-               {loading ? "正在创建..." : "立即创建"}
+               {loading ? "正在创建..." : <><Plus size={16} /> 立即创建</>}
             </button>
           </form>
           </div>

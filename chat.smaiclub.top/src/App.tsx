@@ -3,9 +3,11 @@ import { ChatRoom } from './components/ChatRoom';
 import { Landing, type LandingPanel } from './components/Landing';
 import { AppMenuDrawer } from './components/AppMenuDrawer';
 import { SettingsModal } from './components/SettingsModal';
+import { useTheme } from './hooks/useTheme';
 import type { User, Room } from './types';
 import { apiUrl, IS_DEMO_MODE } from './config/api';
 import { demoRooms, demoUser } from './config/demo';
+import { formatRoomName } from './utils/roomDisplay';
 import './App.css';
 
 function BannedModal({ user, onEmergency }: { user: User, onEmergency: () => void }) {
@@ -31,9 +33,73 @@ function BannedModal({ user, onEmergency }: { user: User, onEmergency: () => voi
 }
 
 type ViewState = 'loading' | 'landing' | 'chat' | 'banned' | 'error';
+type RoomGroups = { owned: Room[]; joined: Room[] };
 
-function mergeRoomList(rooms: { owned: Room[]; joined: Room[] }, room: Room, bucket?: 'owned' | 'joined') {
-    const existingOwnedIndex = rooms.owned.findIndex(item => String(item.id) === String(room.id));
+const ROOM_ORDER_STORAGE_KEY = 'chat_room_order_v1';
+
+function normalizeRoomId(value: string | number | null | undefined) {
+    if (value === null || value === undefined) return '';
+    const normalized = String(value).trim();
+    const numeric = Number(normalized);
+    return Number.isNaN(numeric) ? normalized : String(numeric);
+}
+
+function readStoredRoomOrder(): { owned: string[]; joined: string[] } {
+    try {
+        const raw = localStorage.getItem(ROOM_ORDER_STORAGE_KEY);
+        if (!raw) return { owned: [], joined: [] };
+        const parsed = JSON.parse(raw);
+        return {
+            owned: Array.isArray(parsed?.owned) ? parsed.owned.map((value: string | number) => normalizeRoomId(value)) : [],
+            joined: Array.isArray(parsed?.joined) ? parsed.joined.map((value: string | number) => normalizeRoomId(value)) : [],
+        };
+    } catch {
+        return { owned: [], joined: [] };
+    }
+}
+
+function writeStoredRoomOrder(rooms: RoomGroups) {
+    localStorage.setItem(ROOM_ORDER_STORAGE_KEY, JSON.stringify({
+        owned: rooms.owned.map(room => normalizeRoomId(room.id)),
+        joined: rooms.joined.map(room => normalizeRoomId(room.id)),
+    }));
+}
+
+function mergeRoomBucket(current: Room[], incoming: Room[], storedOrder: string[]) {
+    const merged = new Map<string, Room>();
+
+    for (const room of current) {
+        merged.set(normalizeRoomId(room.id), room);
+    }
+
+    for (const room of incoming) {
+        const key = normalizeRoomId(room.id);
+        merged.set(key, { ...merged.get(key), ...room });
+    }
+
+    const orderedIds: string[] = [];
+    const seen = new Set<string>();
+
+    for (const key of [...storedOrder, ...current.map(room => normalizeRoomId(room.id)), ...incoming.map(room => normalizeRoomId(room.id))]) {
+        if (!key || seen.has(key) || !merged.has(key)) continue;
+        seen.add(key);
+        orderedIds.push(key);
+    }
+
+    return orderedIds.map(key => merged.get(key)!).filter(Boolean);
+}
+
+function mergeRoomGroups(current: RoomGroups, incoming: RoomGroups): RoomGroups {
+    const storedOrder = readStoredRoomOrder();
+    return {
+        owned: mergeRoomBucket(current.owned, incoming.owned, storedOrder.owned),
+        joined: mergeRoomBucket(current.joined, incoming.joined, storedOrder.joined),
+    };
+}
+
+function mergeRoomList(rooms: RoomGroups, room: Room, bucket?: 'owned' | 'joined') {
+    const normalizedRoomId = normalizeRoomId(room.id);
+    const existingOwnedIndex = rooms.owned.findIndex(item => normalizeRoomId(item.id) === normalizedRoomId);
     if (existingOwnedIndex !== -1) {
         return {
             ...rooms,
@@ -41,7 +107,7 @@ function mergeRoomList(rooms: { owned: Room[]; joined: Room[] }, room: Room, buc
         };
     }
 
-    const existingJoinedIndex = rooms.joined.findIndex(item => String(item.id) === String(room.id));
+    const existingJoinedIndex = rooms.joined.findIndex(item => normalizeRoomId(item.id) === normalizedRoomId);
     if (existingJoinedIndex !== -1) {
         return {
             ...rooms,
@@ -56,11 +122,30 @@ function mergeRoomList(rooms: { owned: Room[]; joined: Room[] }, room: Room, buc
     };
 }
 
+function bumpRoomToFront(rooms: RoomGroups, roomId: string | number) {
+    const normalizedTarget = normalizeRoomId(roomId);
+
+    const moveToFront = (bucket: Room[]) => {
+        const index = bucket.findIndex(room => normalizeRoomId(room.id) === normalizedTarget);
+        if (index === -1) return bucket;
+        const next = [...bucket];
+        const [room] = next.splice(index, 1);
+        next.unshift(room);
+        return next;
+    };
+
+    return {
+        owned: moveToFront(rooms.owned),
+        joined: moveToFront(rooms.joined),
+    };
+}
+
 function App() {
+    const { theme, toggle: toggleTheme } = useTheme();
     const [view, setView] = useState<ViewState>(IS_DEMO_MODE ? "landing" : "loading");
     const [user, setUser] = useState<User | null>(IS_DEMO_MODE ? demoUser : null);
     const [room, setRoom] = useState<Room | null>(null);
-    const [knownRooms, setKnownRooms] = useState<{ owned: Room[]; joined: Room[] }>(IS_DEMO_MODE ? demoRooms : { owned: [], joined: [] });
+    const [knownRooms, setKnownRooms] = useState<RoomGroups>(IS_DEMO_MODE ? mergeRoomGroups({ owned: [], joined: [] }, demoRooms) : { owned: [], joined: [] });
     const [errorMsg, setErrorMsg] = useState("");
     const [isAppMenuOpen, setIsAppMenuOpen] = useState(false);
     const [showSettings, setShowSettings] = useState(false);
@@ -104,13 +189,25 @@ function App() {
 
     const enterEmergencyRoom = useCallback(() => {
         setIsAppMenuOpen(false);
-        enterRoom({ id: '000001', key: 'smaiclub_issues', name: 'Emergency Channel' });
+        enterRoom({ id: '000001', key: 'smaiclub_issues', name: 'room 1' });
     }, [enterRoom]);
 
     const openSettings = useCallback(() => {
         setIsAppMenuOpen(false);
         setShowSettings(true);
     }, []);
+
+    const handleRoomsChange = useCallback((incomingRooms: RoomGroups) => {
+        setKnownRooms(prev => mergeRoomGroups(prev, incomingRooms));
+    }, []);
+
+    const handleRoomActivity = useCallback((activeRoomId: number) => {
+        setKnownRooms(prev => bumpRoomToFront(prev, activeRoomId));
+    }, []);
+
+    useEffect(() => {
+        writeStoredRoomOrder(knownRooms);
+    }, [knownRooms]);
 
     useEffect(() => {
         if (IS_DEMO_MODE) return;
@@ -152,12 +249,13 @@ function App() {
 
     return (
         <div className={`app-shell app-view-${view}`}>
-            <div className="ambient-grid" aria-hidden="true" />
             {user && view !== 'loading' && view !== 'error' && view !== 'banned' && (
                 <AppMenuDrawer
                     isOpen={isAppMenuOpen}
                     user={user}
                     showAuthControl={!IS_DEMO_MODE}
+                    theme={theme}
+                    onToggleTheme={toggleTheme}
                     onOpen={() => setIsAppMenuOpen(true)}
                     onClose={() => setIsAppMenuOpen(false)}
                     onCreateRoom={() => openLandingPanel('create')}
@@ -175,24 +273,52 @@ function App() {
             )}
 
             {view === 'error' && (
-                <div className="dialog danger-dialog">
-                    <div className="dialog-mark">!</div>
-                    <h2>连接错误</h2>
-                    <p>{errorMsg}</p>
-                    <button
-                        onClick={() => window.location.reload()}
-                        className="button button-primary"
-                    >
-                        重试
-                    </button>
-                </div>
+                <section className="error-state-shell">
+                    <div className="error-state-card">
+                        <div className="error-state-header">
+                            <div className="dialog-mark">!</div>
+                            <div className="error-state-heading">
+                                <p className="eyebrow">Auth Gateway</p>
+                                <h2>现在连不上登录服务</h2>
+                            </div>
+                        </div>
+
+                        <p className="error-state-copy">{errorMsg}</p>
+
+                        <div className="error-state-list">
+                            <div>
+                                <strong>检查步骤</strong>
+                                <span>网络、代理、或者是否拦截了 login.smaiclub.top。</span>
+                            </div>
+                            <div>
+                                <strong>仍然出现问题</strong>
+                                <span>稍后重试，或者先打开登录中心确认账号服务是否正常。</span>
+                            </div>
+                        </div>
+
+                        <div className="error-state-actions">
+                            <button
+                                onClick={() => window.location.reload()}
+                                className="button button-primary button-wide"
+                            >
+                                重新连接
+                            </button>
+                            <button
+                                onClick={() => window.location.href = "https://login.smaiclub.top"}
+                                className="button button-quiet button-wide"
+                            >
+                                打开登录中心
+                            </button>
+                        </div>
+                    </div>
+                </section>
             )}
 
             {view === 'banned' && user && (
                 <BannedModal
                     user={user}
                     onEmergency={() => {
-                        setRoom({ id: '000001', key: 'smaiclub_issues', name: 'Emergency Channel' });
+                        setRoom({ id: '000001', key: 'smaiclub_issues', name: 'room 1' });
                         setView('chat');
                     }}
                 />
@@ -200,11 +326,11 @@ function App() {
 
             {view === 'landing' && user && (
                 <Landing
-                    user={user}
+                    rooms={knownRooms}
                     panel={landingPanel}
                     onPanelChange={setLandingPanel}
                     onEnterRoom={enterRoom}
-                    onRoomsChange={setKnownRooms}
+                    onRoomsChange={handleRoomsChange}
                     onCreated={handleCreatedRoom}
                     onJoined={handleJoinedRoom}
                 />
@@ -215,10 +341,11 @@ function App() {
                     key={room.id}
                     roomId={parseInt(room.id.toString())}
                     roomKey={room.key}
-                    roomName={room.name}
+                    roomName={formatRoomName(room)}
                     user={user}
                     rooms={knownRooms}
                     onEnterRoom={enterRoom}
+                    onRoomActivity={handleRoomActivity}
                 />
             )}
             {showSettings && (

@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react';
+import { ArrowLeft, LogIn } from 'lucide-react';
 import type { Room } from '../types';
+import { formatRoomId } from '../utils/roomDisplay';
 
 interface JoinRoomProps {
     onBack: () => void;
@@ -27,14 +29,16 @@ export function JoinRoom({ onBack, onJoined, initialRoomId, initialRoomName }: J
         const normalizedRoomKey = roomKey.trim();
         if(!normalizedRoomId || !normalizedRoomKey) return;
         localStorage.setItem(`room_key_${normalizedRoomId}`, normalizedRoomKey);
-        onJoined({ id: normalizedRoomId, key: normalizedRoomKey, name: initialRoomName || ('Room ' + normalizedRoomId) });
+        onJoined({ id: normalizedRoomId, key: normalizedRoomKey, name: initialRoomName || (`room ${formatRoomId(normalizedRoomId)}`) });
     };
 
     return (
         <main className="form-shell">
           <div className="form-card">
            <div className="form-head">
-            <button type="button" onClick={onBack} className="button button-quiet compact-button">返回</button>
+            <button type="button" onClick={onBack} className="button button-quiet compact-button" aria-label="返回">
+              <ArrowLeft size={18} />
+            </button>
             <div>
               <p className="eyebrow">Join Room</p>
               <h2>加入房间</h2>
@@ -53,8 +57,8 @@ export function JoinRoom({ onBack, onJoined, initialRoomId, initialRoomName }: J
                  placeholder="粘贴密钥..." />
             </label>
              <button type="submit" className="button button-primary button-full">
-               进入聊天
-            </button>
+               <LogIn size={16} /> 进入聊天
+             </button>
           </form>
           </div>
         </main>

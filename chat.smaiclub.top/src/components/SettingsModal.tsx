@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
+import { X, Bell, BellOff, VolumeX, Volume2 } from 'lucide-react';
 import type { Room } from '../types';
+import { formatRoomId, formatRoomName } from '../utils/roomDisplay';
 
 interface SettingsModalProps {
     isOpen: boolean;
@@ -63,7 +65,9 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, j
             <div className="settings-dialog">
                 <div className="settings-head">
                     <h2>设置</h2>
-                    <button onClick={onClose} className="button button-quiet compact-button">关闭</button>
+                    <button onClick={onClose} className="button button-quiet compact-button">
+                        <X size={16} /> 关闭
+                    </button>
                 </div>
                 
                 <div className="settings-body custom-scroll">
@@ -71,7 +75,10 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, j
                         <h3>通知</h3>
                         <div className="setting-row">
                             <div>
-                                <div className="setting-title">浏览器通知</div>
+                                <div className="setting-title">
+                                    {settings.enableNotifications ? <Bell size={15} className="setting-icon" /> : <BellOff size={15} className="setting-icon" />}
+                                    浏览器通知
+                                </div>
                                 <div className="setting-caption">收到新消息时显示系统通知</div>
                             </div>
                             <button 
@@ -92,17 +99,17 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, j
                             ) : (
                                 joinedRooms.map(room => (
                                     <div key={room.id} className="muted-room-row">
-                                        <div className="room-mini-mark">{room.name.charAt(0).toUpperCase()}</div>
+                                        <div className="room-mini-mark">{formatRoomName(room).charAt(0).toUpperCase()}</div>
                                         <div className="muted-room-copy">
-                                            <div>{room.name}</div>
-                                            <span>ID: {room.id}</span>
+                                            <div>{formatRoomName(room)}</div>
+                                            <span>ID: {formatRoomId(room.id)}</span>
                                         </div>
                                         <button 
                                             onClick={() => toggleMuteRoom(room.id)}
                                             className={`button compact-button ${settings.mutedRooms.includes(room.id) ? 'button-danger' : 'button-quiet'}`}
                                             title={settings.mutedRooms.includes(room.id) ? "取消免打扰" : "开启免打扰"}
                                         >
-                                            {settings.mutedRooms.includes(room.id) ? '已静音' : '静音'}
+                                            {settings.mutedRooms.includes(room.id) ? <><VolumeX size={14} /> 已静音</> : <><Volume2 size={14} /> 静音</>}
                                         </button>
                                     </div>
                                 ))

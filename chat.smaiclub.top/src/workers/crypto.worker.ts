@@ -107,7 +107,7 @@ async function decryptMessage(key: CryptoKey, ivB64: string, contentB64: string)
         return new TextDecoder().decode(decrypted);
     } catch (e) {
         console.error("Decryption failed", e);
-        return "[Decryption Failed]";
+        throw new Error("DECRYPTION_FAILED");
     }
 }
 

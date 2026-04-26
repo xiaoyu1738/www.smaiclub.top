@@ -1,0 +1,155 @@
+/* ============================================================
+   SMAI Chat — Design Tokens (Light + Dark)
+   ============================================================ */
+
+:root,
+[data-theme="light"] {
+  color-scheme: light;
+  /* Surface */
+  --bg: #eef1f6;
+  --surface: #ffffff;
+  --surface-hover: #f0f4f8;
+  --surface-active: #dbeafe;
+  --border: #e2e7ed;
+  --border-strong: #cdd4dc;
+  /* Text */
+  --text: #111827;
+  --text-secondary: #374151;
+  --text-muted: #6b7280;
+  --text-faint: #9ca3af;
+  /* Brand */
+  --primary: #41c784;
+  --primary-hover: #37b472;
+  --primary-text: #ffffff;
+  --accent: #4aa3df;
+  --accent-soft: rgba(74,163,223,0.1);
+  --danger: #e05252;
+  --danger-hover: #d94444;
+  --danger-soft: rgba(224,82,82,0.08);
+  --danger-text: #dc2626;
+  /* Elevation */
+  --shadow-xs: 0 1px 2px rgba(0,0,0,0.04);
+  --shadow-sm: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+  --shadow-md: 0 4px 12px rgba(0,0,0,0.07);
+  --shadow-lg: 0 12px 40px rgba(0,0,0,0.1);
+  /* Chat */
+  --wallpaper: linear-gradient(160deg, #c8dba4 0%, #b5d494 40%, #a8cf8a 70%, #bdd89e 100%);
+  --wallpaper-pattern: repeating-linear-gradient(45deg, rgba(255,255,255,0.06) 0 1px, transparent 1px 24px);
+  --bubble-out: linear-gradient(135deg, #dcf8c6 0%, #e8ffd9 100%);
+  --bubble-out-flat: #e3ffd3;
+  --bubble-out-shadow: 0 1px 3px rgba(46,125,50,0.12);
+  --bubble-in: #ffffff;
+  --bubble-in-shadow: 0 1px 2px rgba(0,0,0,0.08);
+  /* Components */
+  --avatar-bg: linear-gradient(135deg, #53b7e8, #4a9fd4);
+  --avatar-bg-flat: #53b7e8;
+  --avatar-text: #ffffff;
+  --sidebar-active-bg: rgba(74,163,223,0.12);
+  --sidebar-active-text: #2b7dba;
+  --sidebar-active-mark: rgba(74,163,223,0.18);
+  --room-press-shadow: rgba(18,31,48,0.18);
+  --switch-off: #d1d5db;
+  --switch-on: var(--primary);
+  --switch-knob: #ffffff;
+  --input-bg: #f8fafb;
+  --input-border: #d0d7de;
+  --input-focus: var(--accent);
+  --input-focus-ring: rgba(74,163,223,0.18);
+  --scrollbar-thumb: rgba(0,0,0,0.12);
+  --scrollbar-hover: rgba(0,0,0,0.2);
+  /* Meta */
+  --meta-name: #3d7fad;
+  --meta-time: rgba(17,24,39,0.42);
+  --system-msg-bg: rgba(0,0,0,0.14);
+  --system-msg-text: #ffffff;
+  /* Menu */
+  --menu-backdrop: rgba(17,24,39,0.28);
+  --menu-action-bg: #f3f5f7;
+  --menu-action-hover: #e5eef8;
+  --header-shadow: 0 1px 3px rgba(0,0,0,0.04);
+  --input-area-shadow: 0 -1px 3px rgba(0,0,0,0.03);
+  --tile-divider: #f0f2f5;
+  /* Badges */
+  --badge-owner: #1f2937;
+  --badge-admin: #dc2626;
+  --badge-admin-border: rgba(220,38,38,0.3);
+  --badge-vip-text: #92400e;
+  --badge-vip-bg: #fbbf24;
+  /* Loader */
+  --loader-track: rgba(0,0,0,0.08);
+  --loader-active: var(--primary);
+  /* State panel bg */
+  --state-panel-bg: rgba(255,255,255,0.92);
+  --state-panel-border: rgba(223,228,232,0.92);
+  --state-panel-shadow: 0 18px 48px rgba(42,54,43,0.14);
+}
+
+[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #0d1017;
+  --surface: #161920;
+  --surface-hover: #1e2230;
+  --surface-active: #1a2d42;
+  --border: rgba(255,255,255,0.07);
+  --border-strong: rgba(255,255,255,0.13);
+  --text: #e4e7ec;
+  --text-secondary: #b4bac4;
+  --text-muted: #7c838e;
+  --text-faint: #4e545e;
+  --primary: #5fcc96;
+  --primary-hover: #4fbe88;
+  --primary-text: #061a0e;
+  --accent: #6cb6ea;
+  --accent-soft: rgba(108,182,234,0.1);
+  --danger: #f06565;
+  --danger-hover: #e85555;
+  --danger-soft: rgba(240,101,101,0.1);
+  --danger-text: #f87171;
+  --shadow-xs: 0 1px 2px rgba(0,0,0,0.2);
+  --shadow-sm: 0 1px 3px rgba(0,0,0,0.3), 0 1px 2px rgba(0,0,0,0.2);
+  --shadow-md: 0 4px 16px rgba(0,0,0,0.35);
+  --shadow-lg: 0 12px 48px rgba(0,0,0,0.45);
+  --wallpaper: linear-gradient(160deg, #0d1017 0%, #10141c 30%, #111520 60%, #0e1218 100%);
+  --wallpaper-pattern: repeating-linear-gradient(45deg, rgba(255,255,255,0.015) 0 1px, transparent 1px 24px);
+  --bubble-out: linear-gradient(135deg, #1a3d2a 0%, #1e4530 100%);
+  --bubble-out-flat: #1a3d2a;
+  --bubble-out-shadow: 0 1px 3px rgba(0,0,0,0.35);
+  --bubble-in: #1e2128;
+  --bubble-in-shadow: 0 1px 3px rgba(0,0,0,0.3);
+  --avatar-bg: linear-gradient(135deg, #3a6d8c, #2d5a74);
+  --avatar-bg-flat: #3a6d8c;
+  --avatar-text: #e4e7ec;
+  --sidebar-active-bg: rgba(108,182,234,0.1);
+  --sidebar-active-text: #6cb6ea;
+  --sidebar-active-mark: rgba(108,182,234,0.15);
+  --room-press-shadow: rgba(0,0,0,0.34);
+  --switch-off: #3a3f48;
+  --switch-on: #5fcc96;
+  --switch-knob: #e4e7ec;
+  --input-bg: #12151c;
+  --input-border: rgba(255,255,255,0.1);
+  --input-focus: #6cb6ea;
+  --input-focus-ring: rgba(108,182,234,0.2);
+  --scrollbar-thumb: rgba(255,255,255,0.1);
+  --scrollbar-hover: rgba(255,255,255,0.18);
+  --meta-name: #6cb6ea;
+  --meta-time: rgba(228,231,236,0.38);
+  --system-msg-bg: rgba(255,255,255,0.07);
+  --system-msg-text: rgba(228,231,236,0.7);
+  --menu-backdrop: rgba(0,0,0,0.5);
+  --menu-action-bg: #1e2230;
+  --menu-action-hover: #262b38;
+  --header-shadow: 0 1px 4px rgba(0,0,0,0.2);
+  --input-area-shadow: 0 -1px 4px rgba(0,0,0,0.15);
+  --tile-divider: rgba(255,255,255,0.04);
+  --badge-owner: #e4e7ec;
+  --badge-admin: #f87171;
+  --badge-admin-border: rgba(248,113,113,0.3);
+  --badge-vip-text: #0a0600;
+  --badge-vip-bg: #fbbf24;
+  --loader-track: rgba(255,255,255,0.06);
+  --loader-active: #5fcc96;
+  --state-panel-bg: rgba(22,25,32,0.95);
+  --state-panel-border: rgba(255,255,255,0.08);
+  --state-panel-shadow: 0 18px 48px rgba(0,0,0,0.4);
+}

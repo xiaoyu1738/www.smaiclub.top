@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { saveMessage, getMessages, type ChatMessage } from '../db/chatDB';
 import CryptoWorker from '../workers/crypto.worker?worker';
 import { IS_DEMO_MODE, websocketUrl } from '../config/api';
+import { isPlainSystemPayload, parseIncomingChatMessage, type IncomingChatPayload } from './chatMessageProcessor';
 
 interface UseChatProps {
     roomId: number;
@@ -39,6 +40,7 @@ export function useChat({ roomId, roomKey, username, role, avatarUrl }: UseChatP
     const [messages, setMessages] = useState<ChatMessage[]>(() => IS_DEMO_MODE ? createDemoMessages(roomId) : []);
     const [status, setStatus] = useState<'connecting' | 'connected' | 'disconnected' | 'error'>(IS_DEMO_MODE ? 'connected' : 'connecting');
     const [derivedKey, setDerivedKey] = useState<CryptoKey | null>(null);
+    const [reconnectNonce, setReconnectNonce] = useState(0);
     const keyRef = useRef<CryptoKey | null>(null);
     const socketRef = useRef<WebSocket | null>(null);
     const workerRef = useRef<Worker | null>(null);
@@ -92,7 +94,7 @@ export function useChat({ roomId, roomKey, username, role, avatarUrl }: UseChatP
         const worker = new CryptoWorker();
         workerRef.current = worker;
 
-        let reconnectTimer: ReturnType<typeof setTimeout>;
+        let reconnectTimer: ReturnType<typeof setTimeout> | undefined;
         let isUnmounting = false;
 
         const connect = async () => {
@@ -141,15 +143,14 @@ export function useChat({ roomId, roomKey, username, role, avatarUrl }: UseChatP
                     }
 
                     if (data.type === 'system') {
-                        const systemMessage: ChatMessage = {
-                            id: data.timestamp || Date.now(),
+                        const systemMessage = await parseIncomingChatMessage(data, {
                             roomId,
-                            content: String(data.content || ''),
-                            sender: 'SYSTEM',
-                            isMine: false,
-                            timestamp: data.timestamp || Date.now(),
-                            system: true
-                        };
+                            username,
+                            decrypt: async () => {
+                                throw new Error('System messages must not be decrypted');
+                            }
+                        });
+                        if (!systemMessage) return;
                         setMessages(prev => {
                             if (prev.some(m => m.id === systemMessage.id)) return prev;
                             return [...prev, systemMessage].sort((a, b) => a.timestamp - b.timestamp);
@@ -158,20 +159,18 @@ export function useChat({ roomId, roomKey, username, role, avatarUrl }: UseChatP
                         return;
                     }
 
-                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                    const processMessage = (msgData: any) => {
+                    const processMessage = (msgData: IncomingChatPayload) => {
                         const maxKeyWaitRetries = 100;
                         const tryProcess = async (retryCount = 0) => {
-                            if (msgData.iv === 'SYSTEM' || msgData.sender === 'SYSTEM') {
-                                const systemMessage: ChatMessage = {
-                                    id: msgData.timestamp || Date.now(),
+                            if (isPlainSystemPayload(msgData)) {
+                                const systemMessage = await parseIncomingChatMessage(msgData, {
                                     roomId,
-                                    content: String(msgData.content || ''),
-                                    sender: 'SYSTEM',
-                                    isMine: false,
-                                    timestamp: msgData.timestamp || Date.now(),
-                                    system: true
-                                };
+                                    username,
+                                    decrypt: async () => {
+                                        throw new Error('System messages must not be decrypted');
+                                    }
+                                });
+                                if (!systemMessage) return;
                                 setMessages(prev => {
                                     if (prev.some(m => m.id === systemMessage.id)) return prev;
                                     return [...prev, systemMessage].sort((a, b) => a.timestamp - b.timestamp);
@@ -190,24 +189,12 @@ export function useChat({ roomId, roomKey, username, role, avatarUrl }: UseChatP
                                 return;
                             }
 
-                            const decryptedContent = await runWorkerTask('decrypt', { key, iv: msgData.iv, content: msgData.content }) as string;
-                            let sender = String(msgData.sender || "unknown");
-                            // Older rows may have encrypted sender values; new messages store plaintext usernames.
-                            if (!/^[A-Za-z0-9_]{3,32}$/.test(sender) && msgData.sender) {
-                                sender = await runWorkerTask('decrypt', { key, iv: msgData.iv, content: msgData.sender }) as string;
-                            }
-
-                            const newMessage: ChatMessage = {
-                                id: msgData.timestamp || Date.now(),
+                            const newMessage = await parseIncomingChatMessage(msgData, {
                                 roomId,
-                                content: decryptedContent,
-                                sender,
-                                senderRole: msgData.senderRole,
-                                senderAvatar: msgData.senderAvatar,
-                                isMine: sender === username,
-                                timestamp: msgData.timestamp || Date.now(),
-                                tempId: msgData.tempId
-                            };
+                                username,
+                                decrypt: (iv, content) => runWorkerTask('decrypt', { key, iv, content }) as Promise<string>
+                            });
+                            if (!newMessage) return;
 
                             setMessages(prev => {
                                 if (msgData.tempId) {
@@ -272,12 +259,20 @@ export function useChat({ roomId, roomKey, username, role, avatarUrl }: UseChatP
 
         return () => {
             isUnmounting = true;
-            clearTimeout(reconnectTimer);
+            if (reconnectTimer) clearTimeout(reconnectTimer);
             socketRef.current?.close();
             worker.terminate();
             workerRef.current = null;
         };
-    }, [roomId, roomKey, username, role, avatarUrl, runWorkerTask]);
+    }, [roomId, roomKey, username, role, avatarUrl, reconnectNonce, runWorkerTask]);
+
+    const reconnect = useCallback(() => {
+        if (IS_DEMO_MODE) return;
+        setStatus('connecting');
+        setDerivedKey(null);
+        keyRef.current = null;
+        setReconnectNonce(value => value + 1);
+    }, []);
 
     const sendMessage = useCallback(async (content: string) => {
         if (IS_DEMO_MODE) {
@@ -332,5 +327,5 @@ export function useChat({ roomId, roomKey, username, role, avatarUrl }: UseChatP
 
     }, [status, derivedKey, roomId, username, runWorkerTask]);
 
-    return { messages, sendMessage, status, loadMoreMessages };
+    return { messages, sendMessage, status, loadMoreMessages, reconnect };
 }

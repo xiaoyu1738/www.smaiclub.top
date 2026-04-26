@@ -7,10 +7,12 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
+    "test": "node --experimental-strip-types test/chatMessageProcessor.test.ts",
     "preview": "vite preview"
   },
   "dependencies": {
     "idb": "^8.0.3",
+    "lucide-react": "^1.11.0",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
     "react-virtuoso": "^4.18.1"

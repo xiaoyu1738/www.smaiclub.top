@@ -1,11 +1,15 @@
 import { useEffect } from 'react';
+import { Menu, Plus, LogIn, Settings, Moon, Sun, AlertTriangle } from 'lucide-react';
 import type { User } from '../types';
+import type { Theme } from '../hooks/useTheme';
 import { AuthControl } from './AuthControl';
 
 interface AppMenuDrawerProps {
     isOpen: boolean;
     user: User | null;
     showAuthControl: boolean;
+    theme: Theme;
+    onToggleTheme: () => void;
     onOpen: () => void;
     onClose: () => void;
     onCreateRoom: () => void;
@@ -18,6 +22,8 @@ export function AppMenuDrawer({
     isOpen,
     user,
     showAuthControl,
+    theme,
+    onToggleTheme,
     onOpen,
     onClose,
     onCreateRoom,
@@ -27,11 +33,9 @@ export function AppMenuDrawer({
 }: AppMenuDrawerProps) {
     useEffect(() => {
         if (!isOpen) return;
-
         const handleKeyDown = (event: KeyboardEvent) => {
             if (event.key === 'Escape') onClose();
         };
-
         window.addEventListener('keydown', handleKeyDown);
         return () => window.removeEventListener('keydown', handleKeyDown);
     }, [isOpen, onClose]);
@@ -45,7 +49,7 @@ export function AppMenuDrawer({
                 aria-expanded={isOpen}
                 onClick={() => isOpen ? onClose() : onOpen()}
             >
-                <span aria-hidden="true">☰</span>
+                <Menu size={20} strokeWidth={2.2} />
             </button>
 
             <div className={`app-menu-overlay ${isOpen ? 'is-open' : ''}`} aria-hidden={!isOpen}>
@@ -67,10 +71,22 @@ export function AppMenuDrawer({
                     </div>
 
                     <div className="app-menu-actions">
-                        <button type="button" onClick={onCreateRoom}>创建房间</button>
-                        <button type="button" onClick={onJoinRoom}>加入房间</button>
-                        <button type="button" onClick={onOpenSettings}>设置</button>
-                        <button type="button" className="is-danger" onClick={onEmergency}>申诉房间</button>
+                        <button type="button" onClick={onCreateRoom}>
+                            <Plus size={18} /> 创建房间
+                        </button>
+                        <button type="button" onClick={onJoinRoom}>
+                            <LogIn size={18} /> 加入房间
+                        </button>
+                        <button type="button" onClick={onOpenSettings}>
+                            <Settings size={18} /> 设置
+                        </button>
+                        <button type="button" onClick={onToggleTheme}>
+                            {theme === 'light' ? <Moon size={18} /> : <Sun size={18} />}
+                            {theme === 'light' ? '深色模式' : '浅色模式'}
+                        </button>
+                        <button type="button" className="is-danger" onClick={onEmergency}>
+                            <AlertTriangle size={18} /> 申诉房间
+                        </button>
                     </div>
                 </nav>
             </div>

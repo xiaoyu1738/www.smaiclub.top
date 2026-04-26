@@ -21,12 +21,27 @@ const corsHeaders = {
 
 export default {
     async fetch(request, env, ctx) {
+        try {
+            return await handleRequest(request, env, ctx);
+        } catch (error) {
+            console.error("Unhandled login-worker error", error);
+            const origin = request.headers.get("Origin");
+            return jsonResp(
+                { error: "SERVER_ERROR", message: "服务器暂时不可用，请稍后再试" },
+                500,
+                buildCorsHeaders(origin)
+            );
+        }
+    }
+};
+
+async function handleRequest(request, env, ctx) {
         const url = new URL(request.url);
         const origin = request.headers.get("Origin");
         const allowedOrigin = origin ? isAllowedOrigin(origin) : false;
 
         // 动态处理 CORS Origin
-        let responseHeaders = { ...corsHeaders };
+        let responseHeaders = buildCorsHeaders(origin);
         if (allowedOrigin) {
             responseHeaders["Access-Control-Allow-Origin"] = origin;
         }
@@ -241,7 +256,13 @@ export default {
                         return jsonResp({ error: "ACCOUNT_ERROR", message: "账户异常：未设置许可证，请联系管理员" }, 403, responseHeaders);
                     }
 
-                    const decryptedLicense = await decryptData(user.licenseKey, env.SECRET_KEY, user.salt);
+                    let decryptedLicense;
+                    try {
+                        decryptedLicense = await decryptData(user.licenseKey, env.SECRET_KEY, user.salt);
+                    } catch (error) {
+                        console.error("Failed to decrypt login license", error);
+                        return jsonResp({ error: "ACCOUNT_ERROR", message: "账户许可证数据异常，请联系管理员重置许可证" }, 403, responseHeaders);
+                    }
                     if (providedLicense !== decryptedLicense) {
                         return jsonResp({ error: "LICENSE_INVALID", message: "许可证错误" }, 403, responseHeaders);
                     }
@@ -256,13 +277,7 @@ export default {
                 const sessionToken = await encryptData(sessionData, env.SECRET_KEY, "SESSION_SALT");
                 const cookie = `auth_token=${sessionToken}; Path=/; Domain=.smaiclub.top; Secure; HttpOnly; SameSite=None; Max-Age=86400`;
 
-                await clearLoginFailures(env, request, username);
-                if (passwordCheck.needsMigration) {
-                    const migrated = await hashPassword(password);
-                    await env.DB.prepare(
-                        "UPDATE users SET password = ?, password_salt = ?, password_algo = 'pbkdf2' WHERE username = ?"
-                    ).bind(migrated.hash, migrated.salt, username).run();
-                }
+                ctx.waitUntil(runPostLoginMaintenance(env, request, username, password, passwordCheck.needsMigration));
 
                 return new Response(JSON.stringify({ success: true, redirect: safeRedirect, warning }), {
                     headers: {
@@ -744,8 +759,7 @@ export default {
         }
 
         return new Response("Not Found", { status: 404, headers: responseHeaders });
-    }
-};
+}
 
 // --- 辅助函数 ---
 
@@ -821,6 +835,14 @@ function applyExpiration(user) {
 
 function jsonResp(data, status = 200, headers = {}) {
     return new Response(JSON.stringify(data), { status, headers: { "Content-Type": "application/json", ...headers } });
+}
+
+function buildCorsHeaders(origin) {
+    const headers = { ...corsHeaders };
+    if (origin && isAllowedOrigin(origin)) {
+        headers["Access-Control-Allow-Origin"] = origin;
+    }
+    return headers;
 }
 
 async function getUserFromCookie(request, env, options = {}) {
@@ -944,6 +966,25 @@ async function clearLoginFailures(env, request, username) {
     await env.DB.prepare("DELETE FROM login_attempts WHERE key = ?").bind(`user:${normalizedUsername}`).run();
 }
 
+async function runPostLoginMaintenance(env, request, username, password, needsPasswordMigration) {
+    try {
+        await clearLoginFailures(env, request, username);
+    } catch (error) {
+        console.error("Failed to clear login failures", error);
+    }
+
+    if (!needsPasswordMigration) return;
+
+    try {
+        const migrated = await hashPassword(password);
+        await env.DB.prepare(
+            "UPDATE users SET password = ?, password_salt = ?, password_algo = 'pbkdf2' WHERE username = ?"
+        ).bind(migrated.hash, migrated.salt, username).run();
+    } catch (error) {
+        console.error("Failed to migrate password after login", error);
+    }
+}
+
 async function createPasswordChangeToken(username, env) {
     const payload = JSON.stringify({
         purpose: "weak_password_change",
@@ -984,14 +1025,19 @@ async function hashPassword(password) {
 }
 
 async function verifyStoredPassword(user, password, env) {
-    if (typeof user.password === "string" && user.password.startsWith("pbkdf2$")) {
-        const check = await verifyPbkdf2Password(password, user.password, user.password_salt);
-        return { ok: check.ok, needsMigration: check.ok && check.needsMigration };
-    }
+    try {
+        if (typeof user.password === "string" && user.password.startsWith("pbkdf2$")) {
+            const check = await verifyPbkdf2Password(password, user.password, user.password_salt);
+            return { ok: check.ok, needsMigration: check.ok && check.needsMigration };
+        }
 
-    const decryptedPassword = await decryptData(user.password, env.SECRET_KEY, user.salt);
-    const ok = timingSafeEqualString(password, decryptedPassword);
-    return { ok, needsMigration: ok };
+        const decryptedPassword = await decryptData(user.password, env.SECRET_KEY, user.salt);
+        const ok = timingSafeEqualString(password, decryptedPassword);
+        return { ok, needsMigration: ok };
+    } catch (error) {
+        console.error("Failed to verify stored password", error);
+        return { ok: false, needsMigration: false };
+    }
 }
 
 async function verifyPbkdf2Password(password, storedHash, passwordSalt) {

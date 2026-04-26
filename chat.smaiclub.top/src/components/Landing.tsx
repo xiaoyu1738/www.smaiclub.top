@@ -1,5 +1,6 @@
-import { useState, useEffect } from 'react';
-import type { User, Room } from '../types';
+import { useEffect, useState } from 'react';
+import { MessageCircle } from 'lucide-react';
+import type { Room } from '../types';
 import { apiUrl, IS_DEMO_MODE } from '../config/api';
 import { demoRooms } from '../config/demo';
 import { CreateRoom } from './CreateRoom';
@@ -7,7 +8,7 @@ import { JoinRoom } from './JoinRoom';
 import { RoomSidebar } from './RoomSidebar';
 
 interface LandingProps {
-    user: User | null;
+    rooms: { owned: Room[]; joined: Room[] };
     panel: LandingPanel;
     onPanelChange: (panel: LandingPanel) => void;
     onEnterRoom: (room: Room) => void;
@@ -18,8 +19,7 @@ interface LandingProps {
 
 export type LandingPanel = 'home' | 'create' | 'join';
 
-export function Landing({ user, panel, onPanelChange, onEnterRoom, onRoomsChange, onCreated, onJoined }: LandingProps) {
-    const [rooms, setRooms] = useState<{ owned: Room[], joined: Room[] }>(IS_DEMO_MODE ? demoRooms : { owned: [], joined: [] });
+export function Landing({ rooms, panel, onPanelChange, onEnterRoom, onRoomsChange, onCreated, onJoined }: LandingProps) {
     const [loading, setLoading] = useState(!IS_DEMO_MODE);
 
     useEffect(() => {
@@ -33,7 +33,6 @@ export function Landing({ user, panel, onPanelChange, onEnterRoom, onRoomsChange
             .then(data => {
                 if (data.owned || data.joined) {
                     const loadedRooms = { owned: data.owned || [], joined: data.joined || [] };
-                    setRooms(loadedRooms);
                     onRoomsChange(loadedRooms);
                 }
             })
@@ -53,7 +52,7 @@ export function Landing({ user, panel, onPanelChange, onEnterRoom, onRoomsChange
                     </div>
                 </aside>
             ) : (
-                <RoomSidebar user={user} rooms={rooms} onEnterRoom={onEnterRoom} />
+                <RoomSidebar rooms={rooms} onEnterRoom={onEnterRoom} />
             )}
 
             <section className="telegram-empty-chat">
@@ -71,9 +70,9 @@ export function Landing({ user, panel, onPanelChange, onEnterRoom, onRoomsChange
                 )}
                 {panel === 'home' && (
                     <div className="telegram-empty-state">
-                        <div className="empty-sigil">SC</div>
-                        <h2>SMAI Chat</h2>
-                        <p>{hasRooms ? '左侧选择会话，或从左上角菜单创建一个新房间。' : '左上角菜单可以创建房间、加入房间，或者进入申诉房间。'}</p>
+                        <MessageCircle size={52} strokeWidth={1.2} className="empty-state-icon" />
+                        <h2>选择一个聊天</h2>
+                        <p>{hasRooms ? '从左侧选择会话，或从左上角菜单创建新房间。' : '左上角菜单可以创建房间、加入房间，或者进入申诉房间。'}</p>
                     </div>
                 )}
             </section>

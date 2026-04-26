@@ -70,6 +70,10 @@ export async function getMessages(roomId: number, limit = 100, beforeTimestamp?:
     
     while (cursor && messages.length < limit) {
         const msg = cursor.value;
+        if (msg.content === '[Decryption Failed]') {
+             cursor = await cursor.continue();
+             continue;
+        }
         if (beforeTimestamp && msg.timestamp >= beforeTimestamp) {
              cursor = await cursor.continue();
              continue;

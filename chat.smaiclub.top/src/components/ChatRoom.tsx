@@ -1,9 +1,92 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
+import { SendHorizonal, Copy, Eye, EyeOff, ChevronDown, Check, WifiOff, RefreshCw } from 'lucide-react';
 import { useChat } from '../hooks/useChat';
 import { useFaviconBadge } from '../hooks/useFaviconBadge';
 import type { ChatMessage } from '../db/chatDB';
 import type { Room, User } from '../types';
 import { RoomSidebar } from './RoomSidebar';
+import { formatRoomId } from '../utils/roomDisplay';
+
+/** 纯函数，无状态依赖，放在模块顶层避免每次 render 重建 */
+function getRoleBadge(role?: string) {
+    if (!role || role === 'user') return null;
+    const badges: Record<string, { text: string; className: string }> = {
+        'owner': { text: 'OWNER', className: 'role-owner' },
+        'admin': { text: 'ADMIN', className: 'role-admin' },
+        'banned': { text: 'BANNED', className: 'role-banned' },
+        'svip2': { text: 'SVIP II', className: 'role-svip' },
+        'svip1': { text: 'SVIP', className: 'role-svip' },
+        'svip': { text: 'SVIP', className: 'role-svip' },
+        'vip': { text: 'VIP', className: 'role-vip' }
+    };
+    return badges[role] || null;
+}
+
+/**
+ * 独立组件——不再定义在 ChatRoom 内部，
+ * React 能保持稳定的组件引用，避免输入框 setState 触发全量重挂载。
+ */
+const MessageItem = React.memo(({ message, currentUser }: { message: ChatMessage; currentUser: User }) => {
+    const badge = getRoleBadge(message.senderRole);
+
+    if (message.system) {
+        return (
+            <div className="system-message">
+                <span>{message.content}</span>
+            </div>
+        );
+    }
+
+    return (
+        <div className={`chat-message-row ${message.isMine ? 'is-mine' : 'is-other'}`}>
+            {!message.isMine && (
+                <div className="avatar-wrap">
+                    {message.senderAvatar ? (
+                        <img src={message.senderAvatar} alt="" className="avatar" />
+                    ) : (
+                        <div className="avatar avatar-fallback">
+                            {message.sender.charAt(0).toUpperCase()}
+                        </div>
+                    )}
+                </div>
+            )}
+
+            <div className="chat-message-stack">
+                {!message.isMine && (
+                    <div className="message-meta">
+                        <span>{message.sender}</span>
+                        {badge && (
+                            <span className={`role-badge ${badge.className}`}>
+                                {badge.text}
+                            </span>
+                        )}
+                    </div>
+                )}
+
+                <div className={`chat-bubble ${message.pending ? 'is-pending' : ''}`}>
+                    {message.content}
+                </div>
+
+                <div className="message-time">
+                    {new Date(message.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                    {message.pending && <span> / sending</span>}
+                </div>
+            </div>
+
+            {message.isMine && (
+                <div className="avatar-wrap">
+                    {currentUser.avatarUrl ? (
+                        <img src={currentUser.avatarUrl} alt="" className="avatar" />
+                    ) : (
+                        <div className="avatar avatar-fallback">
+                            {(currentUser.displayName || currentUser.username).charAt(0).toUpperCase()}
+                        </div>
+                    )}
+                </div>
+            )}
+        </div>
+    );
+});
 
 interface ChatRoomProps {
     roomId: number;
@@ -12,10 +95,11 @@ interface ChatRoomProps {
     user: User;
     rooms: { owned: Room[]; joined: Room[] };
     onEnterRoom: (room: Room) => void;
+    onRoomActivity: (roomId: number) => void;
 }
 
-export const ChatRoom: React.FC<ChatRoomProps> = ({ roomId, roomKey, roomName, user, rooms, onEnterRoom }) => {
-    const { messages, sendMessage, status, loadMoreMessages } = useChat({
+export const ChatRoom: React.FC<ChatRoomProps> = ({ roomId, roomKey, roomName, user, rooms, onEnterRoom, onRoomActivity }) => {
+    const { messages, sendMessage, status, loadMoreMessages, reconnect } = useChat({
         roomId,
         roomKey,
         username: user.username,
@@ -63,6 +147,10 @@ export const ChatRoom: React.FC<ChatRoomProps> = ({ roomId, roomKey, roomName, u
             
             // Only notify if not mine
             if (!newMessage.isMine) {
+                if (!newMessage.system) {
+                    onRoomActivity(roomId);
+                }
+
                 if (document.hidden) {
                     setTimeout(() => setUnreadCount(prev => prev + 1), 0);
                 }
@@ -81,7 +169,7 @@ export const ChatRoom: React.FC<ChatRoomProps> = ({ roomId, roomKey, roomName, u
             }
         }
         prevMessagesLength.current = messages.length;
-    }, [messages, settings, roomId, roomName]);
+    }, [messages, onRoomActivity, settings, roomId, roomName]);
 
     useEffect(() => {
         const container = messagesRef.current;
@@ -112,6 +200,7 @@ export const ChatRoom: React.FC<ChatRoomProps> = ({ roomId, roomKey, roomName, u
         const bottomDistance = container.scrollHeight - container.scrollTop - container.clientHeight;
         const isCurrentlyAtBottom = bottomDistance < 32;
         atBottomRef.current = isCurrentlyAtBottom;
+        setShowScrollFab(!isCurrentlyAtBottom);
 
         if (container.scrollTop > 24 || loadingMore || messages.length === 0) return;
 
@@ -135,97 +224,27 @@ export const ChatRoom: React.FC<ChatRoomProps> = ({ roomId, roomKey, roomName, u
         setInput("");
     };
 
-    const getRoleBadge = (role?: string) => {
-        if (!role || role === 'user') return null;
-        const badges: Record<string, { text: string; className: string }> = {
-            'owner': { text: 'OWNER', className: 'role-owner' },
-            'admin': { text: 'ADMIN', className: 'role-admin' },
-            'banned': { text: 'BANNED', className: 'role-banned' },
-            'svip2': { text: 'SVIP II', className: 'role-svip' },
-            'svip1': { text: 'SVIP', className: 'role-svip' },
-            'svip': { text: 'SVIP', className: 'role-svip' },
-            'vip': { text: 'VIP', className: 'role-vip' }
-        };
-        return badges[role] || null;
-    };
+    const [showScrollFab, setShowScrollFab] = useState(false);
+    const [copyToast, setCopyToast] = useState(false);
 
-    const MessageItem = ({ message }: { message: ChatMessage }) => {
-        const badge = getRoleBadge(message.senderRole);
-        
-        if (message.system) {
-            return (
-                <div className="system-message">
-                    <span>{message.content}</span>
-                </div>
-            );
-        }
+    const scrollToBottom = useCallback(() => {
+        const container = messagesRef.current;
+        if (!container) return;
+        container.scrollTo({ top: container.scrollHeight, behavior: 'smooth' });
+    }, []);
 
-        return (
-            <div className={`chat-message-row ${message.isMine ? 'is-mine' : 'is-other'}`}>
-                {!message.isMine && (
-                    <div className="avatar-wrap">
-                        {message.senderAvatar ? (
-                            <img src={message.senderAvatar} alt="" className="avatar" />
-                        ) : (
-                            <div className="avatar avatar-fallback">
-                                {message.sender.charAt(0).toUpperCase()}
-                            </div>
-                        )}
-                    </div>
-                )}
-                
-                <div className="chat-message-stack">
-                    {!message.isMine && (
-                         <div className="message-meta">
-                            <span>{message.sender}</span>
-                            {badge && (
-                                <span className={`role-badge ${badge.className}`}>
-                                    {badge.text}
-                                </span>
-                            )}
-                         </div>
-                    )}
-                    
-                    <div className={`chat-bubble ${message.pending ? 'is-pending' : ''}`}>
-                        {message.content}
-                    </div>
-                    
-                    <div className="message-time">
-                        {new Date(message.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
-                        {message.pending && <span> / sending</span>}
-                    </div>
-                </div>
+    const handleCopyKey = useCallback(() => {
+        navigator.clipboard?.writeText(roomKey).then(() => {
+            setCopyToast(true);
+            setTimeout(() => setCopyToast(false), 1800);
+        });
+    }, [roomKey]);
 
-                {message.isMine && (
-                    <div className="avatar-wrap">
-                         {user.avatarUrl ? (
-                            <img src={user.avatarUrl} alt="" className="avatar" />
-                        ) : (
-                            <div className="avatar avatar-fallback">
-                                {(user.displayName || user.username).charAt(0).toUpperCase()}
-                            </div>
-                        )}
-                    </div>
-                )}
-            </div>
-        );
-    };
 
     return (
         <main className="telegram-chat-layout">
             <aside className="telegram-chat-sidebar-wrap">
-                <RoomSidebar user={user} rooms={rooms} activeRoomId={roomId} onEnterRoom={onEnterRoom} />
-                <div className="room-key-panel">
-                    <button type="button" className="room-key-toggle" onClick={() => setShowRoomKey(value => !value)}>
-                        {showRoomKey ? '隐藏房间密钥' : '查看房间密钥'}
-                    </button>
-                    {showRoomKey && (
-                        <div className="room-key-box">
-                            <code>{roomKey}</code>
-                            <button type="button" onClick={() => navigator.clipboard?.writeText(roomKey)}>复制</button>
-                        </div>
-                    )}
-                </div>
+                <RoomSidebar rooms={rooms} activeRoomId={roomId} onEnterRoom={onEnterRoom} />
             </aside>
 
             <section className="chat-shell">
@@ -237,20 +256,61 @@ export const ChatRoom: React.FC<ChatRoomProps> = ({ roomId, roomKey, roomName, u
                     <div className="chat-heading">
                         <h2 className="chat-title">{roomName}</h2>
                         <div className="chat-subtitle">
-                            ID {roomId} / {status === 'connected' ? 'Secure connection' : status === 'connecting' ? 'Connecting' : 'Disconnected'}
+                            <span>ID {formatRoomId(roomId)} / {status === 'connected' ? 'Secure connection' : status === 'connecting' ? 'Connecting' : 'Disconnected'}</span>
+                            <button
+                                type="button"
+                                className="reconnect-button"
+                                onClick={reconnect}
+                                disabled={status === 'connecting'}
+                                aria-label="手动重连"
+                                title="手动重连"
+                            >
+                                <RefreshCw size={12} strokeWidth={2.2} />
+                            </button>
                         </div>
+                    </div>
+                </div>
+                <div className="chat-header-actions">
+                    <div className="room-key-popover-wrap">
+                        <button
+                            type="button"
+                            className="room-key-toggle"
+                            aria-expanded={showRoomKey}
+                            onClick={() => setShowRoomKey(value => !value)}
+                        >
+                            {showRoomKey ? <><EyeOff size={15} /> 隐藏密钥</> : <><Eye size={15} /> 查看密钥</>}
+                        </button>
+                        {showRoomKey && (
+                            <div className="room-key-box">
+                                <code>{roomKey}</code>
+                                <button type="button" onClick={handleCopyKey}><Copy size={14} /> 复制</button>
+                            </div>
+                        )}
                     </div>
                 </div>
             </header>
 
+            {(status === 'disconnected' || status === 'error') && (
+                <div className="disconnect-banner">
+                    <WifiOff size={14} />
+                    连接已断开，正在尝试重连...
+                </div>
+            )}
+
             <div className="chat-messages custom-scroll" ref={messagesRef} onScroll={handleMessagesScroll}>
                 {loadingMore && <div className="history-loader">Loading history...</div>}
                 {messages.map(message => (
-                    <MessageItem key={`${message.id}-${message.tempId || ''}`} message={message} />
+                    <MessageItem key={`${message.id}-${message.tempId || ''}`} message={message} currentUser={user} />
                 ))}
             </div>
 
-            <div className="chat-input-wrap">
+            {showScrollFab && (
+                <button type="button" className="scroll-fab" onClick={scrollToBottom} aria-label="滚动到底部">
+                    <ChevronDown size={20} />
+                </button>
+            )}
+
+            <div className={`chat-input-wrap ${status !== 'connected' ? 'is-disabled' : ''}`}>
                 <form onSubmit={handleSend} className="chat-input-form">
                     <input 
                         type="text" 
@@ -260,11 +320,12 @@ export const ChatRoom: React.FC<ChatRoomProps> = ({ roomId, roomKey, roomName, u
                         autoFocus
                     />
                     <button type="submit" disabled={!input.trim() || status !== 'connected'} className="button button-primary send-button">
-                        发送
+                        <SendHorizonal size={18} />
                     </button>
                 </form>
             </div>
             </section>
+            {copyToast && <div className="copy-toast"><Check size={14} /> 已复制到剪贴板</div>}
         </main>
     );
 };
