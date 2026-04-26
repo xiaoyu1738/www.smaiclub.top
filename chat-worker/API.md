@@ -1,7 +1,7 @@
 # Chat API Documentation
 
 ## Base URL
-`https://chat.smaiclub.top`
+`https://chat-api.smaiclub.top`
 
 ## Endpoints
 
@@ -31,19 +31,23 @@
 ### 2. Connect to Room (WebSocket)
 **GET** `/api/rooms/:id/websocket`
 
-**Query Parameters:**
-- `key`: The `roomKey` returned during creation.
-
 **Example:**
-`wss://chat.smaiclub.top/api/rooms/12345/websocket?key=abcd123...`
+`wss://chat-api.smaiclub.top/api/rooms/12345/websocket?since=1234567890`
+
+The Worker sends a handshake payload with salt, iteration count, and a nonce.
+The client derives the room access verifier from the room key, signs the nonce,
+and sends `{ "type": "auth", "signature": "..." }`.
 
 **WebSocket Payload (Send Message):**
 ```json
 {
-  "content": "Hello World"
+  "iv": "...",
+  "content": "...",
+  "tempId": "temp_123"
 }
 ```
-*Note: The server encrypts the content and sender name using the Room Key.*
+Clients encrypt message content with AES-GCM before sending. The Worker stores
+and broadcasts ciphertext.
 
 **WebSocket Payload (Receive Message):**
 ```json
@@ -54,7 +58,7 @@
   "timestamp": 1234567890
 }
 ```
-*Note: Clients must decrypt `content` and `sender` using AES-GCM and the Room Key.*
+Clients decrypt `content` locally with the room key.
 
 ## Emergency Mode
 If the server responds with:

@@ -1,0 +1,20 @@
+name: CI/CD - Chat
+
+on:
+  push:
+    paths:
+      - "chat.smaiclub.top/**"
+  workflow_dispatch:
+
+jobs:
+  ci-cd:
+    permissions:
+      contents: read
+      deployments: write
+    uses: ./.github/workflows/_pages-app.yml
+    with:
+      app_directory: chat.smaiclub.top
+      project_name: chat-smaiclub-top
+      dist_directory: chat.smaiclub.top/dist
+      ci_command: npm run lint && npm run build
+    secrets: inherit
