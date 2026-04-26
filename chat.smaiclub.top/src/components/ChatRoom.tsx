@@ -28,6 +28,14 @@ function getRoleBadge(role?: string) {
  */
 const MessageItem = React.memo(({ message, currentUser }: { message: ChatMessage; currentUser: User }) => {
     const badge = getRoleBadge(message.senderRole);
+    const sentAt = new Date(message.timestamp).toLocaleString('zh-CN', {
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: false
+    });
 
     if (message.system) {
         return (
@@ -68,7 +76,7 @@ const MessageItem = React.memo(({ message, currentUser }: { message: ChatMessage
                 </div>
 
                 <div className="message-time">
-                    {new Date(message.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                    {sentAt}
                     {message.pending && <span> / sending</span>}
                 </div>
             </div>
@@ -256,7 +264,7 @@ export const ChatRoom: React.FC<ChatRoomProps> = ({ roomId, roomKey, roomName, u
                     <div className="chat-heading">
                         <h2 className="chat-title">{roomName}</h2>
                         <div className="chat-subtitle">
-                            <span>ID {formatRoomId(roomId)} / {status === 'connected' ? 'Secure connection' : status === 'connecting' ? 'Connecting' : 'Disconnected'}</span>
+                            <span>ID {formatRoomId(roomId)} / {status === 'connected' ? 'Secure connection' : status === 'connecting' ? 'Connecting' : status === 'invalid_key' ? '房间密钥错误' : 'Disconnected'}</span>
                             <button
                                 type="button"
                                 className="reconnect-button"
@@ -311,6 +319,9 @@ export const ChatRoom: React.FC<ChatRoomProps> = ({ roomId, roomKey, roomName, u
             )}
 
             <div className={`chat-input-wrap ${status !== 'connected' ? 'is-disabled' : ''}`}>
+                {status === 'invalid_key' && (
+                    <p className="chat-input-notice">房间密钥不正确，请回到加入房间页面重新输入。</p>
+                )}
                 <form onSubmit={handleSend} className="chat-input-form">
                     <input 
                         type="text" 

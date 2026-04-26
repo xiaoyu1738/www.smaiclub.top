@@ -695,6 +695,13 @@ button:disabled { cursor: not-allowed; opacity: 0.55; }
   grid-template-columns: minmax(0, 1fr) auto;
   gap: 10px;
 }
+.chat-input-notice {
+  margin: 0 0 8px;
+  color: #b91c1c;
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+[data-theme="dark"] .chat-input-notice { color: #fca5a5; }
 .chat-input-form input {
   width: 100%;
   min-height: 42px;

@@ -3,6 +3,7 @@ import { saveMessage, getMessages, type ChatMessage } from '../db/chatDB';
 import CryptoWorker from '../workers/crypto.worker?worker';
 import { IS_DEMO_MODE, websocketUrl } from '../config/api';
 import { isPlainSystemPayload, parseIncomingChatMessage, type IncomingChatPayload } from './chatMessageProcessor';
+import { formatRoomId } from '../utils/roomDisplay';
 
 interface UseChatProps {
     roomId: number;
@@ -38,7 +39,7 @@ function createDemoMessages(roomId: number): ChatMessage[] {
 
 export function useChat({ roomId, roomKey, username, role, avatarUrl }: UseChatProps) {
     const [messages, setMessages] = useState<ChatMessage[]>(() => IS_DEMO_MODE ? createDemoMessages(roomId) : []);
-    const [status, setStatus] = useState<'connecting' | 'connected' | 'disconnected' | 'error'>(IS_DEMO_MODE ? 'connected' : 'connecting');
+    const [status, setStatus] = useState<'connecting' | 'connected' | 'disconnected' | 'invalid_key' | 'error'>(IS_DEMO_MODE ? 'connected' : 'connecting');
     const [derivedKey, setDerivedKey] = useState<CryptoKey | null>(null);
     const [reconnectNonce, setReconnectNonce] = useState(0);
     const keyRef = useRef<CryptoKey | null>(null);
@@ -139,6 +140,15 @@ export function useChat({ roomId, roomKey, username, role, avatarUrl }: UseChatP
 
                     if (data.type === 'auth_ok') {
                         setStatus('connected');
+                        return;
+                    }
+
+                    if (data.error === 'Invalid Room Key') {
+                        localStorage.removeItem(`room_key_${formatRoomId(roomId)}`);
+                        localStorage.removeItem(`room_key_${roomId}`);
+                        setDerivedKey(null);
+                        keyRef.current = null;
+                        setStatus('invalid_key');
                         return;
                     }
 
@@ -243,8 +253,16 @@ export function useChat({ roomId, roomKey, username, role, avatarUrl }: UseChatP
                 }
             };
 
-            ws.onclose = () => {
+            ws.onclose = (event) => {
                 if (isUnmounting) return;
+                if (event.code === 1008 || event.reason === 'Invalid Room Key') {
+                    localStorage.removeItem(`room_key_${formatRoomId(roomId)}`);
+                    localStorage.removeItem(`room_key_${roomId}`);
+                    setDerivedKey(null);
+                    keyRef.current = null;
+                    setStatus('invalid_key');
+                    return;
+                }
                 setStatus('disconnected');
                 reconnectTimer = setTimeout(connect, 3000);
             };

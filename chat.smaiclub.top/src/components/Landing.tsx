@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { MessageCircle } from 'lucide-react';
 import type { Room } from '../types';
 import { apiUrl, IS_DEMO_MODE } from '../config/api';
@@ -21,8 +21,6 @@ interface LandingProps {
 export type LandingPanel = 'home' | 'create' | 'join';
 
 export function Landing({ rooms, joinRoomDraft, panel, onPanelChange, onEnterRoom, onRoomsChange, onCreated, onJoined }: LandingProps) {
-    const [loading, setLoading] = useState(!IS_DEMO_MODE);
-
     useEffect(() => {
         if (IS_DEMO_MODE) {
             onRoomsChange(demoRooms);
@@ -38,23 +36,13 @@ export function Landing({ rooms, joinRoomDraft, panel, onPanelChange, onEnterRoo
                 }
             })
             .catch(console.error)
-            .finally(() => setLoading(false));
     }, [onRoomsChange]);
 
     const hasRooms = rooms.owned.length > 0 || rooms.joined.length > 0;
 
     return (
         <main className={`telegram-layout ${panel !== 'home' ? 'has-active-panel' : ''}`}>
-            {loading ? (
-                <aside className="telegram-sidebar">
-                    <div className="state-panel inline-state">
-                        <div className="loader-ring" />
-                        <div className="state-kicker">正在读取房间...</div>
-                    </div>
-                </aside>
-            ) : (
-                <RoomSidebar rooms={rooms} onEnterRoom={onEnterRoom} />
-            )}
+            <RoomSidebar rooms={rooms} onEnterRoom={onEnterRoom} />
 
             <section className="telegram-empty-chat">
                 <header className="telegram-chat-header">
