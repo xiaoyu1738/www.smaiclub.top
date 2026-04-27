@@ -37,9 +37,13 @@ function createDemoMessages(roomId: number): ChatMessage[] {
     ];
 }
 
+function getDemoStatus(roomKey: string) {
+    return roomKey === 'wrongpreviewkey' ? 'invalid_key' : 'connected';
+}
+
 export function useChat({ roomId, roomKey, username, role, avatarUrl }: UseChatProps) {
     const [messages, setMessages] = useState<ChatMessage[]>(() => IS_DEMO_MODE ? createDemoMessages(roomId) : []);
-    const [status, setStatus] = useState<'connecting' | 'connected' | 'disconnected' | 'invalid_key' | 'error'>(IS_DEMO_MODE ? 'connected' : 'connecting');
+    const [status, setStatus] = useState<'connecting' | 'connected' | 'disconnected' | 'invalid_key' | 'error'>(IS_DEMO_MODE ? getDemoStatus(roomKey) : 'connecting');
     const [derivedKey, setDerivedKey] = useState<CryptoKey | null>(null);
     const [reconnectNonce, setReconnectNonce] = useState(0);
     const keyRef = useRef<CryptoKey | null>(null);
@@ -62,7 +66,7 @@ export function useChat({ roomId, roomKey, username, role, avatarUrl }: UseChatP
             worker.postMessage({ id, type, payload });
         });
     }, []);
-    
+
     // Load initial messages from DB
     useEffect(() => {
         if (IS_DEMO_MODE) return;
@@ -345,5 +349,5 @@ export function useChat({ roomId, roomKey, username, role, avatarUrl }: UseChatP
 
     }, [status, derivedKey, roomId, username, runWorkerTask]);
 
-    return { messages, sendMessage, status, loadMoreMessages, reconnect };
+    return { messages, sendMessage, status: IS_DEMO_MODE ? getDemoStatus(roomKey) : status, loadMoreMessages, reconnect };
 }

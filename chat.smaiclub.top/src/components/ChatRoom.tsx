@@ -119,6 +119,7 @@ export const ChatRoom: React.FC<ChatRoomProps> = ({ roomId, roomKey, roomName, u
     const [loadingMore, setLoadingMore] = useState(false);
     const [unreadCount, setUnreadCount] = useState(0);
     const [showRoomKey, setShowRoomKey] = useState(false);
+    const [retryRoomKey, setRetryRoomKey] = useState("");
     const atBottomRef = useRef(true);
     const forceScrollToBottomRef = useRef(false);
 
@@ -232,6 +233,14 @@ export const ChatRoom: React.FC<ChatRoomProps> = ({ roomId, roomKey, roomName, u
         setInput("");
     };
 
+    const handleRetryKeySubmit = (event: React.FormEvent) => {
+        event.preventDefault();
+        const nextKey = retryRoomKey.trim();
+        if (!nextKey) return;
+        onEnterRoom({ id: roomId, name: roomName, key: nextKey });
+        setRetryRoomKey("");
+    };
+
     const [showScrollFab, setShowScrollFab] = useState(false);
     const [copyToast, setCopyToast] = useState(false);
 
@@ -307,9 +316,35 @@ export const ChatRoom: React.FC<ChatRoomProps> = ({ roomId, roomKey, roomName, u
 
             <div className="chat-messages custom-scroll" ref={messagesRef} onScroll={handleMessagesScroll}>
                 {loadingMore && <div className="history-loader">Loading history...</div>}
-                {messages.map(message => (
-                    <MessageItem key={message.tempId || message.id} message={message} currentUser={user} />
-                ))}
+                {status === 'invalid_key' ? (
+                    <div className="chat-auth-panel">
+                        <form onSubmit={handleRetryKeySubmit} className="chat-auth-card">
+                            <div>
+                                <p className="eyebrow">Room Key</p>
+                                <h2>重新输入房间密钥</h2>
+                                <p>当前密钥不正确，输入正确密钥后会重新连接这个房间。</p>
+                            </div>
+                            <label className="field">
+                                <span>房间密钥 (Key)</span>
+                                <input
+                                    type="password"
+                                    value={retryRoomKey}
+                                    onChange={event => setRetryRoomKey(event.target.value)}
+                                    placeholder="粘贴密钥..."
+                                    required
+                                    autoFocus
+                                />
+                            </label>
+                            <button type="submit" disabled={!retryRoomKey.trim()} className="button button-primary button-full">
+                                重新连接
+                            </button>
+                        </form>
+                    </div>
+                ) : (
+                    messages.map(message => (
+                        <MessageItem key={message.tempId || message.id} message={message} currentUser={user} />
+                    ))
+                )}
             </div>
 
             {showScrollFab && (
@@ -318,23 +353,22 @@ export const ChatRoom: React.FC<ChatRoomProps> = ({ roomId, roomKey, roomName, u
                 </button>
             )}
 
-            <div className={`chat-input-wrap ${status !== 'connected' ? 'is-disabled' : ''}`}>
-                {status === 'invalid_key' && (
-                    <p className="chat-input-notice">房间密钥不正确，请回到加入房间页面重新输入。</p>
-                )}
-                <form onSubmit={handleSend} className="chat-input-form">
-                    <input 
-                        type="text" 
-                        value={input} 
-                        onChange={e => setInput(e.target.value)} 
-                        placeholder="发送消息..." 
-                        autoFocus
-                    />
-                    <button type="submit" disabled={!input.trim() || status !== 'connected'} className="button button-primary send-button">
-                        <SendHorizonal size={18} />
-                    </button>
-                </form>
-            </div>
+            {status !== 'invalid_key' && (
+                <div className={`chat-input-wrap ${status !== 'connected' ? 'is-disabled' : ''}`}>
+                    <form onSubmit={handleSend} className="chat-input-form">
+                        <input
+                            type="text"
+                            value={input}
+                            onChange={e => setInput(e.target.value)}
+                            placeholder="发送消息..."
+                            autoFocus
+                        />
+                        <button type="submit" disabled={!input.trim() || status !== 'connected'} className="button button-primary send-button">
+                            <SendHorizonal size={18} />
+                        </button>
+                    </form>
+                </div>
+            )}
             </section>
             {copyToast && <div className="copy-toast"><Check size={14} /> 已复制到剪贴板</div>}
         </main>

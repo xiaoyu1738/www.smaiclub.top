@@ -15,5 +15,6 @@ export const demoRooms: { owned: Room[]; joined: Room[] } = {
   ],
   joined: [
     { id: 90001, name: "工单同步", is_private: 0, key: "previewroomkey03" },
+    { id: 90002, name: "密钥错误预览", is_private: 1, key: "wrongpreviewkey" },
   ],
 };

@@ -1,6 +1,10 @@
 import { useEffect, useRef } from 'react';
 
-export function AuthControl() {
+interface AuthControlProps {
+    hidden?: boolean;
+}
+
+export function AuthControl({ hidden = false }: AuthControlProps) {
     const containerRef = useRef<HTMLDivElement>(null);
     const initialized = useRef(false);
 
@@ -48,7 +52,8 @@ export function AuthControl() {
         <div
             id="smai-auth-stable-container"
             ref={containerRef}
-            className="smai-auth-container-wrapper"
+            className={`smai-auth-container-wrapper ${hidden ? 'is-auth-bridge' : ''}`}
+            aria-hidden={hidden}
             style={{
                 minHeight: '40px',
                 minWidth: '120px', // Reserve space to prevent layout shift

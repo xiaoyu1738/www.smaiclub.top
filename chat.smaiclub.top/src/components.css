@@ -21,6 +21,25 @@
   transition: transform 280ms cubic-bezier(0.32, 0.72, 0, 1);
 }
 .app-menu-overlay.is-open .app-menu-panel { transform: translateX(0); }
+.app-menu-page {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  min-height: 0;
+  animation-duration: 220ms;
+  animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+  animation-fill-mode: both;
+}
+.app-menu-page-main { animation-name: app-menu-page-back-in; }
+.app-menu-page-account { animation-name: app-menu-page-forward-in; }
+@keyframes app-menu-page-forward-in {
+  from { opacity: 0; transform: translateX(22px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+@keyframes app-menu-page-back-in {
+  from { opacity: 0; transform: translateX(-18px); }
+  to { opacity: 1; transform: translateX(0); }
+}
 .app-menu-head {
   display: grid;
   grid-template-columns: 48px minmax(0, 1fr);
@@ -28,9 +47,32 @@
   border-bottom: 1px solid var(--border);
   padding-bottom: 16px;
 }
+.app-menu-head-button {
+  width: 100%;
+  border: 0;
+  border-radius: 8px;
+  padding: 0 0 16px;
+  color: inherit;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+}
+.app-menu-head-button:hover, .app-menu-head-button:focus-visible {
+  background: transparent;
+}
 .app-menu-auth { grid-column: 1 / -1; min-width: 0; }
 .app-menu-auth .smai-auth-container-wrapper {
   width: 100%; min-width: 0; justify-content: flex-start !important;
+}
+.smai-auth-container-wrapper.is-auth-bridge {
+  position: absolute !important;
+  width: 1px !important;
+  min-width: 0 !important;
+  height: 1px !important;
+  min-height: 0 !important;
+  overflow: hidden !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
 }
 .app-menu-head strong, .app-menu-head span {
   display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
@@ -45,6 +87,42 @@
   font-weight: 800; font-size: 1.1rem;
   overflow: hidden;
 }
+.app-menu-avatar img {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: cover;
+}
+.app-menu-subhead {
+  display: grid;
+  grid-template-columns: 36px 48px minmax(0, 1fr);
+  gap: 10px;
+  align-items: center;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 16px;
+}
+.app-menu-subhead strong, .app-menu-subhead span {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.app-menu-subhead strong { color: var(--text); }
+.app-menu-subhead span { margin-top: 2px; color: var(--text-muted); font-size: 0.86rem; }
+.app-menu-back-button {
+  width: 36px;
+  height: 36px;
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-radius: 8px;
+  padding: 0;
+  color: var(--text);
+  background: var(--menu-action-bg);
+}
+.app-menu-back-button:hover, .app-menu-back-button:focus-visible {
+  background: var(--menu-action-hover);
+}
 .app-menu-actions { display: grid; gap: 4px; }
 .app-menu-actions button {
   min-height: 46px;
@@ -58,6 +136,10 @@
 }
 .app-menu-actions button:hover, .app-menu-actions button:focus-visible {
   background: var(--menu-action-hover);
+}
+.app-menu-actions button:disabled {
+  opacity: 0.7;
+  cursor: default;
 }
 .app-menu-actions button svg {
   flex-shrink: 0;
