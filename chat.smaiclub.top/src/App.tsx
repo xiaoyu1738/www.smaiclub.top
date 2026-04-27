@@ -32,6 +32,21 @@ function BannedModal({ user, onEmergency }: { user: User, onEmergency: () => voi
     );
 }
 
+function RoomDeletedModal({ roomName, onClose }: { roomName: string; onClose: () => void }) {
+    return (
+        <div className="modal-backdrop">
+            <div className="dialog danger-dialog">
+                <div className="dialog-mark">!</div>
+                <h2>该房间已被删除</h2>
+                <p>{roomName} 已不可用，当前会话已关闭。</p>
+                <button onClick={onClose} className="button button-primary button-full">
+                    知道了
+                </button>
+            </div>
+        </div>
+    );
+}
+
 type ViewState = 'loading' | 'landing' | 'chat' | 'banned' | 'error';
 type RoomGroups = { owned: Room[]; joined: Room[] };
 
@@ -207,6 +222,7 @@ function App() {
     const [landingPanel, setLandingPanel] = useState<LandingPanel>('home');
     const [joinRoomDraft, setJoinRoomDraft] = useState<Pick<Room, 'id' | 'name'> | null>(null);
     const [pinnedRoomIds, setPinnedRoomIds] = useState<string[]>(readPinnedRooms);
+    const [deletedRoomNotice, setDeletedRoomNotice] = useState<{ id: string | number; name: string } | null>(null);
 
     const enterRoom = useCallback((targetRoom: Room) => {
         const savedKey = readSavedRoomKey(targetRoom.id);
@@ -307,6 +323,23 @@ function App() {
         });
         setKnownRooms(prev => removeRoomFromGroups(prev, targetRoom.id));
         if (room && normalizeRoomId(room.id) === normalizeRoomId(targetRoom.id)) {
+            setRoom(null);
+            setLandingPanel('home');
+            setView('landing');
+        }
+    }, [room]);
+
+    const handleRoomDeleted = useCallback((deletedRoomId: string | number, deletedRoomName: string) => {
+        localStorage.removeItem(getRoomKeyStorageKey(deletedRoomId));
+        localStorage.removeItem(`room_key_${deletedRoomId}`);
+        setPinnedRoomIds(prev => {
+            const next = prev.filter(roomId => roomId !== normalizeRoomId(deletedRoomId));
+            writePinnedRooms(next);
+            return next;
+        });
+        setKnownRooms(prev => removeRoomFromGroups(prev, deletedRoomId));
+        setDeletedRoomNotice({ id: deletedRoomId, name: deletedRoomName });
+        if (room && normalizeRoomId(room.id) === normalizeRoomId(deletedRoomId)) {
             setRoom(null);
             setLandingPanel('home');
             setView('landing');
@@ -458,6 +491,7 @@ function App() {
                     pinnedRoomIds={pinnedRoomIds}
                     onTogglePinRoom={handleTogglePinRoom}
                     onDeleteRoom={handleDeleteRoom}
+                    onRoomDeleted={handleRoomDeleted}
                 />
             )}
             {showSettings && (
@@ -465,6 +499,12 @@ function App() {
                     isOpen={showSettings}
                     onClose={() => setShowSettings(false)}
                     joinedRooms={[...knownRooms.owned, ...knownRooms.joined]}
+                />
+            )}
+            {deletedRoomNotice && (
+                <RoomDeletedModal
+                    roomName={deletedRoomNotice.name}
+                    onClose={() => setDeletedRoomNotice(null)}
                 />
             )}
         </div>

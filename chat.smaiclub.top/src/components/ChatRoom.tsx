@@ -107,9 +107,10 @@ interface ChatRoomProps {
     pinnedRoomIds: string[];
     onTogglePinRoom: (roomId: string | number) => void;
     onDeleteRoom: (room: Room) => Promise<void>;
+    onRoomDeleted: (roomId: string | number, roomName: string) => void;
 }
 
-export const ChatRoom: React.FC<ChatRoomProps> = ({ roomId, roomKey, roomName, user, rooms, onEnterRoom, onRoomActivity, pinnedRoomIds, onTogglePinRoom, onDeleteRoom }) => {
+export const ChatRoom: React.FC<ChatRoomProps> = ({ roomId, roomKey, roomName, user, rooms, onEnterRoom, onRoomActivity, pinnedRoomIds, onTogglePinRoom, onDeleteRoom, onRoomDeleted }) => {
     const { messages, sendMessage, status, loadMoreMessages, reconnect } = useChat({
         roomId,
         roomKey,
@@ -127,6 +128,11 @@ export const ChatRoom: React.FC<ChatRoomProps> = ({ roomId, roomKey, roomName, u
     const forceScrollToBottomRef = useRef(false);
 
     useFaviconBadge(unreadCount);
+
+    useEffect(() => {
+        if (status !== 'room_deleted') return;
+        onRoomDeleted(roomId, roomName);
+    }, [onRoomDeleted, roomId, roomName, status]);
 
     // Load settings
     const [settings] = useState(() => {
@@ -283,7 +289,7 @@ export const ChatRoom: React.FC<ChatRoomProps> = ({ roomId, roomKey, roomName, u
                     <div className="chat-heading">
                         <h2 className="chat-title">{roomName}</h2>
                         <div className="chat-subtitle">
-                            <span>ID {formatRoomId(roomId)} / {status === 'connected' ? 'Secure connection' : status === 'connecting' ? 'Connecting' : status === 'invalid_key' ? '房间密钥错误' : 'Disconnected'}</span>
+                            <span>ID {formatRoomId(roomId)} / {status === 'connected' ? 'Secure connection' : status === 'connecting' ? 'Connecting' : status === 'invalid_key' ? '房间密钥错误' : status === 'room_deleted' ? '房间已删除' : 'Disconnected'}</span>
                             <button
                                 type="button"
                                 className="reconnect-button"

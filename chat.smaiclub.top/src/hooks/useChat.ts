@@ -1,9 +1,11 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { saveMessage, getMessages, type ChatMessage } from '../db/chatDB';
 import CryptoWorker from '../workers/crypto.worker?worker';
-import { IS_DEMO_MODE, websocketUrl } from '../config/api';
+import { apiUrl, IS_DEMO_MODE, websocketUrl } from '../config/api';
 import { isPlainSystemPayload, parseIncomingChatMessage, type IncomingChatPayload } from './chatMessageProcessor';
 import { formatRoomId } from '../utils/roomDisplay';
+
+export type ChatConnectionStatus = 'connecting' | 'connected' | 'disconnected' | 'invalid_key' | 'room_deleted' | 'error';
 
 interface UseChatProps {
     roomId: number;
@@ -43,7 +45,7 @@ function getDemoStatus(roomKey: string) {
 
 export function useChat({ roomId, roomKey, username, role, avatarUrl }: UseChatProps) {
     const [messages, setMessages] = useState<ChatMessage[]>(() => IS_DEMO_MODE ? createDemoMessages(roomId) : []);
-    const [status, setStatus] = useState<'connecting' | 'connected' | 'disconnected' | 'invalid_key' | 'error'>(IS_DEMO_MODE ? getDemoStatus(roomKey) : 'connecting');
+    const [status, setStatus] = useState<ChatConnectionStatus>(IS_DEMO_MODE ? getDemoStatus(roomKey) : 'connecting');
     const [derivedKey, setDerivedKey] = useState<CryptoKey | null>(null);
     const [reconnectNonce, setReconnectNonce] = useState(0);
     const keyRef = useRef<CryptoKey | null>(null);
@@ -102,7 +104,29 @@ export function useChat({ roomId, roomKey, username, role, avatarUrl }: UseChatP
         let reconnectTimer: ReturnType<typeof setTimeout> | undefined;
         let isUnmounting = false;
 
+        const markRoomDeleted = () => {
+            localStorage.removeItem(`room_key_${formatRoomId(roomId)}`);
+            localStorage.removeItem(`room_key_${roomId}`);
+            setDerivedKey(null);
+            keyRef.current = null;
+            setStatus('room_deleted');
+        };
+
         const connect = async () => {
+            try {
+                const response = await fetch(apiUrl(`/api/rooms/${formatRoomId(roomId)}`), { credentials: 'include' });
+                if (response.status === 404) {
+                    const data = await response.json().catch(() => null);
+                    if (data?.error === 'ROOM_DELETED') {
+                        markRoomDeleted();
+                        return;
+                    }
+                    throw new Error('Room status endpoint is unavailable');
+                }
+            } catch (e) {
+                console.error("Failed to check room status", e);
+            }
+
             let since = 0;
             try {
                 const latestMsgs = await getMessages(roomId, 1);
@@ -156,7 +180,16 @@ export function useChat({ roomId, roomKey, username, role, avatarUrl }: UseChatP
                         return;
                     }
 
+                    if (data.error === 'ROOM_DELETED' || data.message === '该房间已被删除') {
+                        markRoomDeleted();
+                        return;
+                    }
+
                     if (data.type === 'system') {
+                        if (data.content === 'Room has been closed.') {
+                            markRoomDeleted();
+                            return;
+                        }
                         const systemMessage = await parseIncomingChatMessage(data, {
                             roomId,
                             username,
@@ -259,6 +292,10 @@ export function useChat({ roomId, roomKey, username, role, avatarUrl }: UseChatP
 
             ws.onclose = (event) => {
                 if (isUnmounting) return;
+                if (event.reason === 'Room Deleted') {
+                    markRoomDeleted();
+                    return;
+                }
                 if (event.code === 1008 || event.reason === 'Invalid Room Key') {
                     localStorage.removeItem(`room_key_${formatRoomId(roomId)}`);
                     localStorage.removeItem(`room_key_${roomId}`);

@@ -213,6 +213,30 @@ export default {
             }
         }
 
+        // --- 1.5 Room Status (GET /api/rooms/:id) ---
+        if (request.method === "GET" && url.pathname.startsWith("/api/rooms/")) {
+            const match = url.pathname.match(/\/api\/rooms\/(\d+)$/);
+            if (match) {
+                try {
+                    const user = await getUserFromRequest(request, env);
+                    if (!user) return new Response(JSON.stringify({ error: "Unauthorized", message: "请先登录" }), { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+
+                    const roomId = match[1];
+                    const room = await env.CHAT_DB.prepare(
+                        "SELECT id, name, is_private, owner FROM rooms WHERE id = ?"
+                    ).bind(roomId).first();
+
+                    if (!room) {
+                        return new Response(JSON.stringify({ error: "ROOM_DELETED", message: "该房间已被删除" }), { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+                    }
+
+                    return new Response(JSON.stringify({ exists: true, room }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+                } catch (e) {
+                    return new Response(JSON.stringify({ error: e.message }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+                }
+            }
+        }
+
         // --- 2. Join/Connect Room (WebSocket) ---
         if (url.pathname.startsWith("/api/rooms/")) {
             // Path: /api/rooms/:id/websocket
@@ -306,7 +330,7 @@ export default {
                     // 5. Notify DO to destroy (close connections)
                     const id = env.CHAT_ROOM.idFromName(roomId.toString());
                     const stub = env.CHAT_ROOM.get(id);
-                    ctx.waitUntil(stub.fetch("http://internal/destroy", { method: "POST" }));
+                    await stub.fetch("http://internal/destroy", { method: "POST" });
 
                     // Log Room Deletion
                     try {
