@@ -499,6 +499,62 @@
 .is-active-room .room-tile-body {
   transform: translateX(0);
 }
+.room-context-menu {
+  position: fixed;
+  z-index: 260;
+  width: 176px;
+  display: grid;
+  gap: 4px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 6px;
+  background: var(--surface);
+  box-shadow: var(--shadow-lg);
+  animation: context-menu-in 120ms ease-out both;
+}
+.room-context-menu button {
+  min-height: 36px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border: 0;
+  border-radius: 6px;
+  padding: 0 10px;
+  color: var(--text);
+  background: transparent;
+  text-align: left;
+  font-weight: 700;
+}
+.room-context-menu button:hover:not(:disabled),
+.room-context-menu button:focus-visible:not(:disabled) {
+  background: var(--surface-hover);
+}
+.room-context-menu button.is-danger { color: var(--danger-text); }
+.room-context-menu button:disabled {
+  opacity: 0.48;
+  cursor: not-allowed;
+}
+.room-delete-dialog { width: min(440px, 100%); }
+.room-delete-confirm {
+  grid-template-columns: minmax(0, 1fr);
+  background: var(--danger-soft);
+}
+.room-delete-error {
+  margin: 10px 0 0;
+  color: var(--danger-text);
+  font-size: 0.86rem;
+  font-weight: 700;
+}
+.room-delete-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-top: 14px;
+}
+@keyframes context-menu-in {
+  from { opacity: 0; transform: translateY(-4px) scale(0.98); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
 
 /* Avatar hover */
 .avatar-wrap .avatar {

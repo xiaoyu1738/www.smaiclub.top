@@ -16,11 +16,14 @@ interface LandingProps {
     onRoomsChange: (rooms: { owned: Room[]; joined: Room[] }) => void;
     onCreated: (room: Room) => void;
     onJoined: (room: Room) => void;
+    pinnedRoomIds: string[];
+    onTogglePinRoom: (roomId: string | number) => void;
+    onDeleteRoom: (room: Room) => Promise<void>;
 }
 
 export type LandingPanel = 'home' | 'create' | 'join';
 
-export function Landing({ rooms, joinRoomDraft, panel, onPanelChange, onEnterRoom, onRoomsChange, onCreated, onJoined }: LandingProps) {
+export function Landing({ rooms, joinRoomDraft, panel, onPanelChange, onEnterRoom, onRoomsChange, onCreated, onJoined, pinnedRoomIds, onTogglePinRoom, onDeleteRoom }: LandingProps) {
     useEffect(() => {
         if (IS_DEMO_MODE) {
             onRoomsChange(demoRooms);
@@ -42,7 +45,13 @@ export function Landing({ rooms, joinRoomDraft, panel, onPanelChange, onEnterRoo
 
     return (
         <main className={`telegram-layout ${panel !== 'home' ? 'has-active-panel' : ''}`}>
-            <RoomSidebar rooms={rooms} onEnterRoom={onEnterRoom} />
+            <RoomSidebar
+                rooms={rooms}
+                pinnedRoomIds={pinnedRoomIds}
+                onEnterRoom={onEnterRoom}
+                onTogglePinRoom={onTogglePinRoom}
+                onDeleteRoom={onDeleteRoom}
+            />
 
             <section className="telegram-empty-chat">
                 <header className="telegram-chat-header">

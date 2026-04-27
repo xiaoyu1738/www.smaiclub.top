@@ -36,6 +36,7 @@ type ViewState = 'loading' | 'landing' | 'chat' | 'banned' | 'error';
 type RoomGroups = { owned: Room[]; joined: Room[] };
 
 const ROOM_ORDER_STORAGE_KEY = 'chat_room_order_v1';
+const PINNED_ROOMS_STORAGE_KEY = 'chat_pinned_rooms_v1';
 
 function normalizeRoomId(value: string | number | null | undefined) {
     if (value === null || value === undefined) return '';
@@ -65,6 +66,39 @@ function writeStoredRoomOrder(rooms: RoomGroups) {
     }));
 }
 
+function readPinnedRooms() {
+    try {
+        const raw = localStorage.getItem(PINNED_ROOMS_STORAGE_KEY);
+        if (!raw) return [];
+        const parsed = JSON.parse(raw);
+        return Array.isArray(parsed) ? parsed.map((value: string | number) => normalizeRoomId(value)).filter(Boolean) : [];
+    } catch {
+        return [];
+    }
+}
+
+function writePinnedRooms(roomIds: string[]) {
+    localStorage.setItem(PINNED_ROOMS_STORAGE_KEY, JSON.stringify(roomIds));
+}
+
+function applyPinnedRoomOrder(rooms: RoomGroups, pinnedRoomIds: string[]): RoomGroups {
+    const pinnedSet = new Set(pinnedRoomIds);
+    const sortBucket = (bucket: Room[]) => {
+        const pinned: Room[] = [];
+        const rest: Room[] = [];
+        for (const room of bucket) {
+            if (pinnedSet.has(normalizeRoomId(room.id))) pinned.push(room);
+            else rest.push(room);
+        }
+        return [...pinned, ...rest];
+    };
+
+    return {
+        owned: sortBucket(rooms.owned),
+        joined: sortBucket(rooms.joined),
+    };
+}
+
 function mergeRoomBucket(current: Room[], incoming: Room[], storedOrder: string[]) {
     const merged = new Map<string, Room>();
 
@@ -91,10 +125,10 @@ function mergeRoomBucket(current: Room[], incoming: Room[], storedOrder: string[
 
 function mergeRoomGroups(current: RoomGroups, incoming: RoomGroups): RoomGroups {
     const storedOrder = readStoredRoomOrder();
-    return {
+    return applyPinnedRoomOrder({
         owned: mergeRoomBucket(current.owned, incoming.owned, storedOrder.owned),
         joined: mergeRoomBucket(current.joined, incoming.joined, storedOrder.joined),
-    };
+    }, readPinnedRooms());
 }
 
 function mergeRoomList(rooms: RoomGroups, room: Room, bucket?: 'owned' | 'joined') {
@@ -140,6 +174,19 @@ function bumpRoomToFront(rooms: RoomGroups, roomId: string | number) {
     };
 }
 
+function bumpRoomAfterActivity(rooms: RoomGroups, roomId: string | number, pinnedRoomIds: string[]) {
+    if (pinnedRoomIds.includes(normalizeRoomId(roomId))) return applyPinnedRoomOrder(rooms, pinnedRoomIds);
+    return applyPinnedRoomOrder(bumpRoomToFront(rooms, roomId), pinnedRoomIds);
+}
+
+function removeRoomFromGroups(rooms: RoomGroups, roomId: string | number) {
+    const normalizedTarget = normalizeRoomId(roomId);
+    return {
+        owned: rooms.owned.filter(room => normalizeRoomId(room.id) !== normalizedTarget),
+        joined: rooms.joined.filter(room => normalizeRoomId(room.id) !== normalizedTarget),
+    };
+}
+
 function getRoomKeyStorageKey(roomId: string | number) {
     return `room_key_${formatRoomId(roomId)}`;
 }
@@ -159,6 +206,7 @@ function App() {
     const [showSettings, setShowSettings] = useState(false);
     const [landingPanel, setLandingPanel] = useState<LandingPanel>('home');
     const [joinRoomDraft, setJoinRoomDraft] = useState<Pick<Room, 'id' | 'name'> | null>(null);
+    const [pinnedRoomIds, setPinnedRoomIds] = useState<string[]>(readPinnedRooms);
 
     const enterRoom = useCallback((targetRoom: Room) => {
         const savedKey = readSavedRoomKey(targetRoom.id);
@@ -174,25 +222,25 @@ function App() {
         localStorage.setItem(getRoomKeyStorageKey(roomWithKey.id), roomWithKey.key);
         setJoinRoomDraft(null);
         setRoom(roomWithKey);
-        setKnownRooms(prev => mergeRoomList(prev, roomWithKey));
+        setKnownRooms(prev => applyPinnedRoomOrder(mergeRoomList(prev, roomWithKey), pinnedRoomIds));
         setView('chat');
-    }, []);
+    }, [pinnedRoomIds]);
 
     const handleCreatedRoom = useCallback((createdRoom: Room) => {
         localStorage.setItem(getRoomKeyStorageKey(createdRoom.id), createdRoom.key);
         setJoinRoomDraft(null);
-        setKnownRooms(prev => mergeRoomList(prev, createdRoom, 'owned'));
+        setKnownRooms(prev => applyPinnedRoomOrder(mergeRoomList(prev, createdRoom, 'owned'), pinnedRoomIds));
         setRoom(createdRoom);
         setView('chat');
-    }, []);
+    }, [pinnedRoomIds]);
 
     const handleJoinedRoom = useCallback((joinedRoom: Room) => {
         localStorage.setItem(getRoomKeyStorageKey(joinedRoom.id), joinedRoom.key);
         setJoinRoomDraft(null);
-        setKnownRooms(prev => mergeRoomList(prev, joinedRoom, 'joined'));
+        setKnownRooms(prev => applyPinnedRoomOrder(mergeRoomList(prev, joinedRoom, 'joined'), pinnedRoomIds));
         setRoom(joinedRoom);
         setView('chat');
-    }, []);
+    }, [pinnedRoomIds]);
 
     const openLandingPanel = useCallback((panel: LandingPanel) => {
         setJoinRoomDraft(null);
@@ -204,7 +252,7 @@ function App() {
 
     const enterEmergencyRoom = useCallback(() => {
         setIsAppMenuOpen(false);
-        enterRoom({ id: '000001', key: 'smaiclub_issues', name: 'room 1' });
+        enterRoom({ id: '000001', key: 'smaiclub_issues', name: 'Emergency Room' });
     }, [enterRoom]);
 
     const openSettings = useCallback(() => {
@@ -213,12 +261,57 @@ function App() {
     }, []);
 
     const handleRoomsChange = useCallback((incomingRooms: RoomGroups) => {
-        setKnownRooms(prev => mergeRoomGroups(prev, incomingRooms));
-    }, []);
+        setKnownRooms(prev => applyPinnedRoomOrder(mergeRoomGroups(prev, incomingRooms), pinnedRoomIds));
+    }, [pinnedRoomIds]);
 
     const handleRoomActivity = useCallback((activeRoomId: number) => {
-        setKnownRooms(prev => bumpRoomToFront(prev, activeRoomId));
+        setKnownRooms(prev => bumpRoomAfterActivity(prev, activeRoomId, pinnedRoomIds));
+    }, [pinnedRoomIds]);
+
+    const handleTogglePinRoom = useCallback((targetRoomId: string | number) => {
+        const normalizedTarget = normalizeRoomId(targetRoomId);
+        setPinnedRoomIds(prev => {
+            const next = prev.includes(normalizedTarget)
+                ? prev.filter(roomId => roomId !== normalizedTarget)
+                : [normalizedTarget, ...prev];
+            writePinnedRooms(next);
+            setKnownRooms(current => applyPinnedRoomOrder(current, next));
+            return next;
+        });
     }, []);
+
+    const handleDeleteRoom = useCallback(async (targetRoom: Room) => {
+        if (!IS_DEMO_MODE) {
+            const response = await fetch(apiUrl(`/api/rooms/${formatRoomId(targetRoom.id)}`), {
+                method: 'DELETE',
+                credentials: 'include',
+            });
+            if (!response.ok) {
+                let message = "删除失败，请稍后再试。";
+                try {
+                    const data = await response.json();
+                    message = data.message || data.error || message;
+                } catch {
+                    // Keep fallback message.
+                }
+                throw new Error(message);
+            }
+        }
+
+        localStorage.removeItem(getRoomKeyStorageKey(targetRoom.id));
+        localStorage.removeItem(`room_key_${targetRoom.id}`);
+        setPinnedRoomIds(prev => {
+            const next = prev.filter(roomId => roomId !== normalizeRoomId(targetRoom.id));
+            writePinnedRooms(next);
+            return next;
+        });
+        setKnownRooms(prev => removeRoomFromGroups(prev, targetRoom.id));
+        if (room && normalizeRoomId(room.id) === normalizeRoomId(targetRoom.id)) {
+            setRoom(null);
+            setLandingPanel('home');
+            setView('landing');
+        }
+    }, [room]);
 
     useEffect(() => {
         writeStoredRoomOrder(knownRooms);
@@ -346,6 +439,9 @@ function App() {
                     onRoomsChange={handleRoomsChange}
                     onCreated={handleCreatedRoom}
                     onJoined={handleJoinedRoom}
+                    pinnedRoomIds={pinnedRoomIds}
+                    onTogglePinRoom={handleTogglePinRoom}
+                    onDeleteRoom={handleDeleteRoom}
                 />
             )}
 
@@ -359,6 +455,9 @@ function App() {
                     rooms={knownRooms}
                     onEnterRoom={enterRoom}
                     onRoomActivity={handleRoomActivity}
+                    pinnedRoomIds={pinnedRoomIds}
+                    onTogglePinRoom={handleTogglePinRoom}
+                    onDeleteRoom={handleDeleteRoom}
                 />
             )}
             {showSettings && (

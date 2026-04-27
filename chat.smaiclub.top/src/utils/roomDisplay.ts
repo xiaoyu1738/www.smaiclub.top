@@ -15,6 +15,7 @@ export function hasLeadingZeroRoomId(value: string | number | null | undefined) 
 
 export function formatRoomName(room: Pick<Room, 'id' | 'name'>) {
     const displayId = formatRoomId(room.id);
+    if (displayId === '1') return 'Emergency Room';
     const name = room.name?.trim();
     if (hasLeadingZeroRoomId(room.id) || !name || /^room\s+0*\d+$/i.test(name)) {
         return displayId ? `room ${displayId}` : 'room';

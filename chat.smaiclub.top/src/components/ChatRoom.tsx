@@ -104,9 +104,12 @@ interface ChatRoomProps {
     rooms: { owned: Room[]; joined: Room[] };
     onEnterRoom: (room: Room) => void;
     onRoomActivity: (roomId: number) => void;
+    pinnedRoomIds: string[];
+    onTogglePinRoom: (roomId: string | number) => void;
+    onDeleteRoom: (room: Room) => Promise<void>;
 }
 
-export const ChatRoom: React.FC<ChatRoomProps> = ({ roomId, roomKey, roomName, user, rooms, onEnterRoom, onRoomActivity }) => {
+export const ChatRoom: React.FC<ChatRoomProps> = ({ roomId, roomKey, roomName, user, rooms, onEnterRoom, onRoomActivity, pinnedRoomIds, onTogglePinRoom, onDeleteRoom }) => {
     const { messages, sendMessage, status, loadMoreMessages, reconnect } = useChat({
         roomId,
         roomKey,
@@ -261,7 +264,14 @@ export const ChatRoom: React.FC<ChatRoomProps> = ({ roomId, roomKey, roomName, u
     return (
         <main className="telegram-chat-layout">
             <aside className="telegram-chat-sidebar-wrap">
-                <RoomSidebar rooms={rooms} activeRoomId={roomId} onEnterRoom={onEnterRoom} />
+                <RoomSidebar
+                    rooms={rooms}
+                    activeRoomId={roomId}
+                    pinnedRoomIds={pinnedRoomIds}
+                    onEnterRoom={onEnterRoom}
+                    onTogglePinRoom={onTogglePinRoom}
+                    onDeleteRoom={onDeleteRoom}
+                />
             </aside>
 
             <section className="chat-shell">
