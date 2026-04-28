@@ -1,0 +1,97 @@
+@font-face {
+  font-family: "SmaiPanel";
+  src: local("Aptos"), local("Segoe UI");
+}
+
+:root {
+  color-scheme: light;
+  --bg: #f3f4ef;
+  --ink: #151712;
+  --muted: #6a7062;
+  --panel: #ffffff;
+  --line: #dfe3d8;
+  --accent: #147c6c;
+  --accent-strong: #0d5b50;
+  --danger: #c24137;
+  --gold: #d99b2b;
+  --shadow: 0 22px 60px rgba(38, 45, 31, 0.12);
+  font-family: SmaiPanel, "Segoe UI", sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  min-height: 100vh;
+  color: var(--ink);
+  background:
+    linear-gradient(135deg, rgba(20, 124, 108, 0.08), transparent 34%),
+    linear-gradient(315deg, rgba(217, 155, 43, 0.15), transparent 30%),
+    var(--bg);
+}
+
+a {
+  color: inherit;
+}
+
+input {
+  width: 100%;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 12px 14px;
+  color: var(--ink);
+  background: #fbfcf8;
+  font: inherit;
+}
+
+input:focus {
+  outline: 2px solid rgba(20, 124, 108, 0.18);
+  border-color: var(--accent);
+}
+
+.button {
+  min-height: 44px;
+  border: 0;
+  border-radius: 8px;
+  padding: 0 16px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+  transition: transform 160ms ease, background 160ms ease;
+}
+
+.button:active {
+  transform: translateY(1px);
+}
+
+.button-primary {
+  color: #ffffff;
+  background: var(--accent);
+}
+
+.button-primary:hover {
+  background: var(--accent-strong);
+}
+
+.button-ghost {
+  color: var(--accent-strong);
+  background: rgba(20, 124, 108, 0.1);
+}
+
+.button-danger {
+  color: #ffffff;
+  background: var(--danger);
+}
+
+@media (max-width: 680px) {
+  .button {
+    width: 100%;
+  }
+}

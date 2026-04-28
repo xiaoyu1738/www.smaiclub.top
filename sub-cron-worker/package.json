@@ -1,0 +1,16 @@
+{
+  "name": "sub-cron-worker",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "build": "tsc --noEmit",
+    "test": "node --experimental-strip-types test/cron.test.ts"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20260423.0",
+    "@types/node": "^24.10.1",
+    "typescript": "~5.9.3",
+    "wrangler": "^4.51.0"
+  }
+}

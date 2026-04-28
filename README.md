@@ -24,6 +24,7 @@
 - `hall.smaiclub.top`
 - `novel.smaiclub.top`
 - `player.smaiclub.top`
+- `sub.smaiclub.top`
 
 行为：
 
@@ -67,6 +68,7 @@ test -s index.html
 - `chat-worker`
 - `hall-worker`
 - `login-worker`
+- `sub-cron-worker`
 
 行为：
 
@@ -78,6 +80,7 @@ test -s index.html
 - `chat-worker`：`npm install` + `npm run build`
 - `hall-worker`：`npm ci` + `npm test`
 - `login-worker`：`wrangler deploy --dry-run --name login-smaiclub-kv`
+- `sub-cron-worker`：`npm ci` + `npm test && npm run build`
 
 复用模板：
 
@@ -96,6 +99,7 @@ test -s index.html
 
 - [`.github/workflows/convert.yml`](/home/fish_/smaiclub_project/Repositories/www.smaiclub.top/.github/workflows/convert.yml)
 - [`.github/workflows/hall.yml`](/home/fish_/smaiclub_project/Repositories/www.smaiclub.top/.github/workflows/hall.yml)
+- [`.github/workflows/sub.yml`](/home/fish_/smaiclub_project/Repositories/www.smaiclub.top/.github/workflows/sub.yml)
 - [`.github/workflows/novel.yml`](/home/fish_/smaiclub_project/Repositories/www.smaiclub.top/.github/workflows/novel.yml)
 - [`.github/workflows/player.yml`](/home/fish_/smaiclub_project/Repositories/www.smaiclub.top/.github/workflows/player.yml)
 
@@ -114,6 +118,7 @@ test -s index.html
 
 - [`.github/workflows/chat-worker.yml`](/home/fish_/smaiclub_project/Repositories/www.smaiclub.top/.github/workflows/chat-worker.yml)
 - [`.github/workflows/hall-worker.yml`](/home/fish_/smaiclub_project/Repositories/www.smaiclub.top/.github/workflows/hall-worker.yml)
+- [`.github/workflows/sub-cron-worker.yml`](/home/fish_/smaiclub_project/Repositories/www.smaiclub.top/.github/workflows/sub-cron-worker.yml)
 - [`.github/workflows/login-worker.yml`](/home/fish_/smaiclub_project/Repositories/www.smaiclub.top/.github/workflows/login-worker.yml)
 
 ## 仓库需要的配置
@@ -132,4 +137,3 @@ test -s index.html
 - 新增 Worker 时，优先复用 `_worker.yml`
 - 如果修改复用模板，记得手动通过 `workflow_dispatch` 或真实目录提交验证受影响项目
 - 如果要强制 main 只能在 CI 通过后合并，还需要在 GitHub 仓库设置 branch protection
-

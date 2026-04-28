@@ -1,0 +1,11 @@
+name = "sub-cron-worker"
+main = "src/index.ts"
+compatibility_date = "2026-04-27"
+
+[triggers]
+crons = ["0 * * * *"]
+
+[[d1_databases]]
+binding = "DB"
+database_name = "user_db"
+database_id = "0b100581-db8c-46a3-92f8-55d2ee05c30a"

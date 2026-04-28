@@ -18,3 +18,8 @@ hall-worker/.wrangler/*
 .nexus-map/*
 .codex
 backups/*
+sub.smaiclub.top/node_modules/*
+sub.smaiclub.top/dist/*
+sub.smaiclub.top/.wrangler/*
+sub-cron-worker/node_modules/*
+sub-cron-worker/.wrangler/*

@@ -1,0 +1,17 @@
+name: CI/CD - Sub Cron Worker
+
+on:
+  push:
+    paths:
+      - "sub-cron-worker/**"
+  workflow_dispatch:
+
+jobs:
+  ci-cd:
+    uses: ./.github/workflows/_worker.yml
+    with:
+      worker_directory: sub-cron-worker
+      node_version: "22"
+      ci_command: npm test && npm run build
+      validate_command: deploy --dry-run
+    secrets: inherit

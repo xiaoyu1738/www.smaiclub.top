@@ -1,0 +1,161 @@
+.shell {
+  width: min(1080px, 100%);
+  margin: 0 auto;
+  padding: 24px;
+}
+
+.header,
+.panel,
+.metrics,
+.usage,
+.subscription {
+  margin-bottom: 18px;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.logo {
+  color: var(--accent-strong);
+  font-size: 20px;
+  font-weight: 900;
+  text-decoration: none;
+}
+
+.panel,
+.usage,
+.subscription,
+.alert {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.86);
+  box-shadow: var(--shadow);
+}
+
+.panel {
+  display: grid;
+  grid-template-columns: 1.2fr 1fr;
+  gap: 24px;
+  padding: 28px;
+}
+
+.eyebrow {
+  margin: 0;
+  color: var(--gold);
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.panel h1 {
+  margin: 8px 0;
+  font-size: clamp(32px, 6vw, 64px);
+}
+
+.muted {
+  color: var(--muted);
+}
+
+.tokenForm {
+  display: grid;
+  align-content: center;
+  gap: 12px;
+}
+
+.adminLink {
+  color: var(--accent-strong);
+  font-weight: 800;
+  text-align: center;
+  text-decoration: none;
+}
+
+.alert {
+  padding: 16px;
+  color: var(--danger);
+  font-weight: 700;
+}
+
+.metrics {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
+}
+
+.metrics article {
+  min-height: 118px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 18px;
+  background: var(--panel);
+}
+
+.metrics span,
+.subscription label {
+  color: var(--muted);
+  font-weight: 700;
+}
+
+.metrics strong {
+  display: block;
+  margin-top: 12px;
+  font-size: clamp(24px, 4vw, 38px);
+}
+
+.usage {
+  padding: 24px;
+}
+
+.usageHead,
+.subscription div {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.usageHead p {
+  margin: 0 0 8px;
+  color: var(--muted);
+  font-weight: 700;
+}
+
+.usageHead strong {
+  font-size: 28px;
+}
+
+.bar {
+  height: 14px;
+  margin-top: 18px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: #e8ebe2;
+}
+
+.bar span {
+  display: block;
+  height: 100%;
+  background: linear-gradient(90deg, var(--accent), var(--gold));
+}
+
+.subscription {
+  padding: 24px;
+}
+
+.subscription div {
+  margin-top: 10px;
+}
+
+@media (max-width: 760px) {
+  .panel,
+  .metrics {
+    grid-template-columns: 1fr;
+  }
+
+  .usageHead,
+  .subscription div {
+    align-items: stretch;
+    flex-direction: column;
+  }
+}

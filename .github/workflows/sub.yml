@@ -1,0 +1,20 @@
+name: CI/CD - Sub
+
+on:
+  push:
+    paths:
+      - "sub.smaiclub.top/**"
+  workflow_dispatch:
+
+jobs:
+  ci-cd:
+    permissions:
+      contents: read
+      deployments: write
+    uses: ./.github/workflows/_pages-app.yml
+    with:
+      app_directory: sub.smaiclub.top
+      project_name: sub-smaiclub-top
+      dist_directory: sub.smaiclub.top/dist
+      ci_command: npm test && npm run lint && npm run build
+    secrets: inherit
