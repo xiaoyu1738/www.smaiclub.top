@@ -15,7 +15,8 @@ jobs:
     with:
       app_directory: sub.smaiclub.top
       project_name: sub-smaiclub-top
-      dist_directory: sub.smaiclub.top/dist
+      dist_directory: dist
       ci_command: npm test && npm run lint && npm run build
       node_version: "22"
+      wrangler_cwd: sub.smaiclub.top
     secrets: inherit

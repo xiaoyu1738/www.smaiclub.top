@@ -19,6 +19,10 @@ on:
         required: false
         type: string
         default: "20"
+      wrangler_cwd:
+        required: false
+        type: string
+        default: ""
     secrets:
       CLOUDFLARE_API_TOKEN:
         required: false
@@ -58,7 +62,7 @@ jobs:
         run: ${{ inputs.ci_command }}
 
       - name: Deploy to Cloudflare Pages
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main' && inputs.wrangler_cwd == ''
         id: deploy
         uses: cloudflare/wrangler-action@v3
         with:
@@ -67,8 +71,18 @@ jobs:
           gitHubToken: ${{ github.token }}
           command: pages deploy ${{ inputs.dist_directory }} --project-name=${{ inputs.project_name }}
 
+      - name: Deploy to Cloudflare Pages from app directory
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main' && inputs.wrangler_cwd != ''
+        id: deploy-cwd
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          gitHubToken: ${{ github.token }}
+          command: --cwd ${{ inputs.wrangler_cwd }} pages deploy ${{ inputs.dist_directory }} --project-name=${{ inputs.project_name }}
+
       - name: Deploy preview to Cloudflare Pages
-        if: env.DEPLOY_BRANCH != 'main'
+        if: env.DEPLOY_BRANCH != 'main' && inputs.wrangler_cwd == ''
         id: preview
         uses: cloudflare/wrangler-action@v3
         with:
@@ -76,3 +90,13 @@ jobs:
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           gitHubToken: ${{ github.token }}
           command: pages deploy ${{ inputs.dist_directory }} --project-name=${{ inputs.project_name }} --branch=${{ env.DEPLOY_BRANCH }}
+
+      - name: Deploy preview to Cloudflare Pages from app directory
+        if: env.DEPLOY_BRANCH != 'main' && inputs.wrangler_cwd != ''
+        id: preview-cwd
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          gitHubToken: ${{ github.token }}
+          command: --cwd ${{ inputs.wrangler_cwd }} pages deploy ${{ inputs.dist_directory }} --project-name=${{ inputs.project_name }} --branch=${{ env.DEPLOY_BRANCH }}

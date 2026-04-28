@@ -38,4 +38,4 @@ Secrets / Variables:
 - `npm run lint`
 - `npm run build`
 
-GitHub Actions uses Node.js 22 for this app because the test runner uses native TypeScript stripping.
+GitHub Actions uses Node.js 22 for this app because the test runner uses native TypeScript stripping. The deploy step runs Wrangler from this app directory so Pages Functions are uploaded with the static assets.
