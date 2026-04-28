@@ -11,58 +11,75 @@ interface RenewPayload {
 }
 
 export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
-  const admin = await requireAdminLogin(request, env);
-  if (admin instanceof Response) return admin;
+  try {
+    const admin = await requireAdminLogin(request, env);
+    if (admin instanceof Response) return admin;
 
-  const payload = await request.json().catch(() => ({})) as RenewPayload;
-  const username = payload.username?.trim();
-  if (!username) return jsonResponse({ error: 'USERNAME_REQUIRED' }, { status: 400 });
+    const payload = await request.json().catch(() => ({})) as RenewPayload;
+    const username = payload.username?.trim();
+    if (!username) return jsonResponse({ error: 'USERNAME_REQUIRED' }, { status: 400 });
 
-  const user = await getUserByUsername(env.DB, username);
-  if (!user) return jsonResponse({ error: 'USER_NOT_FOUND' }, { status: 404 });
+    const user = await getUserByUsername(env.DB, username);
+    if (!user) return jsonResponse({ error: 'USER_NOT_FOUND' }, { status: 404 });
 
-  const now = Date.now();
-  const addDays = Math.max(1, Math.min(366, Number(payload.addDays || 30)));
-  const expiresFrom = Math.max(now, user.sub_expired_at || 0);
-  const expiredAt = expiresFrom + addDays * 86_400_000;
-  const subToken = user.sub_token || generateSecretToken();
-  const xuiUuid = user.xui_uuid || crypto.randomUUID();
-  const trafficTotal = user.traffic_total || configuredTrafficTotal(env);
-  const resetTraffic = payload.resetTraffic !== false;
+    const now = Date.now();
+    const addDays = Math.max(1, Math.min(366, Number(payload.addDays || 30)));
+    const expiresFrom = Math.max(now, user.sub_expired_at || 0);
+    const expiredAt = expiresFrom + addDays * 86_400_000;
+    const subToken = user.sub_token || generateSecretToken();
+    const xuiUuid = user.xui_uuid || crypto.randomUUID();
+    const trafficTotal = user.traffic_total || configuredTrafficTotal(env);
+    const resetTraffic = payload.resetTraffic !== false;
 
-  const xui = await setXuiClientEnabled(env, xuiUuid, true, {
-    email: username,
-  });
-  if (!xui.ok) {
+    const xui = await setXuiClientEnabled(env, xuiUuid, true, {
+      email: username,
+    });
+    if (!xui.ok) {
+      console.warn('XUI_SYNC_FAILED', {
+        username,
+        attempted: xui.attempted,
+        status: xui.status,
+        message: xui.message,
+        body: xui.body,
+        config: xui.config,
+      });
+      return jsonResponse({
+        error: 'XUI_SYNC_FAILED',
+        message: xui.message || '3x-ui client sync failed',
+        xui,
+      }, { status: 502 });
+    }
+
+    await env.DB.prepare(`
+      UPDATE users
+      SET sub_token = ?,
+          xui_uuid = ?,
+          sub_status = 'active',
+          sub_expired_at = ?,
+          traffic_total = ?,
+          traffic_used_vps = CASE WHEN ? THEN 0 ELSE traffic_used_vps END,
+          traffic_updated_at = ?
+      WHERE username = ?
+    `).bind(subToken, xuiUuid, expiredAt, trafficTotal, resetTraffic ? 1 : 0, now, username).run();
+
+    const url = new URL(request.url);
     return jsonResponse({
-      error: 'XUI_SYNC_FAILED',
-      message: xui.message || '3x-ui client sync failed',
+      ok: true,
+      username,
+      subToken,
+      xuiUuid,
+      expiredAt,
+      trafficTotal,
+      subscriptionUrl: publicSubscriptionUrl(env.SUB_PUBLIC_ORIGIN || url.origin, subToken),
+      admin: admin.username,
       xui,
-    }, { status: 502 });
+    });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    console.error('ADMIN_RENEW_UNHANDLED', message);
+    return jsonResponse({
+      error: 'ADMIN_RENEW_UNHANDLED',
+      message,
+    }, { status: 500 });
   }
-
-  await env.DB.prepare(`
-    UPDATE users
-    SET sub_token = ?,
-        xui_uuid = ?,
-        sub_status = 'active',
-        sub_expired_at = ?,
-        traffic_total = ?,
-        traffic_used_vps = CASE WHEN ? THEN 0 ELSE traffic_used_vps END,
-        traffic_updated_at = ?
-    WHERE username = ?
-  `).bind(subToken, xuiUuid, expiredAt, trafficTotal, resetTraffic ? 1 : 0, now, username).run();
-
-  const url = new URL(request.url);
-  return jsonResponse({
-    ok: true,
-    username,
-    subToken,
-    xuiUuid,
-    expiredAt,
-    trafficTotal,
-    subscriptionUrl: publicSubscriptionUrl(env.SUB_PUBLIC_ORIGIN || url.origin, subToken),
-    admin: admin.username,
-    xui,
-  });
 };

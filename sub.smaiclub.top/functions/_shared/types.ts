@@ -15,6 +15,9 @@ export interface Env {
   XUI_PASSWORD?: string;
   XUI_COOKIE?: string;
   XUI_INBOUND_ID?: string;
+  XUI_ACCESS_CLIENT_ID?: string;
+  XUI_ACCESS_CLIENT_SECRET?: string;
+  XUI_ACCESS_AUTH_HEADER?: string;
   REALITY_HOST?: string;
   REALITY_PORT?: string;
   REALITY_PUBLIC_KEY?: string;

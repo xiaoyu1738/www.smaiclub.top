@@ -5,6 +5,9 @@ export interface Env {
   XUI_PASSWORD?: string;
   XUI_COOKIE?: string;
   XUI_INBOUND_ID?: string;
+  XUI_ACCESS_CLIENT_ID?: string;
+  XUI_ACCESS_CLIENT_SECRET?: string;
+  XUI_ACCESS_AUTH_HEADER?: string;
 }
 
 export interface XuiClientStat {
@@ -19,6 +22,7 @@ export async function setXuiClientEnabled(env: Env, uuid: string, enabled: boole
   const response = await fetch(`${trimSlash(env.XUI_BASE_URL)}/panel/api/inbounds/updateClient/${uuid}`, {
     method: 'POST',
     headers: {
+      ...xuiAccessHeaders(env),
       'Content-Type': 'application/json',
       Cookie: cookie,
     },
@@ -35,7 +39,10 @@ export async function fetchXuiClientStats(env: Env): Promise<XuiClientStat[]> {
   const cookie = await getXuiCookie(env);
   if (!cookie) return [];
   const response = await fetch(`${trimSlash(env.XUI_BASE_URL)}/panel/api/inbounds/list`, {
-    headers: { Cookie: cookie },
+    headers: {
+      ...xuiAccessHeaders(env),
+      Cookie: cookie,
+    },
   });
   if (!response.ok) return [];
   const payload = await response.json().catch(() => null);
@@ -63,10 +70,32 @@ async function getXuiCookie(env: Env): Promise<string | null> {
   if (!env.XUI_BASE_URL || !env.XUI_USERNAME || !env.XUI_PASSWORD) return null;
   const response = await fetch(`${trimSlash(env.XUI_BASE_URL)}/login`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    headers: {
+      ...xuiAccessHeaders(env),
+      'Content-Type': 'application/x-www-form-urlencoded',
+      Accept: 'application/json, text/plain, */*',
+      Origin: trimSlash(env.XUI_BASE_URL),
+      Referer: `${trimSlash(env.XUI_BASE_URL)}/login`,
+    },
     body: new URLSearchParams({ username: env.XUI_USERNAME, password: env.XUI_PASSWORD }),
   });
   return response.ok ? response.headers.get('set-cookie') : null;
+}
+
+function xuiAccessHeaders(env: Env): Record<string, string> {
+  if (!env.XUI_ACCESS_CLIENT_ID || !env.XUI_ACCESS_CLIENT_SECRET) return {};
+  if (env.XUI_ACCESS_AUTH_HEADER) {
+    return {
+      [env.XUI_ACCESS_AUTH_HEADER]: JSON.stringify({
+        'cf-access-client-id': env.XUI_ACCESS_CLIENT_ID,
+        'cf-access-client-secret': env.XUI_ACCESS_CLIENT_SECRET,
+      }),
+    };
+  }
+  return {
+    'CF-Access-Client-Id': env.XUI_ACCESS_CLIENT_ID,
+    'CF-Access-Client-Secret': env.XUI_ACCESS_CLIENT_SECRET,
+  };
 }
 
 function extractInbounds(payload: unknown): Record<string, unknown>[] {

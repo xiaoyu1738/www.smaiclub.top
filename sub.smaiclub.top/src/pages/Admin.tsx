@@ -17,7 +17,7 @@ export default function Admin() {
     setAuthLoading(true);
     try {
       const response = await fetch('/api/account/me', { credentials: 'include' });
-      const payload = await response.json() as AccountInfo | { error?: string };
+      const payload = await readApiResponse<AccountInfo | { error?: string }>(response);
       setAccount(response.ok ? payload as AccountInfo : null);
     } finally {
       setAuthLoading(false);
@@ -41,9 +41,9 @@ export default function Admin() {
       credentials: 'include',
       body: JSON.stringify({ username, addDays: 30, resetTraffic }),
     });
-    const payload = await response.json() as RenewResult | { error?: string };
+    const payload = await readApiResponse<RenewResult | { error?: string; message?: string; xui?: RenewResult['xui'] & { body?: string; status?: number } }>(response);
     if (!response.ok) {
-      setMessage(formatAdminError('error' in payload ? payload.error : undefined, '续期失败'));
+      setMessage(formatAdminError(getErrorCode(payload), '续期失败', payload));
       return;
     }
     setResult(payload as RenewResult);
@@ -60,8 +60,8 @@ export default function Admin() {
       credentials: 'include',
       body: JSON.stringify({ username }),
     });
-    const payload = await response.json() as { error?: string };
-    setMessage(response.ok ? '已封禁' : formatAdminError(payload.error, '封禁失败'));
+    const payload = await readApiResponse<{ error?: string; message?: string }>(response);
+    setMessage(response.ok ? '已封禁' : formatAdminError(getErrorCode(payload), '封禁失败', payload));
   }
 
   return (
@@ -115,8 +115,42 @@ export default function Admin() {
   );
 }
 
-function formatAdminError(error: string | undefined, fallback: string): string {
+async function readApiResponse<T>(response: Response): Promise<T & { rawText?: string }> {
+  const text = await response.text();
+  if (!text) return {} as T & { rawText?: string };
+  try {
+    return JSON.parse(text) as T & { rawText?: string };
+  } catch {
+    return { rawText: text } as T & { rawText?: string };
+  }
+}
+
+function getErrorCode(payload: unknown): string | undefined {
+  return payload && typeof payload === 'object' && 'error' in payload
+    ? String((payload as { error?: unknown }).error || '')
+    : undefined;
+}
+
+function formatAdminError(
+  error: string | undefined,
+  fallback: string,
+  payload?: { message?: string; rawText?: string; xui?: { message?: string; body?: string; status?: number } },
+): string {
   if (error === 'LOGIN_REQUIRED') return '请先登录 SmaiClub 账号';
   if (error === 'FORBIDDEN') return '当前账号没有管理员权限';
+  if (error === 'XUI_SYNC_FAILED') {
+    const status = payload?.xui?.status ? `HTTP ${payload.xui.status}: ` : '';
+    const config = formatXuiConfig(payload?.xui);
+    return `3x-ui 同步失败：${status}${payload?.xui?.message || payload?.message || payload?.xui?.body || fallback}${config}`;
+  }
+  if (payload?.message) return payload.message;
+  if (payload?.rawText) return `${fallback}：${payload.rawText.replace(/\s+/g, ' ').trim().slice(0, 160)}`;
   return error || fallback;
+}
+
+function formatXuiConfig(xui: unknown): string {
+  if (!xui || typeof xui !== 'object' || !('config' in xui)) return '';
+  const config = (xui as { config?: Record<string, boolean> }).config;
+  if (!config) return '';
+  return `（配置：base=${Boolean(config.hasBaseUrl)}, inbound=${Boolean(config.hasInboundId)}, user=${Boolean(config.hasUsername)}, pass=${Boolean(config.hasPassword)}, cookie=${Boolean(config.hasCookie)}）`;
 }
