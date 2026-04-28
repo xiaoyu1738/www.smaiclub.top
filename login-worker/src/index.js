@@ -7,7 +7,7 @@ const DISPLAY_NAME_REGEX = /^[\p{L}\p{N}_\-\s]{1,32}$/u;
 const SESSION_MAX_AGE_MS = 24 * 60 * 60 * 1000;
 const CHANGE_PASSWORD_TOKEN_TTL_MS = 10 * 60 * 1000;
 const LOGIN_LOCK_MS = 15 * 60 * 1000;
-const LOGIN_MAX_FAILURES = 5;
+const LOGIN_MAX_FAILURES = 10;
 const PASSWORD_PBKDF2_ITERATIONS = 100000;
 const ROLE_LEVELS = { user: 0, vip: 1, svip1: 2, svip2: 3, admin: 10, owner: 100, banned: -1 };
 let schemaReadyPromise;
