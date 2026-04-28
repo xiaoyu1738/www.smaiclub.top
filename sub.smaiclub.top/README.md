@@ -37,3 +37,5 @@ Secrets / Variables:
 - `npm test`
 - `npm run lint`
 - `npm run build`
+
+GitHub Actions uses Node.js 22 for this app because the test runner uses native TypeScript stripping.
