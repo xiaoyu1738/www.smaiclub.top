@@ -79,7 +79,8 @@ jobs:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           gitHubToken: ${{ github.token }}
-          command: --cwd ${{ inputs.wrangler_cwd }} pages deploy ${{ inputs.dist_directory }} --project-name=${{ inputs.project_name }}
+          workingDirectory: ${{ inputs.wrangler_cwd }}
+          command: pages deploy ${{ inputs.dist_directory }} --project-name=${{ inputs.project_name }}
 
       - name: Deploy preview to Cloudflare Pages
         if: env.DEPLOY_BRANCH != 'main' && inputs.wrangler_cwd == ''
@@ -99,4 +100,5 @@ jobs:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           gitHubToken: ${{ github.token }}
-          command: --cwd ${{ inputs.wrangler_cwd }} pages deploy ${{ inputs.dist_directory }} --project-name=${{ inputs.project_name }} --branch=${{ env.DEPLOY_BRANCH }}
+          workingDirectory: ${{ inputs.wrangler_cwd }}
+          command: pages deploy ${{ inputs.dist_directory }} --project-name=${{ inputs.project_name }} --branch=${{ env.DEPLOY_BRANCH }}
