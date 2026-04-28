@@ -8,6 +8,7 @@ const SESSION_MAX_AGE_MS = 24 * 60 * 60 * 1000;
 const CHANGE_PASSWORD_TOKEN_TTL_MS = 10 * 60 * 1000;
 const LOGIN_LOCK_MS = 15 * 60 * 1000;
 const LOGIN_MAX_FAILURES = 5;
+const PASSWORD_PBKDF2_ITERATIONS = 100000;
 const ROLE_LEVELS = { user: 0, vip: 1, svip1: 2, svip2: 3, admin: 10, owner: 100, banned: -1 };
 let schemaReadyPromise;
 
@@ -1017,10 +1018,10 @@ async function verifyPasswordChangeToken(token, username, env, user = null) {
 async function hashPassword(password) {
     const saltBytes = crypto.getRandomValues(new Uint8Array(16));
     const salt = bytesToBase64(saltBytes);
-    const hash = await pbkdf2(password, saltBytes, 310000);
+    const hash = await pbkdf2(password, saltBytes, PASSWORD_PBKDF2_ITERATIONS);
     return {
         salt,
-        hash: `pbkdf2$310000$${bytesToBase64(hash)}`
+        hash: `pbkdf2$${PASSWORD_PBKDF2_ITERATIONS}$${bytesToBase64(hash)}`
     };
 }
 
@@ -1046,7 +1047,7 @@ async function verifyPbkdf2Password(password, storedHash, passwordSalt) {
         return { ok: false, needsMigration: false };
     }
     const iterations = Number(parts[1]);
-    if (!Number.isInteger(iterations) || iterations < 100000) {
+    if (!Number.isInteger(iterations) || iterations !== PASSWORD_PBKDF2_ITERATIONS) {
         return { ok: false, needsMigration: false };
     }
 
