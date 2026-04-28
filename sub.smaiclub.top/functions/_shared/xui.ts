@@ -13,8 +13,6 @@ export interface XuiSyncResult {
 
 interface XuiClientOptions {
   email?: string;
-  expiryTime?: number;
-  totalBytes?: number;
 }
 
 export async function setXuiClientEnabled(
@@ -43,12 +41,13 @@ export async function setXuiClientEnabled(
         }),
       }),
     });
-    if (response.ok) return { attempted: true, ok: true };
+    const updateResult = await parseXuiMutationResponse(response, 'updateClient');
+    if (updateResult.ok) return updateResult;
     if (enabled) {
       const created = await addXuiClient(env, cookie, uuid, options);
       if (created.ok) return created;
     }
-    return { attempted: true, ok: false, message: `3x-ui returned ${response.status}` };
+    return updateResult;
   } catch (error) {
     return {
       attempted: true,
@@ -75,21 +74,24 @@ async function addXuiClient(
       settings: JSON.stringify({
         clients: [{
           id: uuid,
+          security: '',
+          password: '',
           flow: env.REALITY_FLOW || 'xtls-rprx-vision',
           email: options.email || uuid,
+          limitIp: 0,
+          totalGB: 0,
+          expiryTime: 0,
           enable: true,
-          expiryTime: options.expiryTime || 0,
-          totalGB: options.totalBytes || 0,
+          tgId: 0,
+          subId: generateXuiSubId(),
+          comment: '',
+          reset: 0,
         }],
       }),
     }),
   });
 
-  return {
-    attempted: true,
-    ok: response.ok,
-    message: response.ok ? 'created' : `3x-ui addClient returned ${response.status}`,
-  };
+  return parseXuiMutationResponse(response, 'addClient');
 }
 
 export async function fetchXuiClientStats(env: Env): Promise<XuiClientStat[]> {
@@ -115,7 +117,7 @@ export function parseXuiClientStats(payload: unknown): XuiClientStat[] {
     for (const stat of clientStats) {
       if (!stat || typeof stat !== 'object') continue;
       const candidate = stat as Record<string, unknown>;
-      const uuid = String(candidate.email || candidate.id || candidate.uuid || '').trim();
+      const uuid = String(candidate.uuid || candidate.id || candidate.email || '').trim();
       const up = Number(candidate.up || candidate.upload || 0);
       const down = Number(candidate.down || candidate.download || 0);
       if (uuid) stats.push({ uuid, used: Math.max(0, up + down) });
@@ -134,6 +136,17 @@ export function parseXuiClientStats(payload: unknown): XuiClientStat[] {
   }
 
   return dedupeStats(stats);
+}
+
+async function parseXuiMutationResponse(response: Response, action: string): Promise<XuiSyncResult> {
+  const payload = await response.clone().json().catch(() => null) as { success?: boolean; msg?: string } | null;
+  const businessOk = payload?.success !== false;
+  const ok = response.ok && businessOk;
+  return {
+    attempted: true,
+    ok,
+    message: ok ? action : payload?.msg || `3x-ui ${action} returned ${response.status}`,
+  };
 }
 
 async function getXuiCookie(env: Env): Promise<string | null> {
@@ -179,4 +192,11 @@ function safeJson(value: string): unknown {
 
 function trimSlash(value: string): string {
   return value.replace(/\/+$/, '');
+}
+
+function generateXuiSubId(): string {
+  const alphabet = 'abcdefghijklmnopqrstuvwxyz0123456789';
+  const bytes = new Uint8Array(16);
+  crypto.getRandomValues(bytes);
+  return Array.from(bytes, byte => alphabet[byte % alphabet.length]).join('');
 }

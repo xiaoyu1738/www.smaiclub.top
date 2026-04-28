@@ -7,7 +7,7 @@ test('parseXuiClientStats extracts client traffic from 3x-ui list payload', () =
     obj: [
       {
         clientStats: [
-          { email: 'uuid-a', up: 1024, down: 2048 },
+          { email: 'label-a', uuid: 'uuid-a', up: 1024, down: 2048 },
           { id: 'uuid-b', upload: 10, download: 20 },
         ],
       },

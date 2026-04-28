@@ -23,6 +23,17 @@ test('parseEdgetunnelSubscription rewrites UUID and names nodes', () => {
   assert.equal(nodes[0].name, '优选-Hongkong-01');
 });
 
+test('parseEdgetunnelSubscription preserves upstream UUID by default', () => {
+  const nodes = parseEdgetunnelSubscription(
+    'vless://edge-uuid@1.2.3.4:443?security=tls&type=ws&host=proxy.smaiclub.top&sni=proxy.smaiclub.top&path=%2F#HK',
+    null,
+    1,
+  );
+
+  assert.equal(nodes.length, 1);
+  assert.match(nodes[0].uri, /^vless:\/\/edge-uuid@1\.2\.3\.4/);
+});
+
 test('renderSubscription emits clash yaml and raw base64', () => {
   const nodes: ProxyNode[] = [
     {

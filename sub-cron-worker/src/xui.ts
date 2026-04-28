@@ -50,7 +50,7 @@ export function parseXuiClientStats(payload: unknown): XuiClientStat[] {
     for (const raw of clientStats) {
       if (!raw || typeof raw !== 'object') continue;
       const stat = raw as Record<string, unknown>;
-      const uuid = String(stat.email || stat.id || stat.uuid || '').trim();
+      const uuid = String(stat.uuid || stat.id || stat.email || '').trim();
       const used = Number(stat.up || stat.upload || 0) + Number(stat.down || stat.download || 0);
       if (uuid) stats.push({ uuid, used: Math.max(0, used) });
     }

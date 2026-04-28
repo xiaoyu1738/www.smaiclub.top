@@ -8,6 +8,7 @@ export interface Env {
   SUB_TRAFFIC_TOTAL_BYTES?: string;
   EDGETUNNEL_SUB_URL?: string;
   EDGETUNNEL_MAX_NODES?: string;
+  EDGETUNNEL_REWRITE_UUID?: string;
   GEO_API_BASE_URL?: string;
   XUI_BASE_URL?: string;
   XUI_USERNAME?: string;
@@ -19,6 +20,7 @@ export interface Env {
   REALITY_PUBLIC_KEY?: string;
   REALITY_SNI?: string;
   REALITY_SHORT_ID?: string;
+  REALITY_SHORT_IDS?: string;
   REALITY_SPIDER_X?: string;
   REALITY_FLOW?: string;
   REALITY_FINGERPRINT?: string;

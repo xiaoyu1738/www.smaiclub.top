@@ -30,6 +30,17 @@ export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
   const trafficTotal = user.traffic_total || configuredTrafficTotal(env);
   const resetTraffic = payload.resetTraffic !== false;
 
+  const xui = await setXuiClientEnabled(env, xuiUuid, true, {
+    email: username,
+  });
+  if (!xui.ok) {
+    return jsonResponse({
+      error: 'XUI_SYNC_FAILED',
+      message: xui.message || '3x-ui client sync failed',
+      xui,
+    }, { status: 502 });
+  }
+
   await env.DB.prepare(`
     UPDATE users
     SET sub_token = ?,
@@ -42,11 +53,6 @@ export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
     WHERE username = ?
   `).bind(subToken, xuiUuid, expiredAt, trafficTotal, resetTraffic ? 1 : 0, now, username).run();
 
-  const xui = await setXuiClientEnabled(env, xuiUuid, true, {
-    email: username,
-    expiryTime: expiredAt,
-    totalBytes: trafficTotal,
-  });
   const url = new URL(request.url);
   return jsonResponse({
     ok: true,

@@ -40,7 +40,8 @@ export function buildVpsNode(env: Env, user: UserSubscriptionRow): ProxyNode | n
     fp: env.REALITY_FINGERPRINT || 'chrome',
     sni: env.REALITY_SNI,
   });
-  if (env.REALITY_SHORT_ID) params.set('sid', env.REALITY_SHORT_ID);
+  const shortId = selectRealityShortId(env);
+  if (shortId) params.set('sid', shortId);
   if (env.REALITY_SPIDER_X) params.set('spx', env.REALITY_SPIDER_X);
   if (env.REALITY_FLOW) params.set('flow', env.REALITY_FLOW);
 
@@ -52,6 +53,14 @@ export function buildVpsNode(env: Env, user: UserSubscriptionRow): ProxyNode | n
     kind: 'vps',
     uri: `vless://${user.xui_uuid}@${env.REALITY_HOST}:${port}?${params.toString()}#${encodeURIComponent(name)}`,
   };
+}
+
+function selectRealityShortId(env: Env): string {
+  const candidates = (env.REALITY_SHORT_IDS || env.REALITY_SHORT_ID || '')
+    .split(',')
+    .map(value => value.trim())
+    .filter(Boolean);
+  return candidates[0] || '';
 }
 
 export async function fetchEdgetunnelNodes(env: Env, user: UserSubscriptionRow): Promise<ProxyNode[]> {
@@ -66,7 +75,8 @@ export async function fetchEdgetunnelNodes(env: Env, user: UserSubscriptionRow):
     } as RequestInit);
     if (!response.ok) return [];
     const text = await response.text();
-    return parseEdgetunnelSubscription(text, user.xui_uuid, maxNodes);
+    const rewriteUuid = env.EDGETUNNEL_REWRITE_UUID === 'true';
+    return parseEdgetunnelSubscription(text, rewriteUuid ? user.xui_uuid : null, maxNodes);
   } catch (error) {
     console.warn('Failed to fetch edgetunnel subscription', error);
     return [];
@@ -74,7 +84,6 @@ export async function fetchEdgetunnelNodes(env: Env, user: UserSubscriptionRow):
 }
 
 export function parseEdgetunnelSubscription(input: string, userUuid: string | null | undefined, maxNodes = 99): ProxyNode[] {
-  if (!userUuid) return [];
   const decoded = maybeDecodeBase64(input);
   const links = decoded
     .split(/\r?\n/)
@@ -95,10 +104,10 @@ function maybeDecodeBase64(input: string): string {
   }
 }
 
-function normalizeEdgeNode(link: string, userUuid: string, ordinal: number): ProxyNode | null {
+function normalizeEdgeNode(link: string, userUuid: string | null | undefined, ordinal: number): ProxyNode | null {
   try {
     const url = new URL(link);
-    url.username = userUuid;
+    if (userUuid) url.username = userUuid;
     const originalName = decodeURIComponent(url.hash.replace(/^#/, ''));
     const region = extractRegionFromName(originalName || url.hostname);
     const name = `优选-${labelRegion(region)}-${String(ordinal).padStart(2, '0')}`;
