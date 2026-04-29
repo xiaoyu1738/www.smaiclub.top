@@ -13,7 +13,7 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(false);
 
   const usagePercent = useMemo(() => {
-    if (!account || account.trafficTotal <= 0) return 0;
+    if (!account || account.unlimitedTraffic || account.trafficTotal <= 0) return 0;
     return Math.min(100, Math.round((account.trafficUsedVps / account.trafficTotal) * 100));
   }, [account]);
 
@@ -87,11 +87,11 @@ export default function Dashboard() {
             </article>
             <article>
               <span>剩余天数</span>
-              <strong>{account.remainingDays}</strong>
+              <strong>{account.unlimitedTime ? '不限' : account.remainingDays}</strong>
             </article>
             <article>
               <span>到期时间</span>
-              <strong>{new Date(account.expiredAt).toLocaleDateString()}</strong>
+              <strong>{account.unlimitedTime ? '不限' : new Date(account.expiredAt).toLocaleDateString()}</strong>
             </article>
           </section>
 
@@ -99,7 +99,7 @@ export default function Dashboard() {
             <div className={styles.usageHead}>
               <div>
                 <p>已用流量</p>
-                <strong>{formatBytes(account.trafficUsedVps)} / {formatBytes(account.trafficTotal)}</strong>
+                <strong>{formatBytes(account.trafficUsedVps)} / {account.unlimitedTraffic ? '不限' : formatBytes(account.trafficTotal)}</strong>
               </div>
               <Gauge size={28} />
             </div>
@@ -129,6 +129,7 @@ export default function Dashboard() {
 }
 
 function formatBytes(value: number): string {
+  if (value < 0) return '不限';
   const units = ['B', 'KB', 'MB', 'GB', 'TB'];
   let current = value;
   let unit = 0;

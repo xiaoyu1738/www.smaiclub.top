@@ -36,12 +36,16 @@ export async function runSubscriptionSweep(env: Env, now = Date.now()) {
     FROM users
     WHERE xui_uuid IS NOT NULL
       AND sub_status = 'active'
-      AND (sub_expired_at <= ? OR traffic_used_vps >= traffic_total)
+      AND COALESCE(role, 'user') NOT IN ('admin', 'owner')
+      AND (
+        (sub_expired_at > 0 AND sub_expired_at <= ?)
+        OR (traffic_total > 0 AND traffic_used_vps >= traffic_total)
+      )
   `).bind(now).all<UserRow>();
 
   let disabled = 0;
   for (const user of results || []) {
-    const nextStatus = user.traffic_used_vps >= user.traffic_total ? 'limited' : 'expired';
+    const nextStatus = user.traffic_total > 0 && user.traffic_used_vps >= user.traffic_total ? 'limited' : 'expired';
     await env.DB.prepare(`
       UPDATE users
       SET sub_status = ?,

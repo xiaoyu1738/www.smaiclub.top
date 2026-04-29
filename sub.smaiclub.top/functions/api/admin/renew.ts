@@ -1,5 +1,11 @@
 import { requireAdminLogin } from '../../_shared/auth.ts';
-import { configuredTrafficTotal, generateSecretToken, getUserByUsername, publicSubscriptionUrl } from '../../_shared/db.ts';
+import {
+  configuredTrafficTotal,
+  generateSecretToken,
+  getUserByUsername,
+  publicSubscriptionUrl,
+  UNLIMITED_TRAFFIC_TOTAL_BYTES,
+} from '../../_shared/db.ts';
 import { jsonResponse } from '../../_shared/http.ts';
 import type { Env } from '../../_shared/types.ts';
 import { setXuiClientEnabled } from '../../_shared/xui.ts';
@@ -8,6 +14,9 @@ interface RenewPayload {
   username?: string;
   addDays?: number;
   resetTraffic?: boolean;
+  trafficTotalBytes?: number | null;
+  trafficTotalGb?: number | null;
+  unlimitedTraffic?: boolean;
 }
 
 export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
@@ -28,7 +37,8 @@ export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
     const expiredAt = expiresFrom + addDays * 86_400_000;
     const subToken = user.sub_token || generateSecretToken();
     const xuiUuid = user.xui_uuid || crypto.randomUUID();
-    const trafficTotal = user.traffic_total || configuredTrafficTotal(env);
+    const trafficTotal = parseRequestedTrafficTotal(payload, user.traffic_total, configuredTrafficTotal(env));
+    if (trafficTotal === null) return jsonResponse({ error: 'INVALID_TRAFFIC_TOTAL' }, { status: 400 });
     const resetTraffic = payload.resetTraffic !== false;
 
     const xui = await setXuiClientEnabled(env, xuiUuid, true, {
@@ -83,3 +93,22 @@ export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
     }, { status: 500 });
   }
 };
+
+function parseRequestedTrafficTotal(payload: RenewPayload, currentTotal: number, defaultTotal: number): number | null {
+  if (payload.unlimitedTraffic === true || payload.trafficTotalBytes === null || payload.trafficTotalGb === null) {
+    return UNLIMITED_TRAFFIC_TOTAL_BYTES;
+  }
+  if (typeof payload.trafficTotalBytes === 'number') {
+    if (!Number.isFinite(payload.trafficTotalBytes) || payload.trafficTotalBytes < 1) {
+      return null;
+    }
+    return Math.floor(payload.trafficTotalBytes);
+  }
+  if (typeof payload.trafficTotalGb === 'number') {
+    if (!Number.isFinite(payload.trafficTotalGb) || payload.trafficTotalGb < 1 || payload.trafficTotalGb > 102400) {
+      return null;
+    }
+    return Math.floor(payload.trafficTotalGb * 1024 * 1024 * 1024);
+  }
+  return currentTotal || defaultTotal;
+}

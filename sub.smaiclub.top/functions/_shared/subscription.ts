@@ -1,3 +1,4 @@
+import { isUnlimitedTime, isUnlimitedTraffic } from './db.ts';
 import { extractRegionFromName, labelRegion } from './geo.ts';
 import type { ClientFormat, Env, ProxyNode, UserSubscriptionRow } from './types.ts';
 
@@ -26,8 +27,8 @@ export function buildSubscriptionUserinfo(user: UserSubscriptionRow): string {
   return [
     'upload=0',
     `download=${Math.max(0, Math.floor(user.traffic_used_vps))}`,
-    `total=${Math.max(0, Math.floor(user.traffic_total))}`,
-    `expire=${Math.max(0, Math.floor(user.sub_expired_at / 1000))}`,
+    `total=${isUnlimitedTraffic(user) ? 0 : Math.max(0, Math.floor(user.traffic_total))}`,
+    `expire=${isUnlimitedTime(user) ? 0 : Math.max(0, Math.floor(user.sub_expired_at / 1000))}`,
   ].join('; ');
 }
 

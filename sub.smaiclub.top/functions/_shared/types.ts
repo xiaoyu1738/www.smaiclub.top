@@ -35,6 +35,7 @@ export interface Env {
 export interface UserSubscriptionRow {
   username: string;
   display_name?: string | null;
+  role?: string | null;
   sub_token?: string | null;
   xui_uuid?: string | null;
   sub_status: SubscriptionStatus;

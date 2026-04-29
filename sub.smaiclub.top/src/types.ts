@@ -10,6 +10,8 @@ export interface AccountInfo {
   trafficTotal: number;
   trafficUsedVps: number;
   trafficUpdatedAt: number;
+  unlimitedTime?: boolean;
+  unlimitedTraffic?: boolean;
   subscriptionUrl: string | null;
 }
 

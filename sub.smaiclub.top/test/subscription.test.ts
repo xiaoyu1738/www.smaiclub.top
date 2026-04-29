@@ -125,6 +125,8 @@ test('isBlocked enforces expiration and quota', () => {
   assert.equal(isBlocked(base, 1_000), null);
   assert.equal(isBlocked({ ...base, traffic_used_vps: 100 }, 1_000), 'limited');
   assert.equal(isBlocked(base, 3_000), 'expired');
+  assert.equal(isBlocked({ ...base, role: 'admin', sub_expired_at: 0, traffic_total: -1, traffic_used_vps: 999 }, 3_000), null);
+  assert.equal(isBlocked({ ...base, sub_expired_at: 10_000, traffic_total: -1, traffic_used_vps: 999 }, 3_000), null);
 });
 
 test('buildSubscriptionUserinfo exposes vps quota fields', () => {
@@ -138,4 +140,17 @@ test('buildSubscriptionUserinfo exposes vps quota fields', () => {
   });
 
   assert.equal(header, 'upload=0; download=40; total=100; expire=2000');
+});
+
+test('buildSubscriptionUserinfo exposes unlimited quota fields', () => {
+  const header = buildSubscriptionUserinfo({
+    username: 'fish',
+    sub_status: 'active',
+    sub_expired_at: 0,
+    traffic_total: -1,
+    traffic_used_vps: 40,
+    traffic_updated_at: 0,
+  });
+
+  assert.equal(header, 'upload=0; download=40; total=0; expire=0');
 });

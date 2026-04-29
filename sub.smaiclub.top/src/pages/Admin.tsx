@@ -10,6 +10,8 @@ export default function Admin() {
   const [account, setAccount] = useState<AccountInfo | null>(null);
   const [authLoading, setAuthLoading] = useState(true);
   const [username, setUsername] = useState('');
+  const [trafficMode, setTrafficMode] = useState<'limited' | 'unlimited'>('limited');
+  const [trafficGb, setTrafficGb] = useState('500');
   const [result, setResult] = useState<RenewResult | null>(null);
   const [message, setMessage] = useState('');
 
@@ -33,13 +35,24 @@ export default function Admin() {
 
   async function renew(resetTraffic: boolean) {
     setMessage('');
+    const requestedTrafficGb = Number(trafficGb);
+    if (trafficMode === 'limited' && (!Number.isFinite(requestedTrafficGb) || requestedTrafficGb < 1)) {
+      setMessage('流量额度必须大于 0 GB');
+      return;
+    }
     const response = await fetch('/api/admin/renew', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
       credentials: 'include',
-      body: JSON.stringify({ username, addDays: 30, resetTraffic }),
+      body: JSON.stringify({
+        username,
+        addDays: 30,
+        resetTraffic,
+        unlimitedTraffic: trafficMode === 'unlimited',
+        trafficTotalGb: trafficMode === 'limited' ? requestedTrafficGb : null,
+      }),
     });
     const payload = await readApiResponse<RenewResult | { error?: string; message?: string; xui?: RenewResult['xui'] & { body?: string; status?: number } }>(response);
     if (!response.ok) {
@@ -92,6 +105,25 @@ export default function Admin() {
                 用户名
                 <input value={username} onChange={event => setUsername(event.target.value)} placeholder="xiaozhong" />
               </label>
+              <label>
+                流量额度
+                <input
+                  disabled={trafficMode === 'unlimited'}
+                  inputMode="decimal"
+                  min="1"
+                  type="number"
+                  value={trafficGb}
+                  onChange={event => setTrafficGb(event.target.value)}
+                  placeholder="500"
+                />
+              </label>
+              <label>
+                额度模式
+                <select value={trafficMode} onChange={event => setTrafficMode(event.target.value as 'limited' | 'unlimited')}>
+                  <option value="limited">按 GB 限额</option>
+                  <option value="unlimited">无限流量</option>
+                </select>
+              </label>
             </div>
             <div className={styles.actions}>
               <Button onClick={() => void renew(true)} icon={<RotateCw size={17} />}>续期30天并重置流量</Button>
@@ -109,10 +141,24 @@ export default function Admin() {
           <input readOnly value={result.subscriptionUrl} />
           <span>UUID</span>
           <input readOnly value={result.xuiUuid} />
+          <span>流量额度</span>
+          <input readOnly value={result.trafficTotal < 0 ? '不限' : formatBytes(result.trafficTotal)} />
         </section>
       )}
     </main>
   );
+}
+
+function formatBytes(value: number): string {
+  if (value < 0) return '不限';
+  const units = ['B', 'KB', 'MB', 'GB', 'TB'];
+  let current = value;
+  let unit = 0;
+  while (current >= 1024 && unit < units.length - 1) {
+    current /= 1024;
+    unit += 1;
+  }
+  return `${current.toFixed(unit === 0 ? 0 : 1)} ${units[unit]}`;
 }
 
 async function readApiResponse<T>(response: Response): Promise<T & { rawText?: string }> {
