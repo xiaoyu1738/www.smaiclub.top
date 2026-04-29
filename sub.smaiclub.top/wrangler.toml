@@ -6,7 +6,7 @@ pages_build_output_dir = "dist"
 SUB_PUBLIC_ORIGIN = "https://sub.smaiclub.top"
 SUB_TRAFFIC_TOTAL_BYTES = "536870912000"
 EDGETUNNEL_MAX_NODES = "99"
-EDGETUNNEL_MAX_PER_REGION = "3"
+EDGETUNNEL_MAX_PER_REGION = "5"
 EDGETUNNEL_GEO_API_URL = "http://ip-api.com/batch?fields=status,message,country,countryCode,city,query"
 
 [[d1_databases]]
