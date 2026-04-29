@@ -63,6 +63,17 @@ test('parseEdgetunnelSubscription groups by geo region and limits each region', 
   ]);
 });
 
+test('parseEdgetunnelSubscription does not trust unknown upstream two letter labels', () => {
+  const nodes = parseEdgetunnelSubscription(
+    'vless://uuid@1.2.3.4:443?security=tls&type=ws#FL',
+    null,
+    99,
+    3,
+  );
+
+  assert.equal(nodes[0].name, '优选-Global-01');
+});
+
 test('renderSubscription emits clash yaml and raw base64', () => {
   const nodes: ProxyNode[] = [
     {

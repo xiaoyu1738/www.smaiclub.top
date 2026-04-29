@@ -1,6 +1,8 @@
 const REGION_NAMES: Record<string, string> = {
   HK: 'Hongkong',
   MO: 'Macau',
+  ME: 'Montenegro',
+  AT: 'Austria',
   TW: 'Taiwan',
   JP: 'Japan',
   KR: 'Korea',
@@ -18,18 +20,25 @@ const REGION_NAMES: Record<string, string> = {
   FR: 'France',
   NL: 'Netherlands',
   AU: 'Australia',
+  SE: 'Sweden',
+  ZA: 'SouthAfrica',
+  RU: 'Russia',
 };
 
 export function labelRegion(codeOrName: string | null | undefined): string {
   const value = (codeOrName ?? '').trim();
   if (!value) return 'Global';
   const upper = value.toUpperCase();
-  return REGION_NAMES[upper] ?? value.replace(/[^A-Za-z0-9\u4e00-\u9fa5]+/g, '') ?? 'Global';
+  return REGION_NAMES[upper] ?? value.replace(/[^A-Za-z0-9\u4e00-\u9fa5-]+/g, '') ?? 'Global';
 }
 
 export function extractRegionFromName(name: string): string {
-  const hashRegion = name.match(/#?\s*([A-Z]{2})(?:\b|$)/i)?.[1];
-  if (hashRegion) return labelRegion(hashRegion);
+  const hashRegion = name.match(/(?:^|#|[^A-Za-z0-9])([A-Z]{2})(?:[^A-Za-z0-9]|$)/i)?.[1];
+  if (hashRegion) {
+    const upper = hashRegion.toUpperCase();
+    if (REGION_NAMES[upper]) return labelRegion(upper);
+    return 'Global';
+  }
   if (/hong\s*kong|香港/i.test(name)) return 'Hongkong';
   if (/macao|macau|澳门|澳門/i.test(name)) return 'Macau';
   if (/japan|tokyo|日本/i.test(name)) return 'Japan';
