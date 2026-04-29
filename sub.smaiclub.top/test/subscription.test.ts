@@ -34,6 +34,35 @@ test('parseEdgetunnelSubscription preserves upstream UUID by default', () => {
   assert.match(nodes[0].uri, /^vless:\/\/edge-uuid@1\.2\.3\.4/);
 });
 
+test('parseEdgetunnelSubscription groups by geo region and limits each region', () => {
+  const input = [
+    'vless://uuid@1.1.1.1:443?security=tls&type=ws#edge-a',
+    'vless://uuid@1.1.1.2:443?security=tls&type=ws#edge-b',
+    'vless://uuid@1.1.1.3:443?security=tls&type=ws#edge-c',
+    'vless://uuid@1.1.1.4:443?security=tls&type=ws#edge-d',
+    'vless://uuid@8.8.8.8:443?security=tls&type=ws#edge-e',
+    'vless://uuid@8.8.4.4:443?security=tls&type=ws#edge-f',
+  ].join('\n');
+  const geoByHost = new Map([
+    ['1.1.1.1', 'AU'],
+    ['1.1.1.2', 'AU'],
+    ['1.1.1.3', 'AU'],
+    ['1.1.1.4', 'AU'],
+    ['8.8.8.8', 'US'],
+    ['8.8.4.4', 'US'],
+  ]);
+
+  const nodes = parseEdgetunnelSubscription(input, null, 99, 3, geoByHost);
+
+  assert.deepEqual(nodes.map(node => node.name), [
+    '优选-Australia-01',
+    '优选-Australia-02',
+    '优选-Australia-03',
+    '优选-UnitedStates-01',
+    '优选-UnitedStates-02',
+  ]);
+});
+
 test('renderSubscription emits clash yaml and raw base64', () => {
   const nodes: ProxyNode[] = [
     {

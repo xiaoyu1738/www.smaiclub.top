@@ -15,6 +15,8 @@ Secrets / Variables:
 - `SUB_TRAFFIC_TOTAL_BYTES`: 默认 `536870912000`
 - `EDGETUNNEL_SUB_URL`: EdgeTunnel 面板提供的订阅 URL
 - `EDGETUNNEL_MAX_NODES`: 默认 `99`
+- `EDGETUNNEL_MAX_PER_REGION`: 默认 `3`，同一 IP 地区最多输出 3 个优选节点
+- `EDGETUNNEL_GEO_API_URL`: 优选 IP 批量 Geo 查询接口，默认 `http://ip-api.com/batch?fields=status,message,country,countryCode,city,query`
 - `XUI_BASE_URL`: 3x-ui 面板 origin，不含末尾斜杠
 - `XUI_USERNAME` / `XUI_PASSWORD` 或 `XUI_COOKIE`
 - `XUI_INBOUND_ID`: 需要更新 client 的 inbound id
