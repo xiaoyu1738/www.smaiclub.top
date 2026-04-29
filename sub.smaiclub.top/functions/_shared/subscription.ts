@@ -2,6 +2,8 @@ import { extractRegionFromName, labelRegion } from './geo.ts';
 import type { ClientFormat, Env, ProxyNode, UserSubscriptionRow } from './types.ts';
 
 const DEFAULT_EDGE_MAX_PER_REGION = 3;
+const CLASH_RULE_PROVIDER_BASE = 'https://raw.githubusercontent.com/Loyalsoldier/clash-rules/release';
+const SING_BOX_RULE_SET_BASE = 'https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/sing/geo';
 
 export function detectClientFormat(userAgent: string | null): ClientFormat {
   const ua = (userAgent ?? '').toLowerCase();
@@ -287,10 +289,41 @@ function renderClash(nodes: ProxyNode[]): string {
     '    type: select',
     '    proxies:',
     ...proxyNames.map(name => `      - ${yamlString(name)}`),
+    '      - DIRECT',
+    '      - REJECT',
+    'rule-providers:',
+    ...renderClashRuleProvider('reject', 'classical', 'reject.txt'),
+    ...renderClashRuleProvider('private', 'classical', 'private.txt'),
+    ...renderClashRuleProvider('direct', 'classical', 'direct.txt'),
+    ...renderClashRuleProvider('proxy', 'classical', 'proxy.txt'),
+    ...renderClashRuleProvider('gfw', 'classical', 'gfw.txt'),
+    ...renderClashRuleProvider('tld-not-cn', 'classical', 'tld-not-cn.txt'),
+    ...renderClashRuleProvider('cncidr', 'classical', 'cncidr.txt'),
+    ...renderClashRuleProvider('lancidr', 'classical', 'lancidr.txt'),
     'rules:',
+    '  - RULE-SET,reject,REJECT',
+    '  - RULE-SET,private,DIRECT',
+    '  - RULE-SET,lancidr,DIRECT,no-resolve',
+    '  - RULE-SET,direct,DIRECT',
+    '  - RULE-SET,cncidr,DIRECT,no-resolve',
+    '  - GEOIP,CN,DIRECT',
+    '  - RULE-SET,proxy,SmaiClub',
+    '  - RULE-SET,gfw,SmaiClub',
+    '  - RULE-SET,tld-not-cn,SmaiClub',
     '  - MATCH,SmaiClub',
     '',
   ].join('\n');
+}
+
+function renderClashRuleProvider(name: string, behavior: string, fileName: string): string[] {
+  return [
+    `  ${name}:`,
+    '    type: http',
+    `    behavior: ${behavior}`,
+    `    url: ${yamlString(`${CLASH_RULE_PROVIDER_BASE}/${fileName}`)}`,
+    `    path: ${yamlString(`./ruleset/${fileName}`)}`,
+    '    interval: 86400',
+  ];
 }
 
 function renderClashProxy(node: ProxyNode): string {
@@ -323,8 +356,18 @@ function renderClashProxy(node: ProxyNode): string {
 }
 
 function renderSingBox(nodes: ProxyNode[]): string {
+  const proxyNames = nodes.map(node => node.name);
   return JSON.stringify({
-    outbounds: nodes.map(node => {
+    outbounds: [
+      {
+        type: 'selector',
+        tag: 'SmaiClub',
+        outbounds: [...proxyNames, 'DIRECT'],
+        default: proxyNames[0] || 'DIRECT',
+      },
+      { type: 'direct', tag: 'DIRECT' },
+      { type: 'block', tag: 'REJECT' },
+      ...nodes.map(node => {
       const parsed = parseVlessUrl(node.uri);
       const outbound: Record<string, unknown> = {
         type: 'vless',
@@ -357,7 +400,34 @@ function renderSingBox(nodes: ProxyNode[]): string {
       }
       return outbound;
     }),
+    ],
+    route: {
+      auto_detect_interface: true,
+      rule_set: [
+        renderSingBoxRuleSet('geosite-category-ads-all', 'geosite/category-ads-all.srs'),
+        renderSingBoxRuleSet('geoip-private', 'geoip/private.srs'),
+        renderSingBoxRuleSet('geosite-cn', 'geosite/cn.srs'),
+        renderSingBoxRuleSet('geoip-cn', 'geoip/cn.srs'),
+        renderSingBoxRuleSet('geosite-geolocation-!cn', 'geosite/geolocation-!cn.srs'),
+      ],
+      rules: [
+        { rule_set: ['geosite-category-ads-all'], outbound: 'REJECT' },
+        { rule_set: ['geoip-private', 'geosite-cn', 'geoip-cn'], outbound: 'DIRECT' },
+        { rule_set: ['geosite-geolocation-!cn'], outbound: 'SmaiClub' },
+      ],
+      final: 'SmaiClub',
+    },
   }, null, 2);
+}
+
+function renderSingBoxRuleSet(tag: string, path: string): Record<string, string> {
+  return {
+    type: 'remote',
+    tag,
+    format: 'binary',
+    url: `${SING_BOX_RULE_SET_BASE}/${path}`,
+    download_detour: 'SmaiClub',
+  };
 }
 
 function parseVlessUrl(uri: string) {

@@ -84,8 +84,32 @@ test('renderSubscription emits clash yaml and raw base64', () => {
     },
   ];
 
-  assert.match(renderSubscription(nodes, { kind: 'clash', contentType: 'text/yaml' }), /reality-opts/);
+  const clash = renderSubscription(nodes, { kind: 'clash', contentType: 'text/yaml' });
+  assert.match(clash, /reality-opts/);
+  assert.match(clash, /rule-providers:/);
+  assert.match(clash, /RULE-SET,cncidr,DIRECT/);
+  assert.match(clash, /MATCH,SmaiClub/);
   assert.match(atob(renderSubscription(nodes, { kind: 'raw', contentType: 'text/plain' })), /vless:\/\/uuid/);
+});
+
+test('renderSubscription emits sing-box route rules', () => {
+  const rendered = renderSubscription([
+    {
+      id: 'vps',
+      kind: 'vps',
+      name: 'VPS-Japan',
+      uri: 'vless://uuid@example.com:443?type=tcp&encryption=none&security=reality&pbk=pub&fp=chrome&sni=www.softbank.jp&sid=ad&flow=xtls-rprx-vision#VPS-Japan',
+    },
+  ], { kind: 'sing-box', contentType: 'application/json' });
+  const config = JSON.parse(rendered) as {
+    outbounds: Array<{ type: string; tag: string }>;
+    route: { final: string; rule_set: Array<{ tag: string }> };
+  };
+
+  assert.equal(config.outbounds[0].type, 'selector');
+  assert.equal(config.outbounds[0].tag, 'SmaiClub');
+  assert.equal(config.route.final, 'SmaiClub');
+  assert.ok(config.route.rule_set.some(ruleSet => ruleSet.tag === 'geosite-cn'));
 });
 
 test('isBlocked enforces expiration and quota', () => {
