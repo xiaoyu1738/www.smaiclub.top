@@ -1,11 +1,10 @@
 import { isUnlimitedTime, isUnlimitedTraffic } from './db.ts';
-import { extractRegionFromName, labelRegion } from './geo.ts';
 import type { ClientFormat, Env, ProxyNode, UserSubscriptionRow } from './types.ts';
 
-const DEFAULT_EDGE_MAX_PER_REGION = 3;
 const CLASH_RULE_PROVIDER_BASE = 'https://raw.githubusercontent.com/Loyalsoldier/clash-rules/release';
 const SING_BOX_RULE_SET_BASE = 'https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/sing/geo';
 
+/** Detect subscription output format from client User-Agent. */
 export function detectClientFormat(userAgent: string | null): ClientFormat {
   const ua = (userAgent ?? '').toLowerCase();
   if (ua.includes('sing-box') || ua.includes('singbox')) {
@@ -23,6 +22,7 @@ export function detectClientFormat(userAgent: string | null): ClientFormat {
   return { kind: 'raw', contentType: 'text/plain; charset=utf-8' };
 }
 
+/** Build `Subscription-Userinfo` header fields for quota-aware clients. */
 export function buildSubscriptionUserinfo(user: UserSubscriptionRow): string {
   return [
     'upload=0',
@@ -32,6 +32,7 @@ export function buildSubscriptionUserinfo(user: UserSubscriptionRow): string {
   ].join('; ');
 }
 
+/** Build the self-hosted VPS Reality node when all required env values exist. */
 export function buildVpsNode(env: Env, user: UserSubscriptionRow): ProxyNode | null {
   if (!user.xui_uuid || !env.REALITY_HOST || !env.REALITY_PUBLIC_KEY || !env.REALITY_SNI) {
     return null;
@@ -68,10 +69,10 @@ function selectRealityShortId(env: Env): string {
   return candidates[0] || '';
 }
 
+/** Fetch EdgeTunnel upstream subscription and optionally rewrite UUID. */
 export async function fetchEdgetunnelNodes(env: Env, user: UserSubscriptionRow): Promise<ProxyNode[]> {
   if (!env.EDGETUNNEL_SUB_URL) return [];
   const maxNodes = Math.max(0, Math.min(99, Number(env.EDGETUNNEL_MAX_NODES || 99) || 99));
-  const maxPerRegion = normalizePositiveInt(env.EDGETUNNEL_MAX_PER_REGION, DEFAULT_EDGE_MAX_PER_REGION, 99);
   if (!maxNodes) return [];
 
   try {
@@ -82,20 +83,18 @@ export async function fetchEdgetunnelNodes(env: Env, user: UserSubscriptionRow):
     if (!response.ok) return [];
     const text = await response.text();
     const rewriteUuid = env.EDGETUNNEL_REWRITE_UUID === 'true';
-    const geoByHost = await fetchEdgeGeoRegions(env, collectEdgeHosts(text));
-    return parseEdgetunnelSubscription(text, rewriteUuid ? user.xui_uuid : null, maxNodes, maxPerRegion, geoByHost);
+    return parseEdgetunnelSubscription(text, rewriteUuid ? user.xui_uuid : null, maxNodes);
   } catch (error) {
     console.warn('Failed to fetch edgetunnel subscription', error);
     return [];
   }
 }
 
+/** Parse EdgeTunnel vless links, preserving upstream order and names. */
 export function parseEdgetunnelSubscription(
   input: string,
   userUuid: string | null | undefined,
   maxNodes = 99,
-  maxPerRegion = DEFAULT_EDGE_MAX_PER_REGION,
-  geoByHost?: Map<string, string> | Record<string, string>,
 ): ProxyNode[] {
   const decoded = maybeDecodeBase64(input);
   const links = decoded
@@ -104,26 +103,22 @@ export function parseEdgetunnelSubscription(
     .filter(line => line.startsWith('vless://'));
 
   const nodes: ProxyNode[] = [];
-  const regionCounts = new Map<string, number>();
+  const nameCounts = new Map<string, number>();
   const totalLimit = normalizeNonNegativeInt(maxNodes, 99, 99);
-  const regionLimit = normalizePositiveInt(String(maxPerRegion), DEFAULT_EDGE_MAX_PER_REGION, 99);
 
   for (const link of links) {
     if (nodes.length >= totalLimit) break;
-    const prepared = prepareEdgeNode(link, userUuid, geoByHost);
+    const prepared = prepareEdgeNode(link, userUuid);
     if (!prepared) continue;
-
-    const currentCount = regionCounts.get(prepared.regionKey) ?? 0;
-    if (currentCount >= regionLimit) continue;
-
-    const regionOrdinal = currentCount + 1;
-    regionCounts.set(prepared.regionKey, regionOrdinal);
-    nodes.push(finalizeEdgeNode(prepared, nodes.length + 1, regionOrdinal));
+    const currentCount = (nameCounts.get(prepared.name) || 0) + 1;
+    nameCounts.set(prepared.name, currentCount);
+    nodes.push(finalizeEdgeNode(prepared, nodes.length + 1, currentCount));
   }
 
   return nodes;
 }
 
+/** Decode base64 payloads used by subscription endpoints when needed. */
 function maybeDecodeBase64(input: string): string {
   const trimmed = input.trim();
   if (trimmed.includes('vless://')) return trimmed;
@@ -137,30 +132,27 @@ function maybeDecodeBase64(input: string): string {
 
 interface PreparedEdgeNode {
   url: URL;
-  regionLabel: string;
-  regionKey: string;
+  name: string;
 }
 
+/** Parse one upstream vless link and apply UUID rewrite when configured. */
 function prepareEdgeNode(
   link: string,
   userUuid: string | null | undefined,
-  geoByHost?: Map<string, string> | Record<string, string>,
 ): PreparedEdgeNode | null {
   try {
     const url = new URL(link);
     if (userUuid) url.username = userUuid;
     const originalName = decodeURIComponent(url.hash.replace(/^#/, ''));
-    const geoRegion = getGeoRegion(geoByHost, url.hostname);
-    const fallbackRegion = extractRegionFromName(originalName || url.hostname);
-    const regionLabel = labelRegion(geoRegion || fallbackRegion);
-    return { url, regionLabel, regionKey: regionLabel.toLowerCase() };
+    return { url, name: originalName || 'EdgeTunnel' };
   } catch {
     return null;
   }
 }
 
-function finalizeEdgeNode(prepared: PreparedEdgeNode, ordinal: number, regionOrdinal: number): ProxyNode {
-  const name = `优选-${prepared.regionLabel}-${String(regionOrdinal).padStart(2, '0')}`;
+/** Convert parsed EdgeTunnel data into internal node shape with stable de-duplicated names. */
+function finalizeEdgeNode(prepared: PreparedEdgeNode, ordinal: number, duplicateCount: number): ProxyNode {
+  const name = duplicateCount > 1 ? `${prepared.name}-${String(duplicateCount).padStart(2, '0')}` : prepared.name;
   prepared.url.hash = encodeURIComponent(name);
   return {
     id: `edge-${ordinal}`,
@@ -170,106 +162,13 @@ function finalizeEdgeNode(prepared: PreparedEdgeNode, ordinal: number, regionOrd
   };
 }
 
-function collectEdgeHosts(input: string): string[] {
-  const decoded = maybeDecodeBase64(input);
-  const hosts = new Set<string>();
-  for (const line of decoded.split(/\r?\n/)) {
-    const link = line.trim();
-    if (!link.startsWith('vless://')) continue;
-    try {
-      const host = new URL(link).hostname;
-      if (isPublicIp(host)) hosts.add(host);
-    } catch {
-      // Ignore malformed upstream links; parseEdgetunnelSubscription will skip them too.
-    }
-  }
-  return [...hosts];
-}
-
-async function fetchEdgeGeoRegions(env: Env, hosts: string[]): Promise<Map<string, string>> {
-  const endpoint = (env.EDGETUNNEL_GEO_API_URL || env.GEO_API_BASE_URL || '').trim();
-  if (!endpoint || hosts.length === 0) return new Map();
-
-  try {
-    const response = await fetch(endpoint, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'User-Agent': 'SmaiClub-Sub/1.0',
-      },
-      body: JSON.stringify(hosts.slice(0, 100)),
-      cf: { cacheTtl: 3600, cacheEverything: true },
-    } as RequestInit);
-    if (!response.ok) return new Map();
-
-    const payload = await response.json();
-    return parseGeoBatchResponse(payload);
-  } catch (error) {
-    console.warn('Failed to fetch edgetunnel geo regions', error);
-    return new Map();
-  }
-}
-
-function parseGeoBatchResponse(payload: unknown): Map<string, string> {
-  const rows = Array.isArray(payload) ? payload : [];
-  const regions = new Map<string, string>();
-
-  for (const row of rows) {
-    if (!row || typeof row !== 'object') continue;
-    const record = row as Record<string, unknown>;
-    const ip = stringField(record, 'query') || stringField(record, 'ip') || stringField(record, 'ip_address');
-    if (!ip) continue;
-
-    const success = record.success;
-    const status = stringField(record, 'status');
-    if (success === false || status === 'fail') continue;
-
-    const countryCode = stringField(record, 'countryCode') || stringField(record, 'country_code');
-    const country = stringField(record, 'country') || stringField(record, 'country_name');
-    const city = stringField(record, 'city') || stringField(record, 'cityName');
-    const region = labelRegion(countryCode || extractRegionFromName(`${city ?? ''} ${country ?? ''}`));
-    if (region !== 'Global') regions.set(ip, region);
-  }
-
-  return regions;
-}
-
-function getGeoRegion(geoByHost: Map<string, string> | Record<string, string> | undefined, host: string): string {
-  if (!geoByHost) return '';
-  if (geoByHost instanceof Map) return geoByHost.get(host) || '';
-  return geoByHost[host] || '';
-}
-
-function stringField(record: Record<string, unknown>, key: string): string {
-  const value = record[key];
-  return typeof value === 'string' ? value.trim() : '';
-}
-
-function normalizePositiveInt(value: string | undefined, fallback: number, max: number): number {
-  const parsed = Number(value);
-  if (!Number.isFinite(parsed) || parsed < 1) return fallback;
-  return Math.min(max, Math.floor(parsed));
-}
-
+/** Clamp a numeric value to a non-negative integer range. */
 function normalizeNonNegativeInt(value: number, fallback: number, max: number): number {
   if (!Number.isFinite(value) || value < 0) return fallback;
   return Math.min(max, Math.floor(value));
 }
 
-function isPublicIp(host: string): boolean {
-  if (/^\d{1,3}(?:\.\d{1,3}){3}$/.test(host)) {
-    const parts = host.split('.').map(Number);
-    if (parts.some(part => part < 0 || part > 255)) return false;
-    const [a, b] = parts;
-    if (a === 10 || a === 127 || a === 0) return false;
-    if (a === 172 && b >= 16 && b <= 31) return false;
-    if (a === 192 && b === 168) return false;
-    if (a === 169 && b === 254) return false;
-    return true;
-  }
-  return /^[a-f0-9:]+$/i.test(host) && host.includes(':') && !host.startsWith('fc') && !host.startsWith('fd') && host !== '::1';
-}
-
+/** Render final subscription payload in raw/clash/sing-box format. */
 export function renderSubscription(nodes: ProxyNode[], format: ClientFormat): string {
   if (format.kind === 'sing-box') return renderSingBox(nodes);
   if (format.kind === 'clash') return renderClash(nodes);
