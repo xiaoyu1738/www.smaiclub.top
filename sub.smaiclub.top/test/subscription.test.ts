@@ -11,7 +11,7 @@ test('detectClientFormat handles mainstream clients', () => {
   assert.equal(detectClientFormat('v2rayN').kind, 'raw');
 });
 
-test('parseEdgetunnelSubscription rewrites UUID and names nodes', () => {
+test('parseEdgetunnelSubscription rewrites UUID and preserves upstream node name', () => {
   const nodes = parseEdgetunnelSubscription(
     'vless://old@1.2.3.4:443?security=tls&type=ws&host=proxy.smaiclub.top&sni=proxy.smaiclub.top&path=%2F#HK',
     'new-uuid',
@@ -20,7 +20,7 @@ test('parseEdgetunnelSubscription rewrites UUID and names nodes', () => {
 
   assert.equal(nodes.length, 1);
   assert.match(nodes[0].uri, /^vless:\/\/new-uuid@1\.2\.3\.4/);
-  assert.equal(nodes[0].name, '优选-Hongkong-01');
+  assert.equal(nodes[0].name, 'HK');
 });
 
 test('parseEdgetunnelSubscription preserves upstream UUID by default', () => {
@@ -34,44 +34,16 @@ test('parseEdgetunnelSubscription preserves upstream UUID by default', () => {
   assert.match(nodes[0].uri, /^vless:\/\/edge-uuid@1\.2\.3\.4/);
 });
 
-test('parseEdgetunnelSubscription groups by geo region and limits each region', () => {
+test('parseEdgetunnelSubscription keeps all upstream nodes in order', () => {
   const input = [
     'vless://uuid@1.1.1.1:443?security=tls&type=ws#edge-a',
     'vless://uuid@1.1.1.2:443?security=tls&type=ws#edge-b',
     'vless://uuid@1.1.1.3:443?security=tls&type=ws#edge-c',
-    'vless://uuid@1.1.1.4:443?security=tls&type=ws#edge-d',
-    'vless://uuid@8.8.8.8:443?security=tls&type=ws#edge-e',
-    'vless://uuid@8.8.4.4:443?security=tls&type=ws#edge-f',
   ].join('\n');
-  const geoByHost = new Map([
-    ['1.1.1.1', 'AU'],
-    ['1.1.1.2', 'AU'],
-    ['1.1.1.3', 'AU'],
-    ['1.1.1.4', 'AU'],
-    ['8.8.8.8', 'US'],
-    ['8.8.4.4', 'US'],
-  ]);
 
-  const nodes = parseEdgetunnelSubscription(input, null, 99, 3, geoByHost);
+  const nodes = parseEdgetunnelSubscription(input, null, 99);
 
-  assert.deepEqual(nodes.map(node => node.name), [
-    '优选-Australia-01',
-    '优选-Australia-02',
-    '优选-Australia-03',
-    '优选-UnitedStates-01',
-    '优选-UnitedStates-02',
-  ]);
-});
-
-test('parseEdgetunnelSubscription does not trust unknown upstream two letter labels', () => {
-  const nodes = parseEdgetunnelSubscription(
-    'vless://uuid@1.2.3.4:443?security=tls&type=ws#FL',
-    null,
-    99,
-    3,
-  );
-
-  assert.equal(nodes[0].name, '优选-Global-01');
+  assert.deepEqual(nodes.map(node => node.name), ['edge-a', 'edge-b', 'edge-c']);
 });
 
 test('renderSubscription emits clash yaml and raw base64', () => {
