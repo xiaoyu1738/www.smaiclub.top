@@ -4,6 +4,7 @@ import type { ClientFormat, Env, ProxyNode, UserSubscriptionRow } from './types.
 const CLASH_RULE_PROVIDER_BASE = 'https://raw.githubusercontent.com/Loyalsoldier/clash-rules/release';
 const SING_BOX_RULE_SET_BASE = 'https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/sing/geo';
 
+/** Detect subscription output format from client User-Agent. */
 export function detectClientFormat(userAgent: string | null): ClientFormat {
   const ua = (userAgent ?? '').toLowerCase();
   if (ua.includes('sing-box') || ua.includes('singbox')) {
@@ -21,6 +22,7 @@ export function detectClientFormat(userAgent: string | null): ClientFormat {
   return { kind: 'raw', contentType: 'text/plain; charset=utf-8' };
 }
 
+/** Build `Subscription-Userinfo` header fields for quota-aware clients. */
 export function buildSubscriptionUserinfo(user: UserSubscriptionRow): string {
   return [
     'upload=0',
@@ -30,6 +32,7 @@ export function buildSubscriptionUserinfo(user: UserSubscriptionRow): string {
   ].join('; ');
 }
 
+/** Build the self-hosted VPS Reality node when all required env values exist. */
 export function buildVpsNode(env: Env, user: UserSubscriptionRow): ProxyNode | null {
   if (!user.xui_uuid || !env.REALITY_HOST || !env.REALITY_PUBLIC_KEY || !env.REALITY_SNI) {
     return null;
@@ -66,6 +69,7 @@ function selectRealityShortId(env: Env): string {
   return candidates[0] || '';
 }
 
+/** Fetch EdgeTunnel upstream subscription and optionally rewrite UUID. */
 export async function fetchEdgetunnelNodes(env: Env, user: UserSubscriptionRow): Promise<ProxyNode[]> {
   if (!env.EDGETUNNEL_SUB_URL) return [];
   const maxNodes = Math.max(0, Math.min(99, Number(env.EDGETUNNEL_MAX_NODES || 99) || 99));
@@ -86,6 +90,7 @@ export async function fetchEdgetunnelNodes(env: Env, user: UserSubscriptionRow):
   }
 }
 
+/** Parse EdgeTunnel vless links, preserving upstream order and names. */
 export function parseEdgetunnelSubscription(
   input: string,
   userUuid: string | null | undefined,
@@ -110,6 +115,7 @@ export function parseEdgetunnelSubscription(
   return nodes;
 }
 
+/** Decode base64 payloads used by subscription endpoints when needed. */
 function maybeDecodeBase64(input: string): string {
   const trimmed = input.trim();
   if (trimmed.includes('vless://')) return trimmed;
@@ -126,6 +132,7 @@ interface PreparedEdgeNode {
   name: string;
 }
 
+/** Parse one upstream vless link and apply UUID rewrite when configured. */
 function prepareEdgeNode(
   link: string,
   userUuid: string | null | undefined,
@@ -140,6 +147,7 @@ function prepareEdgeNode(
   }
 }
 
+/** Convert parsed EdgeTunnel data into internal node shape. */
 function finalizeEdgeNode(prepared: PreparedEdgeNode, ordinal: number): ProxyNode {
   const name = prepared.name;
   prepared.url.hash = encodeURIComponent(name);
@@ -151,11 +159,13 @@ function finalizeEdgeNode(prepared: PreparedEdgeNode, ordinal: number): ProxyNod
   };
 }
 
+/** Clamp a numeric value to a non-negative integer range. */
 function normalizeNonNegativeInt(value: number, fallback: number, max: number): number {
   if (!Number.isFinite(value) || value < 0) return fallback;
   return Math.min(max, Math.floor(value));
 }
 
+/** Render final subscription payload in raw/clash/sing-box format. */
 export function renderSubscription(nodes: ProxyNode[], format: ClientFormat): string {
   if (format.kind === 'sing-box') return renderSingBox(nodes);
   if (format.kind === 'clash') return renderClash(nodes);
