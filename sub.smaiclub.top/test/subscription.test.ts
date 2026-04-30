@@ -46,6 +46,18 @@ test('parseEdgetunnelSubscription keeps all upstream nodes in order', () => {
   assert.deepEqual(nodes.map(node => node.name), ['edge-a', 'edge-b', 'edge-c']);
 });
 
+
+test('parseEdgetunnelSubscription de-duplicates duplicate upstream names', () => {
+  const input = [
+    'vless://uuid@1.1.1.1:443?security=tls&type=ws#proxy US官方优选191ms',
+    'vless://uuid@1.1.1.2:443?security=tls&type=ws#proxy US官方优选191ms',
+  ].join('\n');
+
+  const nodes = parseEdgetunnelSubscription(input, null, 99);
+
+  assert.deepEqual(nodes.map(node => node.name), ['proxy US官方优选191ms', 'proxy US官方优选191ms-02']);
+});
+
 test('renderSubscription emits clash yaml and raw base64', () => {
   const nodes: ProxyNode[] = [
     {

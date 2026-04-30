@@ -103,13 +103,16 @@ export function parseEdgetunnelSubscription(
     .filter(line => line.startsWith('vless://'));
 
   const nodes: ProxyNode[] = [];
+  const nameCounts = new Map<string, number>();
   const totalLimit = normalizeNonNegativeInt(maxNodes, 99, 99);
 
   for (const link of links) {
     if (nodes.length >= totalLimit) break;
     const prepared = prepareEdgeNode(link, userUuid);
     if (!prepared) continue;
-    nodes.push(finalizeEdgeNode(prepared, nodes.length + 1));
+    const currentCount = (nameCounts.get(prepared.name) || 0) + 1;
+    nameCounts.set(prepared.name, currentCount);
+    nodes.push(finalizeEdgeNode(prepared, nodes.length + 1, currentCount));
   }
 
   return nodes;
@@ -147,9 +150,9 @@ function prepareEdgeNode(
   }
 }
 
-/** Convert parsed EdgeTunnel data into internal node shape. */
-function finalizeEdgeNode(prepared: PreparedEdgeNode, ordinal: number): ProxyNode {
-  const name = prepared.name;
+/** Convert parsed EdgeTunnel data into internal node shape with stable de-duplicated names. */
+function finalizeEdgeNode(prepared: PreparedEdgeNode, ordinal: number, duplicateCount: number): ProxyNode {
+  const name = duplicateCount > 1 ? `${prepared.name}-${String(duplicateCount).padStart(2, '0')}` : prepared.name;
   prepared.url.hash = encodeURIComponent(name);
   return {
     id: `edge-${ordinal}`,
