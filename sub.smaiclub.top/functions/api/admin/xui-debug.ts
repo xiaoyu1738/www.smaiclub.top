@@ -1,7 +1,7 @@
 import { requireAdminLogin } from '../../_shared/auth.ts';
 import { jsonResponse } from '../../_shared/http.ts';
 import type { Env } from '../../_shared/types.ts';
-import { probeXuiAuth, probeXuiAuthModes, xuiConfigDiagnostic } from '../../_shared/xui.ts';
+import { probeXuiAuth, probeXuiAuthModes, probeXuiInboundList, xuiConfigDiagnostic } from '../../_shared/xui.ts';
 
 export const onRequestGet: PagesFunction<Env> = async ({ request, env }) => {
   try {
@@ -15,6 +15,9 @@ export const onRequestGet: PagesFunction<Env> = async ({ request, env }) => {
     const probes = url.searchParams.get('modes') === '1'
       ? await probeXuiAuthModes(env)
       : null;
+    const list = url.searchParams.get('list') === '1'
+      ? await probeXuiInboundList(env)
+      : null;
 
     return jsonResponse({
       ok: true,
@@ -23,6 +26,7 @@ export const onRequestGet: PagesFunction<Env> = async ({ request, env }) => {
       accessSecretFingerprint: await accessSecretFingerprint(env),
       probe,
       probes,
+      list,
     });
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);

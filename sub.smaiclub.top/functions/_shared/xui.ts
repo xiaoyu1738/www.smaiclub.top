@@ -159,6 +159,47 @@ export async function probeXuiAuth(env: Env): Promise<XuiSyncResult> {
   return getXuiCookie(env, true, 'paired');
 }
 
+export async function probeXuiInboundList(env: Env): Promise<XuiSyncResult & { inboundCount?: number }> {
+  if (!env.XUI_BASE_URL) {
+    return {
+      attempted: false,
+      ok: false,
+      message: 'XUI env is not configured',
+      config: xuiConfigDiagnostic(env),
+    };
+  }
+  const cookie = await getXuiCookie(env);
+  if (!cookie) {
+    return {
+      attempted: true,
+      ok: false,
+      message: 'XUI auth cookie missing',
+      config: xuiConfigDiagnostic(env),
+    };
+  }
+
+  const response = await fetch(`${trimSlash(env.XUI_BASE_URL)}/panel/api/inbounds/list`, {
+    headers: {
+      ...xuiAccessHeaders(env),
+      Cookie: cookie,
+    },
+  });
+  const text = await response.clone().text().catch(() => '');
+  const payload = safeJson(text) as { success?: boolean; msg?: string; obj?: unknown[] } | null;
+  const businessOk = payload?.success !== false;
+  const ok = response.ok && businessOk;
+  return {
+    attempted: true,
+    ok,
+    status: response.status,
+    contentType: response.headers.get('content-type'),
+    message: ok ? 'XUI inbound list received' : payload?.msg || `3x-ui list returned ${response.status}`,
+    body: ok ? undefined : summarizeBody(text),
+    inboundCount: Array.isArray(payload?.obj) ? payload.obj.length : undefined,
+    config: xuiConfigDiagnostic(env),
+  };
+}
+
 export function parseXuiClientStats(payload: unknown): XuiClientStat[] {
   const stats: XuiClientStat[] = [];
   const inbounds = extractInbounds(payload);
