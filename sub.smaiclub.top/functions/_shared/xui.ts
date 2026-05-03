@@ -33,6 +33,11 @@ interface XuiClientOptions {
   createOnly?: boolean;
 }
 
+interface XuiClientRecord {
+  id: string;
+  email: string;
+}
+
 export async function setXuiClientEnabled(
   env: Env,
   uuid: string,
@@ -61,6 +66,7 @@ export async function setXuiClientEnabled(
     if (enabled && options.createOnly) {
       return addXuiClient(env, cookie, uuid, options);
     }
+    const client = buildXuiClient(env, uuid, enabled, options);
     const response = await fetch(`${trimSlash(env.XUI_BASE_URL)}/panel/api/inbounds/updateClient/${uuid}`, {
       method: 'POST',
       headers: {
@@ -71,7 +77,7 @@ export async function setXuiClientEnabled(
       body: JSON.stringify({
         id: Number(env.XUI_INBOUND_ID),
         settings: JSON.stringify({
-          clients: [{ id: uuid, enable: enabled }],
+          clients: [client],
         }),
       }),
     });
@@ -113,23 +119,7 @@ async function addXuiClient(
 ): Promise<XuiSyncResult> {
   const body = new URLSearchParams();
   body.set('id', String(Number(env.XUI_INBOUND_ID)));
-  body.set('settings', JSON.stringify({
-    clients: [{
-      id: uuid,
-      security: '',
-      password: '',
-      flow: env.REALITY_FLOW || 'xtls-rprx-vision',
-      email: options.email || uuid,
-      limitIp: 0,
-      totalGB: 0,
-      expiryTime: 0,
-      enable: true,
-      tgId: 0,
-      subId: generateXuiSubId(),
-      comment: '',
-      reset: 0,
-    }],
-  }));
+  body.set('settings', JSON.stringify({ clients: [buildXuiClient(env, uuid, true, options)] }));
 
   const response = await fetch(`${trimSlash(env.XUI_BASE_URL || '')}/panel/api/inbounds/addClient`, {
     method: 'POST',
@@ -179,7 +169,7 @@ export async function probeXuiAuth(env: Env): Promise<XuiSyncResult> {
   return getXuiCookie(env, true, 'paired');
 }
 
-export async function probeXuiInboundList(env: Env): Promise<XuiSyncResult & { inboundCount?: number }> {
+export async function probeXuiInboundList(env: Env): Promise<XuiSyncResult & { inboundCount?: number; malformedClients?: XuiClientRecord[] }> {
   if (!env.XUI_BASE_URL) {
     return {
       attempted: false,
@@ -216,6 +206,7 @@ export async function probeXuiInboundList(env: Env): Promise<XuiSyncResult & { i
     message: ok ? 'XUI inbound list received' : payload?.msg || `3x-ui list returned ${response.status}`,
     body: ok ? undefined : summarizeBody(text),
     inboundCount: Array.isArray(payload?.obj) ? payload.obj.length : undefined,
+    malformedClients: findMalformedClients(payload),
     config: xuiConfigDiagnostic(env),
   };
 }
@@ -377,6 +368,40 @@ function dedupeStats(stats: XuiClientStat[]): XuiClientStat[] {
     merged.set(stat.uuid, Math.max(merged.get(stat.uuid) ?? 0, stat.used));
   }
   return Array.from(merged, ([uuid, used]) => ({ uuid, used }));
+}
+
+function buildXuiClient(env: Env, uuid: string, enabled: boolean, options: XuiClientOptions): Record<string, unknown> {
+  return {
+    id: uuid,
+    security: '',
+    password: '',
+    flow: env.REALITY_FLOW || 'xtls-rprx-vision',
+    email: options.email || uuid,
+    limitIp: 0,
+    totalGB: 0,
+    expiryTime: 0,
+    enable: enabled,
+    tgId: 0,
+    subId: generateXuiSubId(),
+    comment: '',
+    reset: 0,
+  };
+}
+
+function findMalformedClients(payload: unknown): XuiClientRecord[] {
+  const malformed: XuiClientRecord[] = [];
+  for (const inbound of extractInbounds(payload)) {
+    const settings = typeof inbound.settings === 'string' ? safeJson(inbound.settings) : inbound.settings;
+    const clients = settings && typeof settings === 'object' && Array.isArray((settings as { clients?: unknown[] }).clients)
+      ? (settings as { clients: Record<string, unknown>[] }).clients
+      : [];
+    for (const client of clients) {
+      const id = String(client.id || client.uuid || '').trim();
+      const email = String(client.email || '').trim();
+      if (id && !email) malformed.push({ id, email });
+    }
+  }
+  return malformed;
 }
 
 async function xuiClientExists(env: Env, cookie: string, uuid: string): Promise<boolean> {
