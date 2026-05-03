@@ -107,9 +107,9 @@ async function addXuiClient(
   uuid: string,
   options: XuiClientOptions,
 ): Promise<XuiSyncResult> {
-  const form = new FormData();
-  form.set('id', String(Number(env.XUI_INBOUND_ID)));
-  form.set('settings', JSON.stringify({
+  const body = new URLSearchParams();
+  body.set('id', String(Number(env.XUI_INBOUND_ID)));
+  body.set('settings', JSON.stringify({
     clients: [{
       id: uuid,
       security: '',
@@ -132,9 +132,10 @@ async function addXuiClient(
     headers: {
       ...xuiAccessHeaders(env),
       Accept: 'application/json, text/plain, */*',
+      'Content-Type': 'application/x-www-form-urlencoded',
       Cookie: cookie,
     },
-    body: form,
+    body,
   });
 
   const result = await parseXuiMutationResponse(response, 'addClient');
