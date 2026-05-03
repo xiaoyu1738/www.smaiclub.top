@@ -36,6 +36,7 @@ export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
     const expiresFrom = Math.max(now, user.sub_expired_at || 0);
     const expiredAt = expiresFrom + addDays * 86_400_000;
     const subToken = user.sub_token || generateSecretToken();
+    const hasExistingXuiUuid = Boolean(user.xui_uuid);
     const xuiUuid = user.xui_uuid || crypto.randomUUID();
     const trafficTotal = parseRequestedTrafficTotal(payload, user.traffic_total, configuredTrafficTotal(env));
     if (trafficTotal === null) return jsonResponse({ error: 'INVALID_TRAFFIC_TOTAL' }, { status: 400 });
@@ -43,6 +44,7 @@ export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
 
     const xui = await setXuiClientEnabled(env, xuiUuid, true, {
       email: username,
+      createOnly: !hasExistingXuiUuid,
     });
     if (!xui.ok) {
       console.warn('XUI_SYNC_FAILED', {

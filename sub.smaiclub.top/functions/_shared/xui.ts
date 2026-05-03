@@ -30,6 +30,7 @@ export interface XuiConfigDiagnostic {
 
 interface XuiClientOptions {
   email?: string;
+  createOnly?: boolean;
 }
 
 export async function setXuiClientEnabled(
@@ -56,6 +57,9 @@ export async function setXuiClientEnabled(
         message: 'XUI auth is not configured',
         config: xuiConfigDiagnostic(env),
       };
+    }
+    if (enabled && options.createOnly) {
+      return addXuiClient(env, cookie, uuid, options);
     }
     const response = await fetch(`${trimSlash(env.XUI_BASE_URL)}/panel/api/inbounds/updateClient/${uuid}`, {
       method: 'POST',
