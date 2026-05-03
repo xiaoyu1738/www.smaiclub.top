@@ -1,7 +1,7 @@
 import { requireAdminLogin } from '../../_shared/auth.ts';
 import { jsonResponse } from '../../_shared/http.ts';
 import type { Env } from '../../_shared/types.ts';
-import { probeXuiAuth, probeXuiAuthModes, probeXuiInboundList, xuiConfigDiagnostic } from '../../_shared/xui.ts';
+import { probeXuiAddClient, probeXuiAuth, probeXuiAuthModes, probeXuiInboundList, xuiConfigDiagnostic } from '../../_shared/xui.ts';
 
 export const onRequestGet: PagesFunction<Env> = async ({ request, env }) => {
   try {
@@ -18,6 +18,9 @@ export const onRequestGet: PagesFunction<Env> = async ({ request, env }) => {
     const list = url.searchParams.get('list') === '1'
       ? await probeXuiInboundList(env)
       : null;
+    const add = url.searchParams.get('add') === '1'
+      ? await probeXuiAddClient(env)
+      : null;
 
     return jsonResponse({
       ok: true,
@@ -27,6 +30,7 @@ export const onRequestGet: PagesFunction<Env> = async ({ request, env }) => {
       probe,
       probes,
       list,
+      add,
     });
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);

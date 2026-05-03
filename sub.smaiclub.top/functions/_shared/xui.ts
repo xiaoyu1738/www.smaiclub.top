@@ -220,6 +220,40 @@ export async function probeXuiInboundList(env: Env): Promise<XuiSyncResult & { i
   };
 }
 
+export async function probeXuiAddClient(env: Env): Promise<XuiSyncResult & { uuid?: string; cleanup?: XuiSyncResult }> {
+  if (!env.XUI_BASE_URL || !env.XUI_INBOUND_ID) {
+    return {
+      attempted: false,
+      ok: false,
+      action: 'addClientProbe',
+      message: 'XUI env is not configured',
+      config: xuiConfigDiagnostic(env),
+    };
+  }
+  const cookie = await getXuiCookie(env);
+  if (!cookie) {
+    return {
+      attempted: true,
+      ok: false,
+      action: 'addClientProbe',
+      message: 'XUI auth cookie missing',
+      config: xuiConfigDiagnostic(env),
+    };
+  }
+
+  const uuid = crypto.randomUUID();
+  const result = await addXuiClient(env, cookie, uuid, {
+    email: `smaiclub-probe-${Date.now()}`,
+  });
+  const cleanup = result.ok ? await setXuiClientEnabled(env, uuid, false) : undefined;
+  return {
+    ...result,
+    action: 'addClientProbe',
+    uuid,
+    cleanup,
+  };
+}
+
 export function parseXuiClientStats(payload: unknown): XuiClientStat[] {
   const stats: XuiClientStat[] = [];
   const inbounds = extractInbounds(payload);
