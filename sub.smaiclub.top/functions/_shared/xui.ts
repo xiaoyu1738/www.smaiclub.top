@@ -8,6 +8,7 @@ interface XuiClientStat {
 export interface XuiSyncResult {
   attempted: boolean;
   ok: boolean;
+  action?: string;
   message?: string;
   status?: number;
   body?: string;
@@ -106,36 +107,50 @@ async function addXuiClient(
   uuid: string,
   options: XuiClientOptions,
 ): Promise<XuiSyncResult> {
+  const form = new FormData();
+  form.set('id', String(Number(env.XUI_INBOUND_ID)));
+  form.set('settings', JSON.stringify({
+    clients: [{
+      id: uuid,
+      security: '',
+      password: '',
+      flow: env.REALITY_FLOW || 'xtls-rprx-vision',
+      email: options.email || uuid,
+      limitIp: 0,
+      totalGB: 0,
+      expiryTime: 0,
+      enable: true,
+      tgId: 0,
+      subId: generateXuiSubId(),
+      comment: '',
+      reset: 0,
+    }],
+  }));
+
   const response = await fetch(`${trimSlash(env.XUI_BASE_URL || '')}/panel/api/inbounds/addClient`, {
     method: 'POST',
     headers: {
       ...xuiAccessHeaders(env),
-      'Content-Type': 'application/json',
+      Accept: 'application/json, text/plain, */*',
       Cookie: cookie,
     },
-    body: JSON.stringify({
-      id: Number(env.XUI_INBOUND_ID),
-      settings: JSON.stringify({
-        clients: [{
-          id: uuid,
-          security: '',
-          password: '',
-          flow: env.REALITY_FLOW || 'xtls-rprx-vision',
-          email: options.email || uuid,
-          limitIp: 0,
-          totalGB: 0,
-          expiryTime: 0,
-          enable: true,
-          tgId: 0,
-          subId: generateXuiSubId(),
-          comment: '',
-          reset: 0,
-        }],
-      }),
-    }),
+    body: form,
   });
 
-  return parseXuiMutationResponse(response, 'addClient');
+  const result = await parseXuiMutationResponse(response, 'addClient');
+  if (result.ok) return result;
+
+  if (response.ok && await xuiClientExists(env, cookie, uuid)) {
+    return {
+      attempted: true,
+      ok: true,
+      action: 'addClient',
+      status: response.status,
+      contentType: result.contentType,
+      message: 'addClient verified by inbound list',
+    };
+  }
+  return result;
 }
 
 export async function fetchXuiClientStats(env: Env): Promise<XuiClientStat[]> {
@@ -233,12 +248,15 @@ export function parseXuiClientStats(payload: unknown): XuiClientStat[] {
 async function parseXuiMutationResponse(response: Response, action: string): Promise<XuiSyncResult> {
   const text = await response.clone().text().catch(() => '');
   const payload = safeJson(text) as { success?: boolean; msg?: string } | null;
-  const businessOk = payload?.success !== false;
+  const contentType = response.headers.get('content-type');
+  const businessOk = payload ? payload.success !== false : false;
   const ok = response.ok && businessOk;
   return {
     attempted: true,
     ok,
+    action,
     status: response.status,
+    contentType,
     message: ok ? action : payload?.msg || `3x-ui ${action} returned ${response.status}`,
     body: ok ? undefined : summarizeBody(text),
   };
@@ -320,6 +338,26 @@ function dedupeStats(stats: XuiClientStat[]): XuiClientStat[] {
     merged.set(stat.uuid, Math.max(merged.get(stat.uuid) ?? 0, stat.used));
   }
   return Array.from(merged, ([uuid, used]) => ({ uuid, used }));
+}
+
+async function xuiClientExists(env: Env, cookie: string, uuid: string): Promise<boolean> {
+  const response = await fetch(`${trimSlash(env.XUI_BASE_URL || '')}/panel/api/inbounds/list`, {
+    headers: {
+      ...xuiAccessHeaders(env),
+      Cookie: cookie,
+    },
+  });
+  if (!response.ok) return false;
+  const payload = await response.json().catch(() => null);
+  const inbounds = extractInbounds(payload);
+  for (const inbound of inbounds) {
+    const settings = typeof inbound.settings === 'string' ? safeJson(inbound.settings) : inbound.settings;
+    const clients = settings && typeof settings === 'object' && Array.isArray((settings as { clients?: unknown[] }).clients)
+      ? (settings as { clients: Record<string, unknown>[] }).clients
+      : [];
+    if (clients.some(client => String(client.id || client.uuid || '').trim() === uuid)) return true;
+  }
+  return false;
 }
 
 function safeJson(value: string): unknown {
