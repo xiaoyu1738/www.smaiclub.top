@@ -33,11 +33,6 @@ interface XuiClientOptions {
   createOnly?: boolean;
 }
 
-interface XuiClientRecord {
-  id: string;
-  email: string;
-}
-
 export async function setXuiClientEnabled(
   env: Env,
   uuid: string,
@@ -165,86 +160,6 @@ export async function fetchXuiClientStats(env: Env): Promise<XuiClientStat[]> {
   return parseXuiClientStats(payload);
 }
 
-export async function probeXuiAuth(env: Env): Promise<XuiSyncResult> {
-  return getXuiCookie(env, true, 'paired');
-}
-
-export async function probeXuiInboundList(env: Env): Promise<XuiSyncResult & { inboundCount?: number; malformedClients?: XuiClientRecord[] }> {
-  if (!env.XUI_BASE_URL) {
-    return {
-      attempted: false,
-      ok: false,
-      message: 'XUI env is not configured',
-      config: xuiConfigDiagnostic(env),
-    };
-  }
-  const cookie = await getXuiCookie(env);
-  if (!cookie) {
-    return {
-      attempted: true,
-      ok: false,
-      message: 'XUI auth cookie missing',
-      config: xuiConfigDiagnostic(env),
-    };
-  }
-
-  const response = await fetch(`${trimSlash(env.XUI_BASE_URL)}/panel/api/inbounds/list`, {
-    headers: {
-      ...xuiAccessHeaders(env),
-      Cookie: cookie,
-    },
-  });
-  const text = await response.clone().text().catch(() => '');
-  const payload = safeJson(text) as { success?: boolean; msg?: string; obj?: unknown[] } | null;
-  const businessOk = payload?.success !== false;
-  const ok = response.ok && businessOk;
-  return {
-    attempted: true,
-    ok,
-    status: response.status,
-    contentType: response.headers.get('content-type'),
-    message: ok ? 'XUI inbound list received' : payload?.msg || `3x-ui list returned ${response.status}`,
-    body: ok ? undefined : summarizeBody(text),
-    inboundCount: Array.isArray(payload?.obj) ? payload.obj.length : undefined,
-    malformedClients: findMalformedClients(payload),
-    config: xuiConfigDiagnostic(env),
-  };
-}
-
-export async function probeXuiAddClient(env: Env): Promise<XuiSyncResult & { uuid?: string; cleanup?: XuiSyncResult }> {
-  if (!env.XUI_BASE_URL || !env.XUI_INBOUND_ID) {
-    return {
-      attempted: false,
-      ok: false,
-      action: 'addClientProbe',
-      message: 'XUI env is not configured',
-      config: xuiConfigDiagnostic(env),
-    };
-  }
-  const cookie = await getXuiCookie(env);
-  if (!cookie) {
-    return {
-      attempted: true,
-      ok: false,
-      action: 'addClientProbe',
-      message: 'XUI auth cookie missing',
-      config: xuiConfigDiagnostic(env),
-    };
-  }
-
-  const uuid = crypto.randomUUID();
-  const result = await addXuiClient(env, cookie, uuid, {
-    email: `smaiclub-probe-${Date.now()}`,
-  });
-  const cleanup = result.ok ? await setXuiClientEnabled(env, uuid, false) : undefined;
-  return {
-    ...result,
-    action: 'addClientProbe',
-    uuid,
-    cleanup,
-  };
-}
-
 export function parseXuiClientStats(payload: unknown): XuiClientStat[] {
   const stats: XuiClientStat[] = [];
   const inbounds = extractInbounds(payload);
@@ -292,29 +207,12 @@ async function parseXuiMutationResponse(response: Response, action: string): Pro
   };
 }
 
-export async function probeXuiAuthModes(env: Env): Promise<Record<string, XuiSyncResult>> {
-  const paired = await getXuiCookie(env, true, 'paired');
-  if (paired.ok) return { paired };
-  const authorization = await getXuiCookie(env, true, 'authorization');
-  return { paired, authorization };
-}
-
-async function getXuiCookie(env: Env): Promise<string | null>;
-async function getXuiCookie(env: Env, detailed: true, mode?: 'paired' | 'authorization'): Promise<XuiSyncResult>;
-async function getXuiCookie(
-  env: Env,
-  detailed = false,
-  mode: 'paired' | 'authorization' = 'paired',
-): Promise<string | null | XuiSyncResult> {
+async function getXuiCookie(env: Env): Promise<string | null> {
   if (env.XUI_COOKIE) {
-    return detailed
-      ? { attempted: true, ok: true, message: 'XUI_COOKIE is configured', config: xuiConfigDiagnostic(env) }
-      : env.XUI_COOKIE;
+    return env.XUI_COOKIE;
   }
   if (!env.XUI_BASE_URL || !env.XUI_USERNAME || !env.XUI_PASSWORD) {
-    return detailed
-      ? { attempted: false, ok: false, message: 'XUI auth is not configured', config: xuiConfigDiagnostic(env) }
-      : null;
+    return null;
   }
 
   const response = await fetch(`${trimSlash(env.XUI_BASE_URL)}/login`, {
@@ -324,7 +222,7 @@ async function getXuiCookie(
       Accept: 'application/json, text/plain, */*',
       Origin: trimSlash(env.XUI_BASE_URL),
       Referer: `${trimSlash(env.XUI_BASE_URL)}/login`,
-      ...xuiAccessHeaders(env, mode),
+      ...xuiAccessHeaders(env),
     },
     body: new URLSearchParams({
       username: env.XUI_USERNAME,
@@ -332,25 +230,8 @@ async function getXuiCookie(
     }),
   });
   const cookie = response.headers.get('set-cookie');
-  if (!detailed) {
-    if (!response.ok) return null;
-    return cookie;
-  }
-
-  const text = await response.clone().text().catch(() => '');
-  const payload = safeJson(text) as { success?: boolean; msg?: string } | null;
-  return {
-    attempted: true,
-    ok: Boolean(response.ok && cookie),
-    status: response.status,
-    contentType: response.headers.get('content-type'),
-    hasSetCookie: Boolean(cookie),
-    message: cookie
-      ? 'XUI auth cookie received'
-      : payload?.msg || (payload?.success === false ? 'XUI login returned success=false' : 'XUI auth cookie missing'),
-    body: cookie ? undefined : summarizeBody(text),
-    config: xuiConfigDiagnostic(env),
-  };
+  if (!response.ok) return null;
+  return cookie;
 }
 
 function extractInbounds(payload: unknown): Record<string, unknown>[] {
@@ -386,22 +267,6 @@ function buildXuiClient(env: Env, uuid: string, enabled: boolean, options: XuiCl
     comment: '',
     reset: 0,
   };
-}
-
-function findMalformedClients(payload: unknown): XuiClientRecord[] {
-  const malformed: XuiClientRecord[] = [];
-  for (const inbound of extractInbounds(payload)) {
-    const settings = typeof inbound.settings === 'string' ? safeJson(inbound.settings) : inbound.settings;
-    const clients = settings && typeof settings === 'object' && Array.isArray((settings as { clients?: unknown[] }).clients)
-      ? (settings as { clients: Record<string, unknown>[] }).clients
-      : [];
-    for (const client of clients) {
-      const id = String(client.id || client.uuid || '').trim();
-      const email = String(client.email || '').trim();
-      if (id && !email) malformed.push({ id, email });
-    }
-  }
-  return malformed;
 }
 
 async function xuiClientExists(env: Env, cookie: string, uuid: string): Promise<boolean> {
