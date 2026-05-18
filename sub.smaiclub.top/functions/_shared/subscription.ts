@@ -253,7 +253,6 @@ function renderClash(nodes: ProxyNode[]): string {
     'rule-providers:',
     ...CLASH_RULE_PROVIDERS.flatMap(([name, relativePath, behavior]) => renderClashRuleProvider(name, behavior, relativePath)),
     'rules:',
-    '  - DOMAIN,rtx.al,DIRECT',
     '  - RULE-SET,Apple_Classical_No_Resolve,Apple',
     '  - RULE-SET,BiliBili_No_Resolve,BiliBili',
     '  - RULE-SET,Netflix_No_Resolve,Netflix',

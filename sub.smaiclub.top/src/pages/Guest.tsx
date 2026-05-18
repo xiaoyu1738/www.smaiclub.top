@@ -1,4 +1,5 @@
 import { ArrowRight, Server } from 'lucide-react';
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import Button from '../components/Button';
 import styles from '../styles/Guest.module.css';
@@ -6,6 +7,24 @@ import styles from '../styles/Guest.module.css';
 const LOGIN_URL = 'https://login.smaiclub.top/login?redirect=https%3A%2F%2Fsub.smaiclub.top%2Fdashboard';
 
 export default function Guest() {
+  const [authState, setAuthState] = useState<'checking' | 'guest' | 'authenticated'>('checking');
+
+  useEffect(() => {
+    const controller = new AbortController();
+    fetch('/api/account/me', {
+      credentials: 'include',
+      signal: controller.signal,
+    })
+      .then(response => {
+        setAuthState(response.ok ? 'authenticated' : 'guest');
+      })
+      .catch(error => {
+        if (error instanceof DOMException && error.name === 'AbortError') return;
+        setAuthState('guest');
+      });
+    return () => controller.abort();
+  }, []);
+
   return (
     <main className={styles.shell}>
       <section className={styles.hero}>
@@ -19,9 +38,11 @@ export default function Guest() {
           <p>登录后查看你的订阅信息，并复制客户端订阅链接。</p>
         </div>
         <div className={styles.actions}>
-          <a href={LOGIN_URL}>
-            <Button type="button" icon={<ArrowRight size={18} />}>登录 SmaiClub</Button>
-          </a>
+          {authState === 'guest' && (
+            <a href={LOGIN_URL}>
+              <Button type="button" icon={<ArrowRight size={18} />}>登录 SmaiClub</Button>
+            </a>
+          )}
           <Link to="/dashboard">
             <Button type="button" tone="ghost">进入控制台</Button>
           </Link>
