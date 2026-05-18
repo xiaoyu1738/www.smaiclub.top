@@ -71,8 +71,10 @@ test('renderSubscription emits clash yaml and raw base64', () => {
   const clash = renderSubscription(nodes, { kind: 'clash', contentType: 'text/yaml' });
   assert.match(clash, /reality-opts/);
   assert.match(clash, /rule-providers:/);
-  assert.match(clash, /RULE-SET,cncidr,DIRECT/);
-  assert.match(clash, /MATCH,SmaiClub/);
+  assert.match(clash, /name: SMAICLUB/);
+  assert.match(clash, /name: SMAICLUB Auto/);
+  assert.match(clash, /RULE-SET,OpenAI_No_Resolve,OpenAI/);
+  assert.match(clash, /MATCH,Final/);
   assert.match(atob(renderSubscription(nodes, { kind: 'raw', contentType: 'text/plain' })), /vless:\/\/uuid/);
 });
 
@@ -91,8 +93,8 @@ test('renderSubscription emits sing-box route rules', () => {
   };
 
   assert.equal(config.outbounds[0].type, 'selector');
-  assert.equal(config.outbounds[0].tag, 'SmaiClub');
-  assert.equal(config.route.final, 'SmaiClub');
+  assert.equal(config.outbounds[0].tag, 'SMAICLUB');
+  assert.equal(config.route.final, 'SMAICLUB');
   assert.ok(config.route.rule_set.some(ruleSet => ruleSet.tag === 'geosite-cn'));
 });
 

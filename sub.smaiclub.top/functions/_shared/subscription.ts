@@ -1,8 +1,65 @@
 import { isUnlimitedTime, isUnlimitedTraffic } from './db.ts';
 import type { ClientFormat, Env, ProxyNode, UserSubscriptionRow } from './types.ts';
 
-const CLASH_RULE_PROVIDER_BASE = 'https://raw.githubusercontent.com/Loyalsoldier/clash-rules/release';
+const CLASH_CONNECTIVITY_TEST_URL = 'http://connectivitycheck.gstatic.com/generate_204';
+const CLASH_GROUP = 'SMAICLUB';
+const CLASH_AUTO_GROUP = 'SMAICLUB Auto';
+const CLASH_PROVIDER_BASE = 'https://fastly.jsdelivr.net/gh/blackmatrix7/ios_rule_script@master/rule/Clash';
 const SING_BOX_RULE_SET_BASE = 'https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/sing/geo';
+
+const CLASH_RULE_PROVIDERS = [
+  ['Apple_Classical_No_Resolve', 'Apple/Apple_Classical_No_Resolve.yaml', 'classical'],
+  ['BiliBili_No_Resolve', 'BiliBili/BiliBili_No_Resolve.yaml', 'classical'],
+  ['Netflix_No_Resolve', 'Netflix/Netflix_No_Resolve.yaml', 'classical'],
+  ['Disney_No_Resolve', 'Disney/Disney_No_Resolve.yaml', 'classical'],
+  ['YouTube_No_Resolve', 'YouTube/YouTube_No_Resolve.yaml', 'classical'],
+  ['TikTok_No_Resolve', 'TikTok/TikTok_No_Resolve.yaml', 'classical'],
+  ['GlobalMedia_Classical_No_Resolve', 'GlobalMedia/GlobalMedia_Classical_No_Resolve.yaml', 'classical'],
+  ['OpenAI_No_Resolve', 'OpenAI/OpenAI_No_Resolve.yaml', 'classical'],
+  ['Google_No_Resolve', 'Google/Google_No_Resolve.yaml', 'classical'],
+  ['Microsoft_No_Resolve', 'Microsoft/Microsoft_No_Resolve.yaml', 'classical'],
+  ['PayPal_No_Resolve', 'PayPal/PayPal_No_Resolve.yaml', 'classical'],
+  ['Telegram_No_Resolve', 'Telegram/Telegram_No_Resolve.yaml', 'classical'],
+  ['Steam_No_Resolve', 'Steam/Steam_No_Resolve.yaml', 'classical'],
+  ['Lan_No_Resolve', 'Lan/Lan_No_Resolve.yaml', 'classical'],
+  ['ChinaMax_Classical_No_IPv6_No_Resolve', 'ChinaMax/ChinaMax_Classical_No_IPv6_No_Resolve.yaml', 'classical'],
+] as const;
+
+interface ClashPolicyGroup {
+  name: string;
+  direct?: boolean;
+  directFirst?: boolean;
+  preferredRegions?: readonly string[];
+}
+
+const CLASH_POLICY_GROUPS: readonly ClashPolicyGroup[] = [
+  { name: 'Apple', direct: true },
+  { name: 'BiliBili', direct: true, preferredRegions: ['Hong Kong', 'Taiwan'] },
+  { name: 'Netflix' },
+  { name: 'Disney' },
+  { name: 'YouTube' },
+  { name: 'TikTok' },
+  { name: 'GlobalMedia' },
+  { name: 'OpenAI' },
+  { name: 'Google' },
+  { name: 'Microsoft', direct: true },
+  { name: 'PayPal', direct: true },
+  { name: 'Telegram' },
+  { name: 'Steam', direct: true },
+  { name: 'Lan', directFirst: true },
+  { name: 'ChinaMax', directFirst: true },
+] as const;
+
+const CLASH_REGION_GROUPS = [
+  { name: 'Hong Kong', label: 'Hong Kong', patterns: [/香港/i, /\bHK\b/i, /\bHKG\b/i, /Hong\s*Kong/i] },
+  { name: 'Singapore', label: 'Singapore', patterns: [/新加坡/i, /\bSG\b/i, /\bSGP\b/i, /Singapore/i] },
+  { name: 'Japan', label: 'Japan', patterns: [/日本/i, /\bJP\b/i, /\bJPN\b/i, /Japan/i] },
+  { name: 'United States', label: 'United States', patterns: [/美国/i, /\bUS\b/i, /\bUSA\b/i, /United\s*States/i] },
+  { name: 'Taiwan', label: 'Taiwan', patterns: [/台湾/i, /\bTW\b/i, /\bTWN\b/i, /Taiwan/i] },
+  { name: 'Korea', label: 'Korea', patterns: [/韩国/i, /\bKR\b/i, /\bKOR\b/i, /Korea/i] },
+  { name: 'United Kingdom', label: 'United Kingdom', patterns: [/英国/i, /\bUK\b/i, /\bGB\b/i, /\bGBR\b/i, /United\s*Kingdom/i] },
+  { name: 'Thailand', label: 'Thailand', patterns: [/泰国/i, /\bTH\b/i, /\bTHA\b/i, /Thailand/i] },
+] as const;
 
 /** Detect subscription output format from client User-Agent. */
 export function detectClientFormat(userAgent: string | null): ClientFormat {
@@ -176,54 +233,152 @@ export function renderSubscription(nodes: ProxyNode[], format: ClientFormat): st
 }
 
 function renderClash(nodes: ProxyNode[]): string {
-  const proxyNames = nodes.map(node => node.name);
+  const proxyNodes = nodes.filter(node => !isDisplayOnlyNodeName(node.name));
+  const proxyNames = proxyNodes.map(node => node.name);
+  const regionGroups = buildRegionGroups(proxyNames);
+  const homeBroadband = proxyNames.filter(name => /家宽|home\s*broadband|broadband/i.test(name));
+  const selectableGroups = [...regionGroups.map(group => group.name), ...(homeBroadband.length ? ['Home Broadband'] : [])];
   return [
     'mixed-port: 7890',
     'allow-lan: false',
     'mode: rule',
     'log-level: info',
     'proxies:',
-    ...nodes.map(node => renderClashProxy(node)),
+    ...proxyNodes.map(node => renderClashProxy(node)),
     'proxy-groups:',
-    '  - name: SmaiClub',
-    '    type: select',
-    '    proxies:',
-    ...proxyNames.map(name => `      - ${yamlString(name)}`),
-    '      - DIRECT',
-    '      - REJECT',
+    ...renderClashPrimaryGroups(proxyNames, selectableGroups),
+    ...CLASH_POLICY_GROUPS.flatMap(group => renderClashPolicyGroup(group, selectableGroups, regionGroups)),
+    ...regionGroups.flatMap(group => renderUrlTestGroup(group.name, group.proxies)),
+    ...(homeBroadband.length ? renderUrlTestGroup('Home Broadband', homeBroadband) : []),
     'rule-providers:',
-    ...renderClashRuleProvider('reject', 'classical', 'reject.txt'),
-    ...renderClashRuleProvider('private', 'classical', 'private.txt'),
-    ...renderClashRuleProvider('direct', 'classical', 'direct.txt'),
-    ...renderClashRuleProvider('proxy', 'classical', 'proxy.txt'),
-    ...renderClashRuleProvider('gfw', 'classical', 'gfw.txt'),
-    ...renderClashRuleProvider('tld-not-cn', 'classical', 'tld-not-cn.txt'),
-    ...renderClashRuleProvider('cncidr', 'classical', 'cncidr.txt'),
-    ...renderClashRuleProvider('lancidr', 'classical', 'lancidr.txt'),
+    ...CLASH_RULE_PROVIDERS.flatMap(([name, relativePath, behavior]) => renderClashRuleProvider(name, behavior, relativePath)),
     'rules:',
-    '  - RULE-SET,reject,REJECT',
-    '  - RULE-SET,private,DIRECT',
-    '  - RULE-SET,lancidr,DIRECT,no-resolve',
-    '  - RULE-SET,direct,DIRECT',
-    '  - RULE-SET,cncidr,DIRECT,no-resolve',
-    '  - GEOIP,CN,DIRECT',
-    '  - RULE-SET,proxy,SmaiClub',
-    '  - RULE-SET,gfw,SmaiClub',
-    '  - RULE-SET,tld-not-cn,SmaiClub',
-    '  - MATCH,SmaiClub',
+    '  - DOMAIN,rtx.al,DIRECT',
+    '  - RULE-SET,Apple_Classical_No_Resolve,Apple',
+    '  - RULE-SET,BiliBili_No_Resolve,BiliBili',
+    '  - RULE-SET,Netflix_No_Resolve,Netflix',
+    '  - RULE-SET,Disney_No_Resolve,Disney',
+    '  - RULE-SET,YouTube_No_Resolve,YouTube',
+    '  - RULE-SET,TikTok_No_Resolve,TikTok',
+    '  - RULE-SET,GlobalMedia_Classical_No_Resolve,GlobalMedia',
+    '  - RULE-SET,OpenAI_No_Resolve,OpenAI',
+    '  - RULE-SET,Google_No_Resolve,Google',
+    '  - RULE-SET,Microsoft_No_Resolve,Microsoft',
+    '  - RULE-SET,PayPal_No_Resolve,PayPal',
+    '  - RULE-SET,Telegram_No_Resolve,Telegram',
+    '  - RULE-SET,Steam_No_Resolve,Steam',
+    '  - RULE-SET,Lan_No_Resolve,Lan',
+    '  - RULE-SET,ChinaMax_Classical_No_IPv6_No_Resolve,ChinaMax',
+    '  - MATCH,Final',
     '',
   ].join('\n');
 }
 
-function renderClashRuleProvider(name: string, behavior: string, fileName: string): string[] {
+function renderClashPrimaryGroups(proxyNames: string[], selectableGroups: string[]): string[] {
+  const autoCandidates = proxyNames.length ? proxyNames : ['DIRECT'];
+  return [
+    `  - name: ${CLASH_GROUP}`,
+    '    type: select',
+    '    proxies:',
+    `      - ${CLASH_AUTO_GROUP}`,
+    '      - DIRECT',
+    ...selectableGroups.map(name => `      - ${yamlString(name)}`),
+    ...proxyNames.map(name => `      - ${yamlString(name)}`),
+    `  - name: ${CLASH_AUTO_GROUP}`,
+    '    type: fallback',
+    `    url: ${yamlString(CLASH_CONNECTIVITY_TEST_URL)}`,
+    '    interval: 300',
+    '    proxies:',
+    ...autoCandidates.map(name => `      - ${yamlString(name)}`),
+    `  - name: Final`,
+    '    type: select',
+    '    proxies:',
+    `      - ${CLASH_GROUP}`,
+    `      - ${CLASH_AUTO_GROUP}`,
+    '      - DIRECT',
+  ];
+}
+
+function renderClashPolicyGroup(
+  group: ClashPolicyGroup,
+  selectableGroups: string[],
+  regionGroups: Array<{ name: string; label: string; proxies: string[] }>,
+): string[] {
+  const preferredRegions = group.preferredRegions
+    ? regionGroups.filter(region => group.preferredRegions?.includes(region.label)).map(region => region.name)
+    : [];
+  const regionChoices = preferredRegions.length ? preferredRegions : selectableGroups;
+  const firstChoices = group.directFirst
+    ? ['DIRECT', CLASH_GROUP, CLASH_AUTO_GROUP]
+    : [CLASH_GROUP, ...(group.direct ? ['DIRECT'] : []), CLASH_AUTO_GROUP];
+
+  return [
+    `  - name: ${group.name}`,
+    '    type: select',
+    '    proxies:',
+    ...dedupeStrings([...firstChoices, ...regionChoices]).map(name => `      - ${yamlString(name)}`),
+  ];
+}
+
+function renderUrlTestGroup(name: string, proxies: string[]): string[] {
+  return [
+    `  - name: ${yamlString(name)}`,
+    '    type: url-test',
+    `    url: ${yamlString(CLASH_CONNECTIVITY_TEST_URL)}`,
+    '    interval: 300',
+    '    proxies:',
+    ...proxies.map(proxy => `      - ${yamlString(proxy)}`),
+  ];
+}
+
+function renderClashRuleProvider(name: string, behavior: string, relativePath: string): string[] {
   return [
     `  ${name}:`,
     '    type: http',
     `    behavior: ${behavior}`,
-    `    url: ${yamlString(`${CLASH_RULE_PROVIDER_BASE}/${fileName}`)}`,
-    `    path: ${yamlString(`./ruleset/${fileName}`)}`,
+    `    url: ${yamlString(`${CLASH_PROVIDER_BASE}/${relativePath}`)}`,
+    `    path: ${yamlString(`./providers/${name}.yaml`)}`,
     '    interval: 86400',
   ];
+}
+
+function buildRegionGroups(proxyNames: string[]): Array<{ name: string; label: string; proxies: string[] }> {
+  return CLASH_REGION_GROUPS
+    .map(region => ({
+      name: `${regionFlag(region.label)} ${region.name}`,
+      label: region.label,
+      proxies: proxyNames.filter(proxyName => region.patterns.some(pattern => pattern.test(proxyName))),
+    }))
+    .filter(region => region.proxies.length > 0);
+}
+
+function regionFlag(region: string): string {
+  const flags: Record<string, string> = {
+    'Hong Kong': '🇭🇰',
+    Singapore: '🇸🇬',
+    Japan: '🇯🇵',
+    'United States': '🇺🇸',
+    Taiwan: '🇹🇼',
+    Korea: '🇰🇷',
+    'United Kingdom': '🇬🇧',
+    Thailand: '🇹🇭',
+  };
+  return flags[region] || '🌐';
+}
+
+function isDisplayOnlyNodeName(name: string): boolean {
+  return /剩余流量|距离下次|套餐到期|到期时间|流量重置|traffic|expire|reset/i.test(name);
+}
+
+function dedupeStrings(values: string[]): string[] {
+  const seen = new Set<string>();
+  const result: string[] = [];
+  for (const value of values) {
+    if (seen.has(value)) continue;
+    seen.add(value);
+    result.push(value);
+  }
+  return result;
 }
 
 function renderClashProxy(node: ProxyNode): string {
@@ -256,18 +411,19 @@ function renderClashProxy(node: ProxyNode): string {
 }
 
 function renderSingBox(nodes: ProxyNode[]): string {
-  const proxyNames = nodes.map(node => node.name);
+  const proxyNodes = nodes.filter(node => !isDisplayOnlyNodeName(node.name));
+  const proxyNames = proxyNodes.map(node => node.name);
   return JSON.stringify({
     outbounds: [
       {
         type: 'selector',
-        tag: 'SmaiClub',
+        tag: CLASH_GROUP,
         outbounds: [...proxyNames, 'DIRECT'],
         default: proxyNames[0] || 'DIRECT',
       },
       { type: 'direct', tag: 'DIRECT' },
       { type: 'block', tag: 'REJECT' },
-      ...nodes.map(node => {
+      ...proxyNodes.map(node => {
       const parsed = parseVlessUrl(node.uri);
       const outbound: Record<string, unknown> = {
         type: 'vless',
@@ -313,9 +469,9 @@ function renderSingBox(nodes: ProxyNode[]): string {
       rules: [
         { rule_set: ['geosite-category-ads-all'], outbound: 'REJECT' },
         { rule_set: ['geoip-private', 'geosite-cn', 'geoip-cn'], outbound: 'DIRECT' },
-        { rule_set: ['geosite-geolocation-!cn'], outbound: 'SmaiClub' },
+        { rule_set: ['geosite-geolocation-!cn'], outbound: CLASH_GROUP },
       ],
-      final: 'SmaiClub',
+      final: CLASH_GROUP,
     },
   }, null, 2);
 }
@@ -326,7 +482,7 @@ function renderSingBoxRuleSet(tag: string, path: string): Record<string, string>
     tag,
     format: 'binary',
     url: `${SING_BOX_RULE_SET_BASE}/${path}`,
-    download_detour: 'SmaiClub',
+    download_detour: CLASH_GROUP,
   };
 }
 
