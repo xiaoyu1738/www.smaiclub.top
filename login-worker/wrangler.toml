@@ -2,6 +2,11 @@ name = "login-smaiclub-kv"
 main = "src/index.js"
 compatibility_date = "2025-12-14"
 
+[assets]
+directory = "./dist"
+binding = "ASSETS"
+not_found_handling = "single-page-application"
+
 # 路由配置
 routes = [
 	{ pattern = "login.smaiclub.top", custom_domain = true }

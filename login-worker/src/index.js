@@ -1,5 +1,3 @@
-import { htmlTemplate } from './htmlTemplate.js';
-
 // 密码强度校验正则：至少8位，包含字母和数字，允许特殊字符
 const PASSWORD_REGEX = /^(?=.*[A-Za-z])(?=.*\d).{8,}$/;
 const USERNAME_REGEX = /^[A-Za-z0-9_]{3,32}$/;
@@ -69,7 +67,7 @@ async function handleRequest(request, env, ctx) {
         // 2. 页面路由
         if (request.method === "GET") {
             if (url.pathname === "/" || url.pathname === "/login" || url.pathname === "/register") {
-                return new Response(htmlTemplate(), { headers: { "Content-Type": "text/html" } });
+                return env.ASSETS.fetch(request);
             }
             // 增加 favicon.ico 路由支持
             if (url.pathname === "/favicon.ico") {
@@ -137,6 +135,8 @@ async function handleRequest(request, env, ctx) {
 
                 return jsonResp({ users: results, total: countResult.total }, 200, responseHeaders);
             }
+
+            return env.ASSETS.fetch(request);
         }
 
         // 3. API 路由 (POST)
