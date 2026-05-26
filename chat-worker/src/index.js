@@ -697,6 +697,7 @@ function isAllowedHostname(hostname) {
     const normalized = hostname.toLowerCase();
     return normalized === "smaiclub.top"
         || normalized.endsWith(".smaiclub.top")
+        || normalized === "tauri.localhost"
         || normalized === "chat-smaiclub-top.pages.dev"
         || normalized.endsWith(".chat-smaiclub-top.pages.dev")
         || normalized === "localhost"

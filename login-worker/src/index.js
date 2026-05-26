@@ -1175,7 +1175,9 @@ function isVipRole(role) {
 function isAllowedHostname(hostname) {
     if (!hostname || typeof hostname !== "string") return false;
     const normalized = hostname.toLowerCase();
-    return normalized === "smaiclub.top" || normalized.endsWith(".smaiclub.top");
+    return normalized === "smaiclub.top"
+        || normalized.endsWith(".smaiclub.top")
+        || normalized === "tauri.localhost";
 }
 
 function isAllowedOrigin(origin) {
