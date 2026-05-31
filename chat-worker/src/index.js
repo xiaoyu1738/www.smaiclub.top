@@ -30,6 +30,39 @@ export default {
             return new Response(null, { headers: corsHeaders });
         }
 
+        // --- Proxy to Login Worker (POST /api/login) ---
+        // Allows app clients to authenticate through the chat API origin that is
+        // already trusted by this worker, while preserving login-worker cookies.
+        if (request.method === "POST" && url.pathname === "/api/login") {
+            try {
+                const response = await fetch('https://login.smaiclub.top/api/login', {
+                    method: "POST",
+                    headers: {
+                        'Content-Type': request.headers.get('Content-Type') || 'application/json',
+                        'User-Agent': request.headers.get('User-Agent') || 'SMAI-Chat-Worker'
+                    },
+                    body: await request.text(),
+                });
+
+                const headers = new Headers({
+                    ...corsHeaders,
+                    "Content-Type": response.headers.get("Content-Type") || "application/json"
+                });
+                const setCookie = response.headers.get("Set-Cookie");
+                if (setCookie) headers.set("Set-Cookie", setCookie);
+
+                return new Response(await response.text(), {
+                    status: response.status,
+                    headers
+                });
+            } catch (e) {
+                return new Response(JSON.stringify({ error: "LOGIN_PROXY_FAILED", message: e.message }), {
+                    status: 502,
+                    headers: { ...corsHeaders, "Content-Type": "application/json" }
+                });
+            }
+        }
+
         // --- Proxy to Login Worker (GET /api/me) ---
         // Avoids CORS issues by proxying the request server-side
         if (request.method === "GET" && url.pathname === "/api/me") {
