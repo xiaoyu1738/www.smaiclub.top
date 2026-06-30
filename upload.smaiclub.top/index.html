@@ -138,6 +138,12 @@
       display: flex;
       justify-content: flex-end;
       align-items: center;
+      opacity: 0;
+      transition: opacity 0.18s ease;
+    }
+
+    .auth-container.is-ready {
+      opacity: 1;
     }
 
     .auth-container .smai-auth-wrapper {
@@ -145,6 +151,10 @@
       justify-content: flex-end;
       width: 100%;
       position: relative;
+    }
+
+    .auth-container .smai-auth-wrapper + .smai-auth-wrapper {
+      display: none !important;
     }
 
     .auth-container .smai-auth-btn {
@@ -837,6 +847,44 @@
       display: block;
     }
 
+    .note-floating-notice {
+      position: fixed;
+      left: 50%;
+      bottom: 22px;
+      transform: translateX(-50%);
+      width: min(560px, calc(100% - 28px));
+      display: none;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 14px;
+      padding: 15px 16px;
+      border: 1px solid rgba(96, 69, 35, 0.16);
+      border-radius: 18px;
+      background: rgba(255, 250, 244, 0.98);
+      box-shadow: 0 18px 44px rgba(92, 66, 31, 0.16);
+      color: var(--muted);
+      font-weight: 800;
+      line-height: 1.55;
+      z-index: 40;
+    }
+
+    .note-floating-notice.is-visible {
+      display: flex;
+    }
+
+    .note-floating-notice strong {
+      display: block;
+      color: var(--ink);
+      margin-bottom: 4px;
+    }
+
+    .note-floating-notice button {
+      flex: 0 0 auto;
+      min-height: 34px;
+      padding: 7px 12px;
+      font-size: 0.84rem;
+    }
+
     @media (max-width: 980px) {
       .navbar {
         top: 12px;
@@ -937,11 +985,13 @@
     const app = document.getElementById('app');
     const contextMenu = document.getElementById('context-menu');
     const dashboardLink = document.getElementById('dashboard-link');
+    const authContainer = document.getElementById('auth-container');
     const navbar = document.querySelector('.navbar');
     let session = null;
     let selectedContextFile = null;
     let currentFiles = [];
     let authBooted = false;
+    const NOTE_NOTICE_KEY = 'smai-upload-note-notice-dismissed';
 
     function html(value) {
       return String(value ?? '').replace(/[&<>"']/g, (char) => ({
@@ -962,6 +1012,34 @@
 
     function routeParts() {
       return location.pathname.split('/').filter(Boolean).map(decodeURIComponent);
+    }
+
+    function matchesSpace(space, identifier) {
+      return !!space && [space.id, space.shortCode].includes(identifier);
+    }
+
+    function matchesCurrentSpace(identifier) {
+      return matchesSpace(session?.space, identifier);
+    }
+
+    function isCurrentSpace(space) {
+      return !!space && !!session?.space && (space.id === session.space.id || space.shortCode === session.space.shortCode);
+    }
+
+    function isNoteNoticeDismissed() {
+      try {
+        return window.localStorage.getItem(NOTE_NOTICE_KEY) === '1';
+      } catch (_error) {
+        return false;
+      }
+    }
+
+    function dismissNoteNoticeLocally() {
+      try {
+        window.localStorage.setItem(NOTE_NOTICE_KEY, '1');
+      } catch (_error) {
+        // Ignore storage failures; the notice can still be hidden for this page.
+      }
     }
 
     async function api(path, options = {}) {
@@ -995,17 +1073,25 @@
       wrappers.slice(1).forEach((node) => node.remove());
     }
 
+    function markAuthReady() {
+      dedupeAuth();
+      if (authContainer.querySelector('.smai-auth-wrapper')) {
+        authContainer.classList.add('is-ready');
+      }
+    }
+
     function bootAuth() {
       if (authBooted) {
-        dedupeAuth();
+        markAuthReady();
         return;
       }
       authBooted = true;
-      if (window.CommonAuth && typeof window.CommonAuth.init === 'function') {
-        window.CommonAuth.init('auth-container');
-      }
-      window.setTimeout(dedupeAuth, 120);
-      window.setTimeout(dedupeAuth, 700);
+
+      const observer = new MutationObserver(markAuthReady);
+      observer.observe(authContainer, { childList: true });
+      window.setTimeout(markAuthReady, 80);
+      window.setTimeout(markAuthReady, 500);
+      window.setTimeout(markAuthReady, 1500);
     }
 
     async function loadSession() {
@@ -1206,7 +1292,7 @@
           session.space = payload.space;
           dashboardLink.href = payload.space.dashboardPath;
           history.pushState(null, '', payload.space.dashboardPath);
-          await renderDashboard();
+          await renderDashboard(payload.space.shortCode);
         } catch (error) {
           setMessage(error.message || '上传失败。', 'error');
           uploadButton.disabled = false;
@@ -1214,9 +1300,13 @@
       });
     }
 
-    async function renderDashboard() {
+    async function renderDashboard(requestedSpace) {
       setNoteMode(false);
       const data = await api('/api/v1/files');
+      if (requestedSpace && !matchesSpace(data.space, requestedSpace)) {
+        renderGate('404', '页面不存在。');
+        return;
+      }
       session.space = data.space;
       currentFiles = data.files || [];
       dashboardLink.href = data.space.dashboardPath;
@@ -1291,12 +1381,7 @@
               <div style="color: var(--soft); font-weight: 800; font-size: .86rem;">正在打开新的页面</div>
             </div>
           </div>
-          <div class="drawer-body">
-            <div class="notice ${space.noteCleanupNoticeDismissed ? '' : 'is-visible'}" id="cleanup-notice">
-              在线 txt 内容会定期清理。
-              <button class="secondary" id="dismiss-notice" style="min-height: 34px; padding: 7px 12px; margin-left: 8px;">不再显示</button>
-            </div>
-          </div>
+          <div class="drawer-body"></div>
         </section>
       `;
     }
@@ -1311,16 +1396,6 @@
       const createNote = () => createOnlineNote(space.shortCode);
       document.getElementById('dashboard-new-note').addEventListener('click', createNote);
       document.getElementById('new-note-side').addEventListener('click', createNote);
-
-      const notice = document.getElementById('cleanup-notice');
-      const dismiss = document.getElementById('dismiss-notice');
-      if (dismiss) {
-        dismiss.addEventListener('click', async () => {
-          await api('/api/v1/notes/notice-dismiss', { method: 'POST', body: '{}' });
-          notice.classList.remove('is-visible');
-          document.getElementById('txt-drawer').classList.remove('is-open');
-        });
-      }
 
       const drawer = document.getElementById('txt-drawer');
       const handle = document.getElementById('drawer-handle');
@@ -1389,18 +1464,23 @@
     async function renderNote(spaceCode, noteCode) {
       const payload = await api(`/api/v1/notes/${encodeURIComponent(spaceCode)}/${encodeURIComponent(noteCode)}`);
       const note = payload.note;
+      const canEdit = note.editable !== false;
+      const showNotice = !isNoteNoticeDismissed() && (canEdit ? !note.space.noteCleanupNoticeDismissed : true);
+      const noticeCopy = canEdit ? '设置密码后，可以把链接发给别人访问。' : '输入密码后可以查看这个页面。';
+      const returnHref = canEdit ? note.space.dashboardPath : '/';
+      const returnText = canEdit ? '返回文件' : '返回';
       setNoteMode(true);
       app.innerHTML = `
         <main class="note-layout">
           <section class="note-panel">
             <div class="note-toolbar">
-              <button class="secondary" id="password-toggle" type="button">设置密码</button>
-              <a class="button-link" href="${html(note.space.dashboardPath)}">返回文件</a>
+              ${canEdit ? '<button class="secondary" id="password-toggle" type="button">设置密码</button>' : ''}
+              <a class="button-link" href="${html(returnHref)}">${html(returnText)}</a>
             </div>
-            <div class="password-popover" id="password-popover">
+            ${canEdit ? `<div class="password-popover" id="password-popover">
               <label for="note-password">密码</label>
-              <input id="note-password" type="password" placeholder="${note.hasPassword ? '输入当前密码' : '输入或留空'}" autocomplete="new-password">
-            </div>
+              <input id="note-password" type="password" placeholder="输入或留空" autocomplete="new-password">
+            </div>` : '<input id="note-password" type="hidden" value="">'}
             <div id="note-lock" style="${payload.locked ? '' : 'display:none;'}">
               <p>此页面需要密码。</p>
               <div class="field-grid" style="margin-top: 18px;">
@@ -1415,36 +1495,62 @@
               <div class="message" id="note-lock-message"></div>
             </div>
             <form id="note-form" style="${payload.locked ? 'display:none;' : ''}">
-              <textarea id="note-content" placeholder="写点什么">${html(note.content || '')}</textarea>
-              <div class="actions" style="justify-content:flex-end; margin-top: 12px;">
+              <textarea id="note-content" placeholder="写点什么" ${canEdit ? '' : 'readonly'}>${html(note.content || '')}</textarea>
+              <div class="actions" style="${canEdit ? 'justify-content:flex-end; margin-top: 12px;' : 'display:none;'}">
                 <button class="primary" type="submit">保存</button>
               </div>
               <div class="message" id="note-message"></div>
             </form>
           </section>
         </main>
+        <div class="note-floating-notice ${showNotice ? 'is-visible' : ''}" id="note-floating-notice">
+          <div>
+            <strong>在线 txt 内容会定期清理。</strong>
+            <span>${html(noticeCopy)}</span>
+          </div>
+          <button class="secondary" id="dismiss-note-notice" type="button">知道了</button>
+        </div>
       `;
-      bindNote(spaceCode, noteCode);
+      bindNote(spaceCode, noteCode, note);
     }
 
-    function bindNote(spaceCode, noteCode) {
+    function bindNote(spaceCode, noteCode, note) {
       const lock = document.getElementById('note-lock');
       const form = document.getElementById('note-form');
       const lockMessage = document.getElementById('note-lock-message');
       const message = document.getElementById('note-message');
       const passwordToggle = document.getElementById('password-toggle');
       const passwordPopover = document.getElementById('password-popover');
+      const noteNotice = document.getElementById('note-floating-notice');
+      const dismissNotice = document.getElementById('dismiss-note-notice');
+      const canEdit = note.editable !== false;
       const setMsg = (el, text, tone) => {
         el.textContent = text || '';
         el.className = text ? `message ${tone} is-visible` : 'message';
       };
 
-      passwordToggle.addEventListener('click', () => {
-        passwordPopover.classList.toggle('is-visible');
-        if (passwordPopover.classList.contains('is-visible')) {
-          document.getElementById('note-password').focus();
-        }
-      });
+      if (dismissNotice) {
+        dismissNotice.addEventListener('click', async () => {
+          noteNotice.classList.remove('is-visible');
+          dismissNoteNoticeLocally();
+          if (session?.canUpload && isCurrentSpace(note.space)) {
+            try {
+              await api('/api/v1/notes/notice-dismiss', { method: 'POST', body: '{}' });
+            } catch (_error) {
+              // Local dismissal is enough for the current page.
+            }
+          }
+        });
+      }
+
+      if (passwordToggle && passwordPopover) {
+        passwordToggle.addEventListener('click', () => {
+          passwordPopover.classList.toggle('is-visible');
+          if (passwordPopover.classList.contains('is-visible')) {
+            document.getElementById('note-password').focus();
+          }
+        });
+      }
 
       const unlockButton = document.getElementById('unlock-note');
       if (unlockButton) {
@@ -1457,6 +1563,7 @@
               body: JSON.stringify({ action: 'unlock', password })
             });
             document.getElementById('note-content').value = payload.note.content || '';
+            document.getElementById('note-content').readOnly = payload.note.editable === false;
             lock.style.display = 'none';
             form.style.display = '';
           } catch (error) {
@@ -1467,6 +1574,10 @@
 
       form.addEventListener('submit', async (event) => {
         event.preventDefault();
+        if (!canEdit) {
+          setMsg(message, '不可修改此页面。', 'error');
+          return;
+        }
         try {
           await api(`/api/v1/notes/${spaceCode}/${noteCode}`, {
             method: 'POST',
@@ -1570,6 +1681,18 @@
       }, { passive: true });
     }
 
+    async function renderNoteRoute(spaceCode, noteCode) {
+      try {
+        await renderNote(spaceCode, noteCode);
+      } catch (error) {
+        if (error.status === 404 || error.status === 410) {
+          renderGate('404', '页面不存在。');
+          return;
+        }
+        renderGate('连接异常', '请稍后再试。');
+      }
+    }
+
     async function init() {
       bootAuth();
       const parts = routeParts();
@@ -1577,6 +1700,8 @@
         renderGate('404', '页面不存在。');
         return;
       }
+      const isDashboardRoute = parts.length === 2 && parts[1] === 'dashboard';
+      const isNoteRoute = parts.length === 2 && parts[1] !== 'dashboard';
 
       try {
         await loadSession();
@@ -1585,9 +1710,19 @@
         return;
       }
 
+      if (isNoteRoute) {
+        await renderNoteRoute(parts[0], parts[1]);
+        return;
+      }
+
       if (!session.loggedIn) {
         const loginUrl = `https://login.smaiclub.top?redirect=${encodeURIComponent(location.href)}`;
         renderGate('需要登录', '登录后即可继续。', `<div class="actions" style="justify-content:center;"><a class="button-link" href="${loginUrl}">去登录</a></div>`);
+        return;
+      }
+
+      if (isDashboardRoute && !matchesCurrentSpace(parts[0])) {
+        renderGate('404', '页面不存在。');
         return;
       }
 
@@ -1599,7 +1734,7 @@
       if (!parts.length) {
         if (session.fileCount > 0 && session.space) {
           history.replaceState(null, '', session.space.dashboardPath);
-          await renderDashboard();
+          await renderDashboard(session.space.shortCode);
           return;
         }
         renderUploadHome();
@@ -1607,7 +1742,7 @@
       }
 
       if (parts.length === 1) {
-        if (!session.space || ![session.space.id, session.space.shortCode].includes(parts[0])) {
+        if (!matchesCurrentSpace(parts[0])) {
           renderGate('404', '页面不存在。');
           return;
         }
@@ -1616,15 +1751,15 @@
       }
 
       if (parts[1] === 'dashboard') {
-        if (!session.space || ![session.space.id, session.space.shortCode].includes(parts[0])) {
+        if (!matchesCurrentSpace(parts[0])) {
           renderGate('404', '页面不存在。');
           return;
         }
-        await renderDashboard();
+        await renderDashboard(parts[0]);
         return;
       }
 
-      await renderNote(parts[0], parts[1]);
+      await renderNoteRoute(parts[0], parts[1]);
     }
 
     bindNavScroll();

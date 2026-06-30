@@ -307,10 +307,16 @@ async function handleNote(request, env, spaceIdentifier, code) {
     return json({ error: "NOT_FOUND", message: "页面不存在" }, 404, request, env);
   }
 
+  const viewer = await getLoginUser(request, env);
+  const isOwner = isSpaceOwner(space, viewer);
+  if (!isOwner && !note.password_hash) {
+    return json({ error: "NOT_FOUND", message: "页面不存在" }, 404, request, env);
+  }
+
   if (request.method === "GET") {
     return json({
-      note: publicNote(note, space, false, env),
-      locked: !!note.password_hash,
+      note: publicNote(note, space, isOwner || !note.password_hash, env, isOwner),
+      locked: !isOwner && !!note.password_hash,
     }, 200, request, env);
   }
 
@@ -322,26 +328,26 @@ async function handleNote(request, env, spaceIdentifier, code) {
   const action = String(body.action || "save");
 
   if (action === "unlock") {
+    if (!note.password_hash) {
+      return json({ error: "NOT_FOUND", message: "页面不存在" }, 404, request, env);
+    }
     const ok = await verifyNotePassword(note, String(body.password || ""));
     if (!ok) {
       return json({ error: "PASSWORD_INVALID", message: "密码不正确" }, 403, request, env);
     }
-    return json({ note: publicNote(note, space, true, env) }, 200, request, env);
+    return json({ note: publicNote(note, space, true, env, isOwner) }, 200, request, env);
   }
 
   if (action === "save") {
-    if (note.password_hash) {
-      const ok = await verifyNotePassword(note, String(body.password || ""));
-      if (!ok) {
-        return json({ error: "PASSWORD_INVALID", message: "密码不正确" }, 403, request, env);
-      }
+    if (!isOwner) {
+      return json({ error: "FORBIDDEN", message: "不可修改此页面" }, 403, request, env);
     }
 
     const content = String(body.content || "").slice(0, 200000);
     let passwordHash = note.password_hash;
     let passwordSalt = note.password_salt;
     const password = String(body.password || "");
-    if (!note.password_hash && password) {
+    if (password) {
       passwordSalt = randomToken(16);
       passwordHash = await hashSecret(password, passwordSalt);
     }
@@ -352,7 +358,7 @@ async function handleNote(request, env, spaceIdentifier, code) {
     ).bind(content, passwordHash, passwordSalt, now, now + NOTE_TTL_MS, note.id).run();
 
     const updated = await env.UPLOAD_DB.prepare("SELECT * FROM online_notes WHERE id = ?").bind(note.id).first();
-    return json({ note: publicNote(updated, space, true, env) }, 200, request, env);
+    return json({ note: publicNote(updated, space, true, env, true) }, 200, request, env);
   }
 
   return json({ error: "BAD_REQUEST", message: "请求不可用" }, 400, request, env);
@@ -487,6 +493,11 @@ async function findSpace(env, identifier) {
 function spaceMatches(space, identifier) {
   const value = String(identifier || "").trim().toLowerCase();
   return value === String(space.space_id).toLowerCase() || value === String(space.short_code).toLowerCase();
+}
+
+function isSpaceOwner(space, user) {
+  if (!space || !user?.username) return false;
+  return String(space.username).toLowerCase() === String(user.username).toLowerCase();
 }
 
 async function countActiveFiles(env, spaceId) {
@@ -697,12 +708,13 @@ function publicFile(file, request, env) {
   };
 }
 
-function publicNote(note, space, includeContent, env) {
+function publicNote(note, space, includeContent, env, editable = false) {
   return {
     space: publicSpace(space),
     code: note.code,
     url: `${getFrontendOrigin(env)}/${space.short_code}/${note.code}`,
     hasPassword: !!note.password_hash,
+    editable,
     content: includeContent || !note.password_hash ? note.content || "" : "",
     updatedAt: new Date(Number(note.updated_at || Date.now())).toISOString(),
     expiresAt: new Date(Number(note.expires_at || Date.now())).toISOString(),
