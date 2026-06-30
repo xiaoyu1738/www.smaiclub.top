@@ -98,6 +98,11 @@ async function handleRequest(request, env) {
     return handlePublicDownload(request, env, publicMatch[1]);
   }
 
+  const publicPath = parsePublicFilePath(url.pathname);
+  if (request.method === "GET" && publicPath) {
+    return handlePublicPathDownload(request, env, publicPath.spaceIdentifier, publicPath.objectPath);
+  }
+
   return json({ error: "NOT_FOUND", message: "Not found" }, 404, request, env);
 }
 
@@ -251,6 +256,30 @@ async function handlePublicDownload(request, env, publicId) {
   const file = await env.UPLOAD_DB.prepare(
     "SELECT * FROM upload_files WHERE public_id = ? AND deleted_at IS NULL"
   ).bind(publicId).first();
+  if (!file) {
+    return json({ error: "NOT_FOUND", message: "文件不存在" }, 404, request, env);
+  }
+  if (isExpired(file)) {
+    await deleteFileObject(env, file);
+    return json({ error: "EXPIRED", message: "文件已到期" }, 410, request, env);
+  }
+  return streamFile(env, file, false);
+}
+
+async function handlePublicPathDownload(request, env, spaceIdentifier, objectPath) {
+  if (!env.UPLOAD_DB || !env.UPLOAD_BUCKET) {
+    return json({ error: "NOT_FOUND", message: "Not found" }, 404, request, env);
+  }
+
+  const space = await findSpace(env, spaceIdentifier);
+  const cleanPath = sanitizeObjectPath(objectPath);
+  if (!space || !cleanPath) {
+    return json({ error: "NOT_FOUND", message: "文件不存在" }, 404, request, env);
+  }
+
+  const file = await env.UPLOAD_DB.prepare(
+    "SELECT * FROM upload_files WHERE space_id = ? AND object_path = ? AND deleted_at IS NULL"
+  ).bind(space.space_id, cleanPath).first();
   if (!file) {
     return json({ error: "NOT_FOUND", message: "文件不存在" }, 404, request, env);
   }
@@ -665,6 +694,34 @@ function sanitizeObjectPath(value) {
   return parts.slice(0, 8).join("/").slice(0, 360);
 }
 
+function parsePublicFilePath(pathname) {
+  if (!pathname || pathname.startsWith("/api/") || pathname.startsWith("/public/")) return null;
+  const parts = pathname.split("/").filter(Boolean);
+  if (parts.length < 2) return null;
+  const decoded = parts.map(safeDecodeURIComponent);
+  if (decoded.some((part) => !part)) return null;
+  return {
+    spaceIdentifier: decoded[0],
+    objectPath: decoded.slice(1).join("/"),
+  };
+}
+
+function safeDecodeURIComponent(value) {
+  try {
+    return decodeURIComponent(value);
+  } catch {
+    return "";
+  }
+}
+
+function encodePathSegments(value) {
+  return String(value || "")
+    .split("/")
+    .filter(Boolean)
+    .map((part) => encodeURIComponent(part))
+    .join("/");
+}
+
 function sanitizeLabel(value) {
   return String(value || "").normalize("NFKC").trim().replace(/\s+/g, " ").slice(0, 80);
 }
@@ -722,7 +779,7 @@ function publicNote(note, space, includeContent, env, editable = false) {
 }
 
 function publicFileUrl(file, request, env) {
-  return `${getApiOrigin(request, env)}/public/${file.public_id}`;
+  return `${getApiOrigin(request, env)}/${encodeURIComponent(file.space_id)}/${encodePathSegments(file.object_path)}`;
 }
 
 function getApiOrigin(request, env) {
