@@ -1057,7 +1057,7 @@
     <a class="logo" href="/">SMAICLUB</a>
     <div class="nav-links">
       <a class="nav-link" href="https://www.smaiclub.top">首页</a>
-      <a class="nav-link" href="/">上传</a>
+      <a class="nav-link" href="/upload">上传</a>
       <a class="nav-link" id="dashboard-link" href="/">管理</a>
     </div>
     <div class="auth-container" id="auth-container"></div>
@@ -1424,7 +1424,7 @@
               <aside class="drive-sidebar">
                 <div class="side-title">Uploading<br>Centre</div>
                 <a class="side-link active" href="${html(data.space.dashboardPath)}">我的文件</a>
-                <a class="side-link" href="/">上传文件</a>
+                <a class="side-link" href="/upload">上传文件</a>
                 <div class="side-link" id="new-note-side">在线 txt</div>
               </aside>
               <section class="drive-main" id="drive-main">
@@ -1809,6 +1809,7 @@
         renderGate('404', '页面不存在。');
         return;
       }
+      const isUploadRoute = parts.length === 1 && parts[0] === 'upload';
       const isDashboardRoute = parts.length === 2 && parts[1] === 'dashboard';
       const isNoteRoute = parts.length === 2 && parts[1] !== 'dashboard';
 
@@ -1837,6 +1838,11 @@
 
       if (!session.canUpload) {
         renderGate('暂未开放', '当前身份无法上传。');
+        return;
+      }
+
+      if (isUploadRoute) {
+        renderUploadHome();
         return;
       }
 
