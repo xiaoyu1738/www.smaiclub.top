@@ -13,6 +13,7 @@ const ROLE_LEVELS = {
 const DEFAULT_MAX_UPLOAD_BYTES = 25 * 1024 * 1024;
 const FILE_TTL_MS = 180 * 24 * 60 * 60 * 1000;
 const NOTE_TTL_MS = 90 * 24 * 60 * 60 * 1000;
+const NOTE_CONTENT_LIMIT = 200000;
 const PROJECT_PATTERN = /^[a-z0-9][a-z0-9._-]{0,47}$/;
 const SHORT_CODE_PATTERN = /^[a-z0-9]{4,5}$/i;
 const NOTE_CODE_PATTERN = /^[a-z0-9]{4}$/i;
@@ -291,6 +292,10 @@ async function handlePublicPathDownload(request, env, spaceIdentifier, objectPat
 }
 
 async function handleCreateNote(request, env, user) {
+  if (!env.UPLOAD_BUCKET) {
+    return json({ error: "BUCKET_NOT_CONFIGURED", message: "在线 txt 暂不可用" }, 503, request, env);
+  }
+
   const space = await getOrCreateSpace(env, user);
   const body = await readJson(request);
   const requestedSpace = String(body.space || "").trim();
@@ -300,12 +305,20 @@ async function handleCreateNote(request, env, user) {
 
   const code = await generateUniqueNoteCode(env, space.space_id);
   const now = Date.now();
-  await env.UPLOAD_DB.prepare(
-    `INSERT INTO online_notes (
-      id, space_id, code, content, password_hash, password_salt,
-      created_at, updated_at, expires_at
-    ) VALUES (?, ?, ?, '', NULL, NULL, ?, ?, ?)`
-  ).bind(crypto.randomUUID(), space.space_id, code, now, now, now + NOTE_TTL_MS).run();
+  const noteId = crypto.randomUUID();
+  const expiresAt = now + NOTE_TTL_MS;
+  await writeNoteContent(env, space.space_id, code, "");
+  try {
+    await env.UPLOAD_DB.prepare(
+      `INSERT INTO online_notes (
+        id, space_id, code, content, password_hash, password_salt,
+        created_at, updated_at, expires_at
+      ) VALUES (?, ?, ?, '', NULL, NULL, ?, ?, ?)`
+    ).bind(noteId, space.space_id, code, now, now, expiresAt).run();
+  } catch (error) {
+    await deleteNoteObject(env, { space_id: space.space_id, code });
+    throw error;
+  }
 
   return json({
     note: {
@@ -317,7 +330,7 @@ async function handleCreateNote(request, env, user) {
 }
 
 async function handleNote(request, env, spaceIdentifier, code) {
-  if (!env.UPLOAD_DB) {
+  if (!env.UPLOAD_DB || !env.UPLOAD_BUCKET) {
     return json({ error: "NOT_FOUND", message: "页面不存在" }, 404, request, env);
   }
   if (!NOTE_CODE_PATTERN.test(code)) {
@@ -332,7 +345,7 @@ async function handleNote(request, env, spaceIdentifier, code) {
     "SELECT * FROM online_notes WHERE space_id = ? AND code = ?"
   ).bind(space.space_id, code.toLowerCase()).first();
   if (!note || Date.now() > note.expires_at) {
-    if (note) await env.UPLOAD_DB.prepare("DELETE FROM online_notes WHERE id = ?").bind(note.id).run();
+    if (note) await deleteNote(env, note);
     return json({ error: "NOT_FOUND", message: "页面不存在" }, 404, request, env);
   }
 
@@ -343,8 +356,10 @@ async function handleNote(request, env, spaceIdentifier, code) {
   }
 
   if (request.method === "GET") {
+    const includeContent = isOwner || !note.password_hash;
+    const content = includeContent ? await readNoteContent(env, note) : "";
     return json({
-      note: publicNote(note, space, isOwner || !note.password_hash, env, isOwner),
+      note: publicNote(note, space, content, env, isOwner),
       locked: !isOwner && !!note.password_hash,
     }, 200, request, env);
   }
@@ -364,7 +379,8 @@ async function handleNote(request, env, spaceIdentifier, code) {
     if (!ok) {
       return json({ error: "PASSWORD_INVALID", message: "密码不正确" }, 403, request, env);
     }
-    return json({ note: publicNote(note, space, true, env, isOwner) }, 200, request, env);
+    const content = await readNoteContent(env, note);
+    return json({ note: publicNote(note, space, content, env, isOwner) }, 200, request, env);
   }
 
   if (action === "save") {
@@ -372,22 +388,31 @@ async function handleNote(request, env, spaceIdentifier, code) {
       return json({ error: "FORBIDDEN", message: "不可修改此页面" }, 403, request, env);
     }
 
-    const content = String(body.content || "").slice(0, 200000);
+    const content = String(body.content || "").slice(0, NOTE_CONTENT_LIMIT);
     let passwordHash = note.password_hash;
     let passwordSalt = note.password_salt;
     const password = String(body.password || "");
-    if (password) {
+    if (body.passwordAction === "replace") {
+      if (password) {
+        passwordSalt = randomToken(16);
+        passwordHash = await hashSecret(password, passwordSalt);
+      } else {
+        passwordHash = null;
+        passwordSalt = null;
+      }
+    } else if (password) {
       passwordSalt = randomToken(16);
       passwordHash = await hashSecret(password, passwordSalt);
     }
 
     const now = Date.now();
+    await writeNoteContent(env, note.space_id, note.code, content);
     await env.UPLOAD_DB.prepare(
       "UPDATE online_notes SET content = ?, password_hash = ?, password_salt = ?, updated_at = ?, expires_at = ? WHERE id = ?"
-    ).bind(content, passwordHash, passwordSalt, now, now + NOTE_TTL_MS, note.id).run();
+    ).bind("", passwordHash, passwordSalt, now, now + NOTE_TTL_MS, note.id).run();
 
     const updated = await env.UPLOAD_DB.prepare("SELECT * FROM online_notes WHERE id = ?").bind(note.id).first();
-    return json({ note: publicNote(updated, space, true, env, true) }, 200, request, env);
+    return json({ note: publicNote(updated, space, content, env, true) }, 200, request, env);
   }
 
   return json({ error: "BAD_REQUEST", message: "请求不可用" }, 400, request, env);
@@ -564,6 +589,43 @@ async function deleteFileObject(env, file) {
   }
 }
 
+async function readNoteContent(env, note) {
+  const object = await env.UPLOAD_BUCKET.get(noteR2Key(note.space_id, note.code));
+  if (object) return object.text();
+  const legacyContent = note.content || "";
+  if (legacyContent) {
+    await writeNoteContent(env, note.space_id, note.code, legacyContent);
+  }
+  return legacyContent;
+}
+
+async function writeNoteContent(env, spaceId, code, content) {
+  await env.UPLOAD_BUCKET.put(noteR2Key(spaceId, code), content, {
+    httpMetadata: {
+      contentType: "text/plain; charset=utf-8",
+    },
+    customMetadata: {
+      spaceId,
+      code: String(code || "").toLowerCase(),
+      kind: "online-txt",
+    },
+  });
+}
+
+async function deleteNoteObject(env, note) {
+  if (!env.UPLOAD_BUCKET) return;
+  await env.UPLOAD_BUCKET.delete(noteR2Key(note.space_id, note.code)).catch((error) => {
+    console.warn("Failed to delete note R2 object", noteR2Key(note.space_id, note.code), error);
+  });
+}
+
+async function deleteNote(env, note) {
+  await deleteNoteObject(env, note);
+  if (env.UPLOAD_DB) {
+    await env.UPLOAD_DB.prepare("DELETE FROM online_notes WHERE id = ?").bind(note.id).run();
+  }
+}
+
 async function streamFile(env, file, attachment) {
   const object = await env.UPLOAD_BUCKET.get(file.r2_key);
   if (!object) {
@@ -589,7 +651,12 @@ async function cleanupExpiredForSpace(env, spaceId) {
   for (const file of results || []) {
     await deleteFileObject(env, file);
   }
-  await env.UPLOAD_DB.prepare("DELETE FROM online_notes WHERE space_id = ? AND expires_at <= ?").bind(spaceId, Date.now()).run();
+  const { results: notes } = await env.UPLOAD_DB.prepare(
+    "SELECT * FROM online_notes WHERE space_id = ? AND expires_at <= ? LIMIT 100"
+  ).bind(spaceId, Date.now()).all();
+  for (const note of notes || []) {
+    await deleteNote(env, note);
+  }
 }
 
 async function cleanupExpired(env) {
@@ -600,7 +667,12 @@ async function cleanupExpired(env) {
   for (const file of results || []) {
     await deleteFileObject(env, file);
   }
-  await env.UPLOAD_DB.prepare("DELETE FROM online_notes WHERE expires_at <= ?").bind(Date.now()).run();
+  const { results: notes } = await env.UPLOAD_DB.prepare(
+    "SELECT * FROM online_notes WHERE expires_at <= ? LIMIT 200"
+  ).bind(Date.now()).all();
+  for (const note of notes || []) {
+    await deleteNote(env, note);
+  }
 }
 
 async function generateUniqueNoteCode(env, spaceId) {
@@ -765,17 +837,21 @@ function publicFile(file, request, env) {
   };
 }
 
-function publicNote(note, space, includeContent, env, editable = false) {
+function publicNote(note, space, content, env, editable = false) {
   return {
     space: publicSpace(space),
     code: note.code,
     url: `${getFrontendOrigin(env)}/${space.short_code}/${note.code}`,
     hasPassword: !!note.password_hash,
     editable,
-    content: includeContent || !note.password_hash ? note.content || "" : "",
+    content: content || "",
     updatedAt: new Date(Number(note.updated_at || Date.now())).toISOString(),
     expiresAt: new Date(Number(note.expires_at || Date.now())).toISOString(),
   };
+}
+
+function noteR2Key(spaceId, code) {
+  return `online-txt/${spaceId}/${String(code || "").toLowerCase()}.txt`;
 }
 
 function publicFileUrl(file, request, env) {

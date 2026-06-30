@@ -851,6 +851,29 @@
       font-size: 0.9rem;
     }
 
+    .note-save-state {
+      margin-right: auto;
+      color: var(--muted);
+      font-size: 0.88rem;
+      font-weight: 900;
+      opacity: 0;
+      transform: translateY(2px);
+      transition: opacity 0.2s ease, transform 0.2s ease, color 0.2s ease;
+    }
+
+    .note-save-state.is-visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .note-save-state.success {
+      color: #2f6a57;
+    }
+
+    .note-save-state.error {
+      color: #b1463c;
+    }
+
     .note-layout.is-locked .note-toolbar .button-link {
       background: rgba(255, 250, 244, 0.82);
       border-color: rgba(96, 69, 35, 0.13);
@@ -917,22 +940,82 @@
       box-shadow: 0 12px 24px rgba(31, 91, 83, 0.16);
     }
 
-    .password-popover {
-      position: absolute;
-      top: 62px;
-      right: 18px;
-      width: min(320px, calc(100vw - 28px));
-      padding: 16px;
-      border: 1px solid rgba(96, 69, 35, 0.14);
-      border-radius: 18px;
-      background: rgba(255, 250, 244, 0.98);
-      box-shadow: 0 18px 44px rgba(92, 66, 31, 0.16);
+    .note-modal {
+      position: fixed;
+      inset: 0;
+      z-index: 90;
       display: none;
-      z-index: 10;
+      place-items: center;
+      padding: 24px;
     }
 
-    .password-popover.is-visible {
-      display: block;
+    .note-modal.is-visible {
+      display: grid;
+    }
+
+    .note-modal-backdrop {
+      position: absolute;
+      inset: 0;
+      background: rgba(20, 20, 18, 0.64);
+      backdrop-filter: blur(12px);
+    }
+
+    .note-dialog {
+      position: relative;
+      width: min(500px, calc(100vw - 32px));
+      padding: 30px;
+      border: 1px solid rgba(255, 255, 255, 0.10);
+      border-radius: 18px;
+      background: #1e1e20;
+      color: #fff8ee;
+      box-shadow: 0 28px 90px rgba(0, 0, 0, 0.38);
+    }
+
+    .note-dialog h2 {
+      margin: 0 0 22px;
+      font-family: inherit;
+      font-size: 1.32rem;
+      line-height: 1.2;
+      color: #fff8ee;
+    }
+
+    .note-dialog input {
+      min-height: 48px;
+      border-color: rgba(255, 255, 255, 0.14);
+      border-radius: 8px;
+      background: #343436;
+      color: #fff8ee;
+      box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.03);
+    }
+
+    .note-dialog input:focus {
+      border-color: rgba(38, 135, 236, 0.82);
+      box-shadow: 0 0 0 3px rgba(38, 135, 236, 0.20);
+    }
+
+    .note-dialog-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 12px;
+      margin-top: 20px;
+    }
+
+    .note-dialog-actions button {
+      min-height: 46px;
+      border-radius: 10px;
+      padding: 10px 20px;
+    }
+
+    .note-dialog-actions .secondary {
+      border-color: transparent;
+      background: #3b3b3e;
+      color: #fff8ee;
+    }
+
+    .note-dialog-actions .primary {
+      background: #0878e9;
+      color: #ffffff;
+      box-shadow: none;
     }
 
     .note-floating-notice {
@@ -1097,6 +1180,7 @@
     let selectedContextFile = null;
     let currentFiles = [];
     let authBooted = false;
+    let currentNoteCleanup = null;
     const NOTE_NOTICE_KEY = 'smai-upload-note-notice-dismissed';
 
     function html(value) {
@@ -1170,6 +1254,10 @@
     function setNoteMode(enabled) {
       document.body.classList.toggle('note-mode', enabled);
       if (!enabled) {
+        if (currentNoteCleanup) {
+          currentNoteCleanup();
+          currentNoteCleanup = null;
+        }
         navbar.classList.remove('nav-hidden');
       }
     }
@@ -1580,13 +1668,10 @@
         <main class="note-layout ${payload.locked ? 'is-locked' : 'is-open'} ${canEdit ? 'can-edit' : 'is-readonly'}">
           <section class="note-panel">
             <div class="note-toolbar">
+              ${canEdit ? '<span class="note-save-state success is-visible" id="note-save-state">已保存</span>' : ''}
               ${canEdit ? '<button class="secondary" id="password-toggle" type="button">设置密码</button>' : ''}
               <a class="button-link" href="${html(returnHref)}">${html(returnText)}</a>
             </div>
-            ${canEdit ? `<div class="password-popover" id="password-popover">
-              <label for="note-password">密码</label>
-              <input id="note-password" type="password" placeholder="输入或留空" autocomplete="new-password">
-            </div>` : '<input id="note-password" type="hidden" value="">'}
             <div class="note-lock" id="note-lock" style="${payload.locked ? '' : 'display:none;'}">
               <p class="lock-kicker">SMAICLUB TXT</p>
               <h1 class="lock-title">输入密码</h1>
@@ -1598,13 +1683,22 @@
             </div>
             <form id="note-form" style="${payload.locked ? 'display:none;' : ''}">
               <textarea id="note-content" placeholder="写点什么" ${canEdit ? '' : 'readonly'}>${html(note.content || '')}</textarea>
-              <div class="actions" style="${canEdit ? 'justify-content:flex-end; margin-top: 12px;' : 'display:none;'}">
-                <button class="primary" type="submit">保存</button>
-              </div>
               <div class="message" id="note-message"></div>
             </form>
           </section>
         </main>
+        ${canEdit ? `<div class="note-modal" id="password-modal" aria-hidden="true">
+          <div class="note-modal-backdrop" id="password-cancel-backdrop"></div>
+          <section class="note-dialog" role="dialog" aria-modal="true" aria-labelledby="password-title">
+            <h2 id="password-title">设置密码</h2>
+            <input id="note-password" type="password" placeholder="输入或留空" autocomplete="new-password">
+            <div class="note-dialog-actions">
+              <button class="secondary" id="password-cancel" type="button">取消</button>
+              <button class="primary" id="password-confirm" type="button">确认</button>
+            </div>
+            <div class="message" id="password-message"></div>
+          </section>
+        </div>` : ''}
         <div class="note-floating-notice ${showNotice ? 'is-visible' : ''}" id="note-floating-notice">
           <div>
             <strong>在线 txt 内容会定期清理。</strong>
@@ -1617,18 +1711,128 @@
     }
 
     function bindNote(spaceCode, noteCode, note) {
+      if (currentNoteCleanup) {
+        currentNoteCleanup();
+        currentNoteCleanup = null;
+      }
+
       const lock = document.getElementById('note-lock');
       const form = document.getElementById('note-form');
       const lockMessage = document.getElementById('note-lock-message');
       const message = document.getElementById('note-message');
+      const noteContent = document.getElementById('note-content');
+      const saveState = document.getElementById('note-save-state');
       const passwordToggle = document.getElementById('password-toggle');
-      const passwordPopover = document.getElementById('password-popover');
+      const passwordModal = document.getElementById('password-modal');
+      const passwordInput = document.getElementById('note-password');
+      const passwordConfirm = document.getElementById('password-confirm');
+      const passwordCancel = document.getElementById('password-cancel');
+      const passwordBackdrop = document.getElementById('password-cancel-backdrop');
+      const passwordMessage = document.getElementById('password-message');
       const noteNotice = document.getElementById('note-floating-notice');
       const dismissNotice = document.getElementById('dismiss-note-notice');
       const canEdit = note.editable !== false;
+      const noteApiPath = `/api/v1/notes/${encodeURIComponent(spaceCode)}/${encodeURIComponent(noteCode)}`;
+      const cleanupFns = [];
+      let saveTimer = 0;
+      let saveChain = Promise.resolve(true);
+      let lastSavedContent = noteContent ? noteContent.value : '';
+
       const setMsg = (el, text, tone) => {
+        if (!el) return;
         el.textContent = text || '';
         el.className = text ? `message ${tone} is-visible` : 'message';
+      };
+      const setSaveState = (text, tone = '') => {
+        if (!saveState) return;
+        saveState.textContent = text || '';
+        saveState.className = `note-save-state ${tone} ${text ? 'is-visible' : ''}`.trim();
+      };
+      const addScopedListener = (target, type, handler, options) => {
+        target.addEventListener(type, handler, options);
+        cleanupFns.push(() => target.removeEventListener(type, handler, options));
+      };
+      const savePayload = (options = {}) => {
+        const payload = {
+          action: 'save',
+          content: noteContent ? noteContent.value : ''
+        };
+        if (options.passwordAction) {
+          payload.passwordAction = options.passwordAction;
+          payload.password = options.password || '';
+        }
+        return payload;
+      };
+      const performSave = async (options = {}) => {
+        if (!canEdit || !noteContent) return true;
+
+        const content = noteContent.value;
+        const replacesPassword = options.passwordAction === 'replace';
+        if (!options.force && !replacesPassword && content === lastSavedContent) {
+          setSaveState('已保存', 'success');
+          return true;
+        }
+
+        setSaveState('保存中');
+        try {
+          await api(noteApiPath, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(savePayload(options))
+          });
+          lastSavedContent = content;
+          setSaveState('已保存', 'success');
+          return true;
+        } catch (error) {
+          setSaveState('未保存', 'error');
+          setMsg(message, error.message || '保存失败。', 'error');
+          return false;
+        } finally {
+          if (noteContent.value !== lastSavedContent) {
+            scheduleSave();
+          }
+        }
+      };
+      const saveNote = (options = {}) => {
+        if (!canEdit || !noteContent) return Promise.resolve(true);
+        window.clearTimeout(saveTimer);
+        saveChain = saveChain.catch(() => false).then(() => performSave(options));
+        return saveChain;
+      };
+      const scheduleSave = () => {
+        if (!canEdit || !noteContent) return;
+        window.clearTimeout(saveTimer);
+        setSaveState('正在输入');
+        saveTimer = window.setTimeout(() => {
+          saveNote();
+        }, 900);
+      };
+      const saveWithKeepalive = () => {
+        if (!canEdit || !noteContent || noteContent.value === lastSavedContent) return;
+        window.clearTimeout(saveTimer);
+        const content = noteContent.value;
+        const body = JSON.stringify({ action: 'save', content });
+        fetch(`${API_BASE}${noteApiPath}`, {
+          method: 'POST',
+          credentials: 'include',
+          keepalive: true,
+          headers: { 'Content-Type': 'application/json' },
+          body
+        }).catch(() => {});
+        lastSavedContent = content;
+      };
+      const openPasswordModal = () => {
+        if (!passwordModal || !passwordInput) return;
+        setMsg(passwordMessage, '');
+        passwordInput.value = '';
+        passwordModal.classList.add('is-visible');
+        passwordModal.setAttribute('aria-hidden', 'false');
+        window.setTimeout(() => passwordInput.focus(), 20);
+      };
+      const closePasswordModal = () => {
+        if (!passwordModal) return;
+        passwordModal.classList.remove('is-visible');
+        passwordModal.setAttribute('aria-hidden', 'true');
       };
 
       if (dismissNotice) {
@@ -1645,11 +1849,42 @@
         });
       }
 
-      if (passwordToggle && passwordPopover) {
-        passwordToggle.addEventListener('click', () => {
-          passwordPopover.classList.toggle('is-visible');
-          if (passwordPopover.classList.contains('is-visible')) {
-            document.getElementById('note-password').focus();
+      if (passwordToggle && passwordModal) {
+        passwordToggle.addEventListener('click', openPasswordModal);
+      }
+
+      if (passwordCancel) {
+        passwordCancel.addEventListener('click', closePasswordModal);
+      }
+
+      if (passwordBackdrop) {
+        passwordBackdrop.addEventListener('click', closePasswordModal);
+      }
+
+      if (passwordConfirm && passwordInput) {
+        passwordConfirm.addEventListener('click', async () => {
+          passwordConfirm.disabled = true;
+          const ok = await saveNote({
+            force: true,
+            passwordAction: 'replace',
+            password: passwordInput.value
+          });
+          passwordConfirm.disabled = false;
+          if (ok) {
+            closePasswordModal();
+          } else {
+            setMsg(passwordMessage, '未保存。', 'error');
+          }
+        });
+
+        passwordInput.addEventListener('keydown', (event) => {
+          if (event.key === 'Enter') {
+            event.preventDefault();
+            passwordConfirm.click();
+          }
+          if (event.key === 'Escape') {
+            event.preventDefault();
+            closePasswordModal();
           }
         });
       }
@@ -1681,27 +1916,38 @@
         });
       }
 
-      form.addEventListener('submit', async (event) => {
-        event.preventDefault();
-        if (!canEdit) {
-          setMsg(message, '不可修改此页面。', 'error');
-          return;
-        }
-        try {
-          await api(`/api/v1/notes/${spaceCode}/${noteCode}`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              action: 'save',
-              content: document.getElementById('note-content').value,
-              password: document.getElementById('note-password').value
-            })
-          });
-          setMsg(message, '已保存。', 'success');
-        } catch (error) {
-          setMsg(message, error.message || '保存失败。', 'error');
+      if (form) {
+        form.addEventListener('submit', (event) => {
+          event.preventDefault();
+          saveNote();
+        });
+      }
+
+      if (canEdit && noteContent) {
+        noteContent.addEventListener('input', scheduleSave);
+        noteContent.addEventListener('blur', () => saveNote());
+        addScopedListener(window, 'blur', () => saveNote());
+        addScopedListener(document, 'visibilitychange', () => {
+          if (document.visibilityState === 'hidden') {
+            saveWithKeepalive();
+          }
+        });
+        addScopedListener(window, 'pagehide', saveWithKeepalive);
+        addScopedListener(window, 'beforeunload', saveWithKeepalive);
+      }
+
+      addScopedListener(document, 'keydown', (event) => {
+        if (event.key === 'Escape' && passwordModal?.classList.contains('is-visible')) {
+          event.preventDefault();
+          closePasswordModal();
         }
       });
+
+      currentNoteCleanup = () => {
+        window.clearTimeout(saveTimer);
+        saveWithKeepalive();
+        cleanupFns.forEach((cleanup) => cleanup());
+      };
     }
 
     contextMenu.addEventListener('click', async (event) => {
@@ -1731,18 +1977,13 @@
       if (action === 'delete') {
         if (!confirm('删除这个文件？')) return;
         await api(`/api/v1/files/${selectedContextFile.id}`, { method: 'DELETE' });
-        await renderDashboard();
+        await renderDashboard(session.space.shortCode);
       }
     });
 
     document.addEventListener('click', (event) => {
       if (!contextMenu.contains(event.target)) {
         contextMenu.classList.remove('is-visible');
-      }
-      const passwordPopover = document.getElementById('password-popover');
-      const passwordToggle = document.getElementById('password-toggle');
-      if (passwordPopover && passwordToggle && !passwordPopover.contains(event.target) && !passwordToggle.contains(event.target)) {
-        passwordPopover.classList.remove('is-visible');
       }
     });
 
@@ -1874,11 +2115,11 @@
         return;
       }
 
-      await renderNoteRoute(parts[0], parts[1]);
+      renderGate('404', '页面不存在。');
     }
 
     bindNavScroll();
     init();
-  </script>
+</script>
 </body>
 </html>
