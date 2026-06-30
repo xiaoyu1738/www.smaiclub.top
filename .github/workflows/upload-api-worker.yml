@@ -1,0 +1,18 @@
+name: CI/CD - Upload API Worker
+
+on:
+  push:
+    paths:
+      - "upload-api-worker/**"
+  workflow_dispatch:
+
+jobs:
+  ci-cd:
+    uses: ./.github/workflows/_worker.yml
+    with:
+      worker_directory: upload-api-worker
+      install_command: npm install
+      ci_command: npm run build
+      validate_command: deploy --dry-run --name upload-api-worker
+      deploy_command: deploy --name upload-api-worker
+    secrets: inherit

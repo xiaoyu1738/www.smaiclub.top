@@ -1,0 +1,18 @@
+name: CI/CD - Upload
+
+on:
+  push:
+    paths:
+      - "upload.smaiclub.top/**"
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    permissions:
+      contents: read
+      deployments: write
+    uses: ./.github/workflows/_static-pages.yml
+    with:
+      site_directory: upload.smaiclub.top
+      project_name: upload-smaiclub-top
+    secrets: inherit

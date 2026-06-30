@@ -10,6 +10,7 @@ login-worker/node_modules/*
 convert.smaiclub.top/node_modules/*
 convert.smaiclub.top/dist/*
 .vscode/*
+.wrangler/*
 player.smaiclub.top/node_modules/*
 player.smaiclub.top/dist/*
 .test/*
@@ -25,3 +26,5 @@ sub.smaiclub.top/dist/*
 sub.smaiclub.top/.wrangler/*
 sub-cron-worker/node_modules/*
 sub-cron-worker/.wrangler/*
+upload-api-worker/node_modules/*
+upload-api-worker/.wrangler/*

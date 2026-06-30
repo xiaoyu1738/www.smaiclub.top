@@ -83,6 +83,8 @@
 - `hall.smaiclub.top`
 - `novel.smaiclub.top`
 - `player.smaiclub.top`
+- `chat.smaiclub.top`
+- `sub.smaiclub.top`
 
 ### 纯静态 Pages
 
@@ -92,6 +94,7 @@
 - `download.smaiclub.top`
 - `kill.smaiclub.top`
 - `news.smaiclub.top`
+- `upload.smaiclub.top`
 - `wanted.smaiclub.top`
 - `www.smaiclub.top`
 
@@ -100,6 +103,8 @@
 - `chat-worker`
 - `hall-worker`
 - `login-worker`
+- `sub-cron-worker`
+- `upload-api-worker`
 
 ### 不自动部署
 
@@ -126,3 +131,20 @@ GitHub Secrets：
 
 - `login-smaiclub-kv`
 
+`upload-api-worker` 当前使用的 Worker 名称：
+
+- `upload-api-worker`
+
+`upload-api-worker` 需要 Cloudflare R2 绑定：
+
+- binding: `UPLOAD_BUCKET`
+- bucket_name: `smai-upload`
+
+`upload-api-worker` 需要 Cloudflare D1 绑定：
+
+- binding: `UPLOAD_DB`
+- database_name: `smai-upload-db`
+- 迁移文件: `upload-api-worker/migrations/0001_create_upload_centre.sql`
+- 创建 D1 后必须替换 `upload-api-worker/wrangler.toml` 中的 `database_id`
+
+`upload-api-worker` 当前包含每日 cron，用于清理 180 天到期文件和 90 天到期在线 txt。

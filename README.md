@@ -24,6 +24,7 @@
 - `hall.smaiclub.top`
 - `novel.smaiclub.top`
 - `player.smaiclub.top`
+- `chat.smaiclub.top`
 - `sub.smaiclub.top`
 
 行为：
@@ -43,6 +44,7 @@
 - `download.smaiclub.top`
 - `kill.smaiclub.top`
 - `news.smaiclub.top`
+- `upload.smaiclub.top`
 - `wanted.smaiclub.top`
 - `www.smaiclub.top`
 
@@ -68,6 +70,7 @@ test -s index.html
 - `chat-worker`
 - `hall-worker`
 - `login-worker`
+- `upload-api-worker`
 - `sub-cron-worker`
 
 行为：
@@ -80,6 +83,7 @@ test -s index.html
 - `chat-worker`：`npm install` + `npm run build`
 - `hall-worker`：`npm ci` + `npm test`
 - `login-worker`：`wrangler deploy --dry-run --name login-smaiclub-kv`
+- `upload-api-worker`：`npm install` + `npm run build` + `wrangler deploy --dry-run --name upload-api-worker`
 - `sub-cron-worker`：`npm ci` + `npm test && npm run build`
 
 复用模板：
@@ -99,6 +103,7 @@ test -s index.html
 
 - [`.github/workflows/convert.yml`](/home/fish_/smaiclub_project/Repositories/www.smaiclub.top/.github/workflows/convert.yml)
 - [`.github/workflows/hall.yml`](/home/fish_/smaiclub_project/Repositories/www.smaiclub.top/.github/workflows/hall.yml)
+- [`.github/workflows/chat.yml`](/home/fish_/smaiclub_project/Repositories/www.smaiclub.top/.github/workflows/chat.yml)
 - [`.github/workflows/sub.yml`](/home/fish_/smaiclub_project/Repositories/www.smaiclub.top/.github/workflows/sub.yml)
 - [`.github/workflows/novel.yml`](/home/fish_/smaiclub_project/Repositories/www.smaiclub.top/.github/workflows/novel.yml)
 - [`.github/workflows/player.yml`](/home/fish_/smaiclub_project/Repositories/www.smaiclub.top/.github/workflows/player.yml)
@@ -111,6 +116,7 @@ test -s index.html
 - [`.github/workflows/download.yml`](/home/fish_/smaiclub_project/Repositories/www.smaiclub.top/.github/workflows/download.yml)
 - [`.github/workflows/kill.yml`](/home/fish_/smaiclub_project/Repositories/www.smaiclub.top/.github/workflows/kill.yml)
 - [`.github/workflows/news.yml`](/home/fish_/smaiclub_project/Repositories/www.smaiclub.top/.github/workflows/news.yml)
+- [`.github/workflows/upload.yml`](/home/fish_/smaiclub_project/Repositories/www.smaiclub.top/.github/workflows/upload.yml)
 - [`.github/workflows/wanted.yml`](/home/fish_/smaiclub_project/Repositories/www.smaiclub.top/.github/workflows/wanted.yml)
 - [`.github/workflows/www.yml`](/home/fish_/smaiclub_project/Repositories/www.smaiclub.top/.github/workflows/www.yml)
 
@@ -120,6 +126,7 @@ test -s index.html
 - [`.github/workflows/hall-worker.yml`](/home/fish_/smaiclub_project/Repositories/www.smaiclub.top/.github/workflows/hall-worker.yml)
 - [`.github/workflows/sub-cron-worker.yml`](/home/fish_/smaiclub_project/Repositories/www.smaiclub.top/.github/workflows/sub-cron-worker.yml)
 - [`.github/workflows/login-worker.yml`](/home/fish_/smaiclub_project/Repositories/www.smaiclub.top/.github/workflows/login-worker.yml)
+- [`.github/workflows/upload-api-worker.yml`](/home/fish_/smaiclub_project/Repositories/www.smaiclub.top/.github/workflows/upload-api-worker.yml)
 
 ## 仓库需要的配置
 
@@ -129,6 +136,25 @@ test -s index.html
 - `CLOUDFLARE_ACCOUNT_ID`
 
 同时需要在 Cloudflare 中预先创建对应的 Pages 项目和 Worker，并建议关闭 Cloudflare 自带的 Git 自动部署，避免和 GitHub Actions 重复发布。
+
+`upload-api-worker` 还需要预先创建 Cloudflare R2 bucket：
+
+- `smai-upload`
+
+并创建 Cloudflare D1 数据库：
+
+- database_name: `smai-upload-db`
+- binding: `UPLOAD_DB`
+- 创建后把 `upload-api-worker/wrangler.toml` 中的 `database_id` 替换为真实 ID
+- 初始化迁移文件：[upload-api-worker/migrations/0001_create_upload_centre.sql](/home/fish_/smaiclub_project/Repositories/www.smaiclub.top/upload-api-worker/migrations/0001_create_upload_centre.sql)
+
+迁移示例：
+
+```sh
+npx wrangler d1 migrations apply smai-upload-db --remote
+```
+
+`upload-api-worker` 包含每日 cron，用于清理到期文件和在线 txt 元数据。文件有效期为 180 天，在线 txt 内容有效期为 90 天。
 
 ## 维护建议
 

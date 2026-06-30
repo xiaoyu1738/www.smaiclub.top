@@ -1,0 +1,25 @@
+name = "upload-api-worker"
+main = "src/index.js"
+compatibility_date = "2025-12-14"
+
+routes = [
+  { pattern = "upload-api.smaiclub.top", custom_domain = true }
+]
+
+[vars]
+LOGIN_ME_URL = "https://login.smaiclub.top/api/me"
+FRONTEND_ORIGIN = "https://upload.smaiclub.top"
+PUBLIC_API_ORIGIN = "https://upload-api.smaiclub.top"
+MAX_UPLOAD_BYTES = "26214400"
+
+[triggers]
+crons = ["17 3 * * *"]
+
+[[r2_buckets]]
+binding = "UPLOAD_BUCKET"
+bucket_name = "smai-upload"
+
+[[d1_databases]]
+binding = "UPLOAD_DB"
+database_name = "smai-upload-db"
+database_id = "7aae5638-cbcb-4032-b547-30e0bb3cd30c"
