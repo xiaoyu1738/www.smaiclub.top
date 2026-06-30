@@ -15,4 +15,5 @@ jobs:
       ci_command: npm run build
       validate_command: deploy --dry-run --name upload-api-worker
       deploy_command: deploy --name upload-api-worker
+      node_version: "24"
     secrets: inherit
