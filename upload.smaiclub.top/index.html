@@ -57,7 +57,10 @@
     }
 
     body.note-mode {
-      background: #fbf7ef;
+      background:
+        linear-gradient(180deg, rgba(255, 250, 244, 0.86), rgba(244, 239, 232, 0.96)),
+        repeating-linear-gradient(90deg, rgba(96, 69, 35, 0.028) 0 1px, transparent 1px 88px),
+        #f7f1e7;
     }
 
     body.note-mode::before,
@@ -796,6 +799,14 @@
       padding: 14px 0 18px;
     }
 
+    .note-layout.is-locked {
+      width: 100%;
+      min-height: 100vh;
+      display: grid;
+      place-items: center;
+      padding: clamp(22px, 6vw, 56px);
+    }
+
     .note-panel {
       position: relative;
       min-height: calc(100vh - 32px);
@@ -804,6 +815,16 @@
       background: rgba(255, 250, 244, 0.72);
       box-shadow: 0 10px 34px rgba(92, 66, 31, 0.08);
       padding: clamp(12px, 2vw, 22px);
+    }
+
+    .note-layout.is-locked .note-panel {
+      width: min(500px, 100%);
+      min-height: 0;
+      padding: 0;
+      border: 0;
+      border-radius: 0;
+      background: transparent;
+      box-shadow: none;
     }
 
     .note-toolbar {
@@ -815,6 +836,14 @@
       margin-bottom: 12px;
     }
 
+    .note-layout.is-locked .note-toolbar {
+      position: fixed;
+      top: 24px;
+      right: 28px;
+      z-index: 20;
+      margin: 0;
+    }
+
     .note-toolbar .button-link,
     .note-toolbar button {
       min-height: 38px;
@@ -822,11 +851,70 @@
       font-size: 0.9rem;
     }
 
+    .note-layout.is-locked .note-toolbar .button-link {
+      background: rgba(255, 250, 244, 0.82);
+      border-color: rgba(96, 69, 35, 0.13);
+      box-shadow: 0 10px 28px rgba(92, 66, 31, 0.08);
+    }
+
     .note-panel textarea {
       min-height: calc(100vh - 116px);
       border-radius: 14px;
       background: rgba(255, 255, 255, 0.66);
       font-size: 1rem;
+    }
+
+    .note-lock {
+      display: grid;
+      gap: 0;
+      padding: clamp(26px, 5vw, 38px);
+      border: 1px solid rgba(96, 69, 35, 0.14);
+      border-radius: 8px;
+      background:
+        linear-gradient(180deg, rgba(255, 252, 247, 0.98), rgba(255, 248, 238, 0.92));
+      box-shadow: 0 18px 42px rgba(65, 54, 39, 0.10);
+    }
+
+    .lock-kicker {
+      margin: 0 0 10px;
+      color: var(--green);
+      font-size: 0.72rem;
+      font-weight: 900;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+    }
+
+    .lock-title {
+      margin: 0 0 16px;
+      font-family: "Cormorant Garamond", Georgia, serif;
+      font-size: clamp(2.2rem, 7vw, 3.45rem);
+      line-height: 0.9;
+      color: #1b1713;
+    }
+
+    .unlock-row {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 10px;
+      align-items: center;
+      margin-top: 0;
+    }
+
+    .unlock-row input {
+      min-height: 54px;
+      border-radius: 8px;
+      padding: 0 16px;
+      border-color: rgba(96, 69, 35, 0.20);
+      background: rgba(255, 255, 255, 0.90);
+      line-height: 54px;
+    }
+
+    .unlock-row button {
+      min-width: 92px;
+      min-height: 54px;
+      border-radius: 8px;
+      background: #1f5b53;
+      box-shadow: 0 12px 24px rgba(31, 91, 83, 0.16);
     }
 
     .password-popover {
@@ -852,7 +940,7 @@
       left: 50%;
       bottom: 22px;
       transform: translateX(-50%);
-      width: min(560px, calc(100% - 28px));
+      width: min(500px, calc(100% - 28px));
       display: none;
       align-items: flex-start;
       justify-content: space-between;
@@ -861,7 +949,7 @@
       border: 1px solid rgba(96, 69, 35, 0.16);
       border-radius: 18px;
       background: rgba(255, 250, 244, 0.98);
-      box-shadow: 0 18px 44px rgba(92, 66, 31, 0.16);
+      box-shadow: 0 14px 32px rgba(65, 54, 39, 0.10);
       color: var(--muted);
       font-weight: 800;
       line-height: 1.55;
@@ -942,6 +1030,24 @@
 
       .drive-top {
         flex-direction: column;
+      }
+
+      .note-layout.is-locked {
+        place-items: start center;
+        padding-top: 88px;
+      }
+
+      .note-layout.is-locked .note-toolbar {
+        top: 14px;
+        right: 14px;
+      }
+
+      .unlock-row {
+        grid-template-columns: 1fr;
+      }
+
+      .unlock-row button {
+        width: 100%;
       }
     }
   </style>
@@ -1471,7 +1577,7 @@
       const returnText = canEdit ? '返回文件' : '返回';
       setNoteMode(true);
       app.innerHTML = `
-        <main class="note-layout">
+        <main class="note-layout ${payload.locked ? 'is-locked' : 'is-open'} ${canEdit ? 'can-edit' : 'is-readonly'}">
           <section class="note-panel">
             <div class="note-toolbar">
               ${canEdit ? '<button class="secondary" id="password-toggle" type="button">设置密码</button>' : ''}
@@ -1481,16 +1587,12 @@
               <label for="note-password">密码</label>
               <input id="note-password" type="password" placeholder="输入或留空" autocomplete="new-password">
             </div>` : '<input id="note-password" type="hidden" value="">'}
-            <div id="note-lock" style="${payload.locked ? '' : 'display:none;'}">
-              <p>此页面需要密码。</p>
-              <div class="field-grid" style="margin-top: 18px;">
-                <div>
-                  <label for="unlock-password">密码</label>
-                  <input id="unlock-password" type="password" autocomplete="current-password">
-                </div>
-                <div style="display:flex; align-items:end;">
-                  <button class="primary" id="unlock-note" type="button">打开</button>
-                </div>
+            <div class="note-lock" id="note-lock" style="${payload.locked ? '' : 'display:none;'}">
+              <p class="lock-kicker">SMAICLUB TXT</p>
+              <h1 class="lock-title">输入密码</h1>
+              <div class="unlock-row">
+                <input id="unlock-password" type="password" autocomplete="current-password" aria-label="密码" placeholder="密码">
+                <button class="primary" id="unlock-note" type="button">打开</button>
               </div>
               <div class="message" id="note-lock-message"></div>
             </div>
@@ -1554,7 +1656,7 @@
 
       const unlockButton = document.getElementById('unlock-note');
       if (unlockButton) {
-        unlockButton.addEventListener('click', async () => {
+        const unlockNote = async () => {
           try {
             const password = document.getElementById('unlock-password').value;
             const payload = await api(`/api/v1/notes/${spaceCode}/${noteCode}`, {
@@ -1568,6 +1670,13 @@
             form.style.display = '';
           } catch (error) {
             setMsg(lockMessage, error.message || '无法打开。', 'error');
+          }
+        };
+        unlockButton.addEventListener('click', unlockNote);
+        document.getElementById('unlock-password').addEventListener('keydown', (event) => {
+          if (event.key === 'Enter') {
+            event.preventDefault();
+            unlockNote();
           }
         });
       }
