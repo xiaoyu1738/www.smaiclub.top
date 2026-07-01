@@ -674,6 +674,105 @@
       text-align: center;
     }
 
+    .token-panel {
+      margin-top: 22px;
+      border: 1px solid rgba(96, 69, 35, 0.12);
+      border-radius: 18px;
+      background: rgba(255, 255, 255, 0.54);
+      overflow: hidden;
+    }
+
+    .token-top {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 18px;
+      border-bottom: 1px solid rgba(96, 69, 35, 0.08);
+      background: rgba(244, 239, 232, 0.50);
+    }
+
+    .token-top h3 {
+      margin: 0;
+      font-size: 1.05rem;
+      color: var(--ink);
+    }
+
+    .token-create {
+      display: grid;
+      grid-template-columns: minmax(150px, 220px) auto;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .token-create input {
+      min-height: 42px;
+      border-radius: 999px;
+      padding: 9px 14px;
+    }
+
+    .token-create button {
+      min-height: 42px;
+      padding: 9px 16px;
+    }
+
+    .token-secret {
+      display: none;
+      margin: 16px 18px 0;
+      padding: 14px;
+      border: 1px solid rgba(26, 127, 90, 0.16);
+      border-radius: 14px;
+      background: rgba(26, 127, 90, 0.08);
+    }
+
+    .token-secret.is-visible {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .token-secret code {
+      color: #185a43;
+      font-weight: 900;
+      overflow-wrap: anywhere;
+    }
+
+    .token-list {
+      padding: 8px 18px 18px;
+    }
+
+    .token-row {
+      display: grid;
+      grid-template-columns: minmax(160px, 1fr) minmax(120px, 0.8fr) minmax(120px, 0.8fr) auto;
+      gap: 12px;
+      align-items: center;
+      min-height: 58px;
+      border-bottom: 1px solid rgba(96, 69, 35, 0.08);
+      color: var(--muted);
+      font-weight: 800;
+    }
+
+    .token-row:last-child {
+      border-bottom: 0;
+    }
+
+    .token-name {
+      color: var(--ink);
+      font-weight: 900;
+    }
+
+    .token-row code {
+      color: var(--soft);
+      font-weight: 900;
+    }
+
+    .token-row button {
+      min-height: 36px;
+      padding: 8px 12px;
+      font-size: 0.84rem;
+    }
+
     .context-menu {
       position: fixed;
       z-index: 80;
@@ -1115,6 +1214,19 @@
         flex-direction: column;
       }
 
+      .token-top,
+      .token-row {
+        grid-template-columns: 1fr;
+      }
+
+      .token-top {
+        display: grid;
+      }
+
+      .token-create {
+        grid-template-columns: 1fr;
+      }
+
       .note-layout.is-locked {
         place-items: start center;
         padding-top: 88px;
@@ -1198,6 +1310,13 @@
       if (value >= 1024 * 1024) return `${(value / 1024 / 1024).toFixed(1)} MB`;
       if (value >= 1024) return `${(value / 1024).toFixed(1)} KB`;
       return `${value} B`;
+    }
+
+    function formatDateTime(value, fallback = '未使用') {
+      if (!value) return fallback;
+      const date = new Date(value);
+      if (Number.isNaN(date.getTime())) return fallback;
+      return date.toLocaleString('zh-CN', { hour12: false });
     }
 
     function routeParts() {
@@ -1496,7 +1615,10 @@
 
     async function renderDashboard(requestedSpace) {
       setNoteMode(false);
-      const data = await api('/api/v1/files');
+      const [data, tokenData] = await Promise.all([
+        api('/api/v1/files'),
+        api('/api/v1/tokens').catch(() => ({ tokens: [] }))
+      ]);
       if (requestedSpace && !matchesSpace(data.space, requestedSpace)) {
         renderGate('404', '页面不存在。');
         return;
@@ -1536,6 +1658,7 @@
                   </div>
                   <div id="file-list">${filesMarkup(currentFiles)}</div>
                 </div>
+                ${tokenPanelMarkup(tokenData.tokens || [])}
               </section>
             </div>
           </section>
@@ -1545,6 +1668,7 @@
 
       bindDashboard(data.space);
       bindContextMenu();
+      bindTokenPanel();
     }
 
     function filesMarkup(files) {
@@ -1578,6 +1702,43 @@
           <div class="drawer-body"></div>
         </section>
       `;
+    }
+
+    function tokenPanelMarkup(tokens) {
+      return `
+        <section class="token-panel" id="token-panel">
+          <div class="token-top">
+            <div>
+              <h3>脚本令牌</h3>
+              <div class="space-code">本机上传</div>
+            </div>
+            <div class="token-create">
+              <input id="token-name" type="text" maxlength="80" placeholder="名称" autocomplete="off">
+              <button class="secondary" type="button" data-token-action="create">新建</button>
+            </div>
+          </div>
+          <div class="token-secret" id="token-secret"></div>
+          <div class="token-list" id="token-list">${tokensMarkup(tokens)}</div>
+          <div class="message" id="token-message"></div>
+        </section>
+      `;
+    }
+
+    function tokensMarkup(tokens) {
+      if (!tokens.length) {
+        return '<div class="empty">这里还没有令牌。</div>';
+      }
+      return tokens.map((token) => `
+        <div class="token-row" data-token-id="${html(token.id)}">
+          <div>
+            <div class="token-name">${html(token.name || '脚本令牌')}</div>
+            <code>${html(token.tokenPrefix || '')}...</code>
+          </div>
+          <div>${html(formatDateTime(token.createdAt, '-'))}</div>
+          <div>${html(formatDateTime(token.lastUsedAt))}</div>
+          <button class="secondary" type="button" data-token-action="revoke">撤销</button>
+        </div>
+      `).join('');
     }
 
     function bindDashboard(space) {
@@ -1632,6 +1793,82 @@
         }
         bottomOverscroll = 0;
       }, { passive: true });
+    }
+
+    function bindTokenPanel() {
+      const panel = document.getElementById('token-panel');
+      if (!panel || panel.dataset.bound === '1') return;
+      panel.dataset.bound = '1';
+      const tokenName = document.getElementById('token-name');
+      const tokenSecret = document.getElementById('token-secret');
+      const tokenList = document.getElementById('token-list');
+      const tokenMessage = document.getElementById('token-message');
+      const setTokenMessage = (text, tone) => {
+        tokenMessage.textContent = text || '';
+        tokenMessage.className = text ? `message ${tone} is-visible` : 'message';
+      };
+      const refreshTokens = async () => {
+        const data = await api('/api/v1/tokens');
+        tokenList.innerHTML = tokensMarkup(data.tokens || []);
+      };
+      const showTokenSecret = (token) => {
+        tokenSecret.innerHTML = `
+          <code>${html(token)}</code>
+          <button class="secondary" type="button" data-token-action="copy-created">复制</button>
+        `;
+        tokenSecret.classList.add('is-visible');
+      };
+
+      panel.addEventListener('click', async (event) => {
+        const action = event.target.dataset.tokenAction;
+        if (!action) return;
+
+        if (action === 'copy-created') {
+          const code = tokenSecret.querySelector('code');
+          if (!code) return;
+          try {
+            await navigator.clipboard.writeText(code.textContent);
+            setTokenMessage('已复制。', 'success');
+          } catch (_error) {
+            setTokenMessage('复制失败。', 'error');
+          }
+          return;
+        }
+
+        if (action === 'create') {
+          event.target.disabled = true;
+          setTokenMessage('', 'success');
+          try {
+            const payload = await api('/api/v1/tokens', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ name: tokenName.value })
+            });
+            tokenName.value = '';
+            showTokenSecret(payload.token);
+            await refreshTokens();
+          } catch (error) {
+            setTokenMessage(error.message || '创建失败。', 'error');
+          } finally {
+            event.target.disabled = false;
+          }
+          return;
+        }
+
+        if (action === 'revoke') {
+          const row = event.target.closest('.token-row');
+          if (!row || !confirm('撤销这个令牌？')) return;
+          event.target.disabled = true;
+          try {
+            await api(`/api/v1/tokens/${encodeURIComponent(row.dataset.tokenId)}`, { method: 'DELETE' });
+            await refreshTokens();
+            setTokenMessage('已撤销。', 'success');
+          } catch (error) {
+            setTokenMessage(error.message || '撤销失败。', 'error');
+            event.target.disabled = false;
+          }
+        }
+      });
     }
 
     function bindContextMenu() {

@@ -146,7 +146,9 @@ test -s index.html
 - database_name: `smai-upload-db`
 - binding: `UPLOAD_DB`
 - 创建后把 `upload-api-worker/wrangler.toml` 中的 `database_id` 替换为真实 ID
-- 初始化迁移文件：[upload-api-worker/migrations/0001_create_upload_centre.sql](/home/fish_/smaiclub_project/Repositories/www.smaiclub.top/upload-api-worker/migrations/0001_create_upload_centre.sql)
+- 迁移目录：[upload-api-worker/migrations/](/home/fish_/smaiclub_project/Repositories/www.smaiclub.top/upload-api-worker/migrations/)
+  - `0001_create_upload_centre.sql`
+  - `0002_create_upload_api_tokens.sql`
 
 迁移示例：
 

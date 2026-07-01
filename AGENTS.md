@@ -144,7 +144,9 @@ GitHub Secrets：
 
 - binding: `UPLOAD_DB`
 - database_name: `smai-upload-db`
-- 迁移文件: `upload-api-worker/migrations/0001_create_upload_centre.sql`
+- 迁移目录: `upload-api-worker/migrations/`
+  - `0001_create_upload_centre.sql`
+  - `0002_create_upload_api_tokens.sql`
 - 创建 D1 后必须替换 `upload-api-worker/wrangler.toml` 中的 `database_id`
 
 `upload-api-worker` 当前包含每日 cron，用于清理 180 天到期文件和 90 天到期在线 txt。

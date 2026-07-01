@@ -14,6 +14,7 @@ const DEFAULT_MAX_UPLOAD_BYTES = 25 * 1024 * 1024;
 const FILE_TTL_MS = 180 * 24 * 60 * 60 * 1000;
 const NOTE_TTL_MS = 90 * 24 * 60 * 60 * 1000;
 const NOTE_CONTENT_LIMIT = 200000;
+const MAX_ACTIVE_API_TOKENS = 12;
 const PROJECT_PATTERN = /^[a-z0-9][a-z0-9._-]{0,47}$/;
 const SHORT_CODE_PATTERN = /^[a-z0-9]{4,5}$/i;
 const NOTE_CODE_PATTERN = /^[a-z0-9]{4}$/i;
@@ -58,7 +59,7 @@ async function handleRequest(request, env) {
   }
 
   if (request.method === "POST" && url.pathname === "/api/v1/uploads") {
-    return withUploader(request, env, (user) => handleUpload(request, env, user));
+    return withUploadAccess(request, env, (user) => handleUpload(request, env, user));
   }
 
   if (request.method === "GET" && url.pathname === "/api/v1/files") {
@@ -73,6 +74,19 @@ async function handleRequest(request, env) {
   const fileMatch = url.pathname.match(/^\/api\/v1\/files\/([^/]+)(?:\/(download|public))?$/);
   if (fileMatch) {
     return withUploader(request, env, (user) => handleFileAction(request, env, user, fileMatch[1], fileMatch[2] || ""));
+  }
+
+  if (request.method === "GET" && url.pathname === "/api/v1/tokens") {
+    return withUploader(request, env, (user) => handleListApiTokens(request, env, user));
+  }
+
+  if (request.method === "POST" && url.pathname === "/api/v1/tokens") {
+    return withUploader(request, env, (user) => handleCreateApiToken(request, env, user));
+  }
+
+  const tokenMatch = url.pathname.match(/^\/api\/v1\/tokens\/([^/]+)$/);
+  if (request.method === "DELETE" && tokenMatch) {
+    return withUploader(request, env, (user) => handleRevokeApiToken(request, env, user, tokenMatch[1]));
   }
 
   if (request.method === "POST" && url.pathname === "/api/v1/notes") {
@@ -148,6 +162,21 @@ async function withUploader(request, env, handler) {
   return handler(user);
 }
 
+async function withUploadAccess(request, env, handler) {
+  if (!env.UPLOAD_DB) {
+    return json({ error: "DB_NOT_CONFIGURED", message: "上传暂不可用" }, 503, request, env);
+  }
+
+  const user = await getLoginUser(request, env) || await getApiTokenUser(request, env);
+  if (!user) {
+    return json({ error: "LOGIN_REQUIRED", message: "请先登录" }, 401, request, env);
+  }
+  if (!canUpload(user)) {
+    return json({ error: "FORBIDDEN", message: "当前身份无法上传" }, 403, request, env);
+  }
+  return handler(user);
+}
+
 async function handleUpload(request, env, user) {
   if (!env.UPLOAD_BUCKET) {
     return json({ error: "BUCKET_NOT_CONFIGURED", message: "上传暂不可用" }, 503, request, env);
@@ -171,7 +200,12 @@ async function handleUpload(request, env, user) {
 
   const space = await getOrCreateSpace(env, user);
   await cleanupExpiredForSpace(env, space.space_id);
-  const objectPath = await chooseAvailablePath(env, space.space_id, buildObjectPath(parsed, project));
+  const requestedPath = buildObjectPath(parsed, project);
+  if (!requestedPath) {
+    return json({ error: "PATH_REQUIRED", message: "请提供文件名或保存路径" }, 400, request, env);
+  }
+
+  const objectPath = await chooseAvailablePath(env, space.space_id, requestedPath);
   const key = `${space.space_id}/${objectPath}`;
   const now = Date.now();
   const expiresAt = now + FILE_TTL_MS;
@@ -247,6 +281,53 @@ async function handleFileAction(request, env, user, id, action) {
   }
 
   return json({ error: "NOT_FOUND", message: "Not found" }, 404, request, env);
+}
+
+async function handleListApiTokens(request, env, user) {
+  await getOrCreateSpace(env, user);
+  const tokens = await listApiTokens(env, user.username);
+  return json({ tokens: tokens.map(publicApiToken) }, 200, request, env);
+}
+
+async function handleCreateApiToken(request, env, user) {
+  await getOrCreateSpace(env, user);
+  const activeCount = await countActiveApiTokens(env, user.username);
+  if (activeCount >= MAX_ACTIVE_API_TOKENS) {
+    return json({ error: "TOKEN_LIMIT", message: "令牌数量已达上限" }, 409, request, env);
+  }
+
+  const body = await readJson(request);
+  const name = sanitizeLabel(body.name || "脚本令牌") || "脚本令牌";
+  const now = Date.now();
+
+  for (let attempt = 0; attempt < 5; attempt += 1) {
+    const token = `smai_${randomToken(48)}`;
+    const tokenHash = await sha256Hex(token);
+    const tokenPrefix = token.slice(0, 16);
+    const id = crypto.randomUUID();
+    try {
+      await env.UPLOAD_DB.prepare(
+        `INSERT INTO upload_api_tokens (
+          id, username, name, token_prefix, token_hash, created_at, last_used_at, revoked_at
+        ) VALUES (?, ?, ?, ?, ?, ?, NULL, NULL)`
+      ).bind(id, user.username, name, tokenPrefix, tokenHash, now).run();
+      const row = await env.UPLOAD_DB.prepare(
+        "SELECT * FROM upload_api_tokens WHERE id = ? AND username = ?"
+      ).bind(id, user.username).first();
+      return json({ token, apiToken: publicApiToken(row) }, 201, request, env);
+    } catch (error) {
+      if (attempt === 4) throw error;
+    }
+  }
+
+  return json({ error: "TOKEN_CREATE_FAILED", message: "令牌创建失败" }, 500, request, env);
+}
+
+async function handleRevokeApiToken(request, env, user, id) {
+  await env.UPLOAD_DB.prepare(
+    "UPDATE upload_api_tokens SET revoked_at = ? WHERE id = ? AND username = ? AND revoked_at IS NULL"
+  ).bind(Date.now(), id, user.username).run();
+  return json({ success: true }, 200, request, env);
 }
 
 async function handlePublicDownload(request, env, publicId) {
@@ -438,9 +519,17 @@ async function parseUploadPayload(request, maxBytes) {
     }
 
     const buffer = await file.arrayBuffer();
+    const filename = sanitizeFilename(file.name);
+    if (!filename) {
+      return {
+        status: 400,
+        error: { error: "FILENAME_REQUIRED", message: "请提供文件名" },
+      };
+    }
+
     return {
       body: buffer,
-      filename: sanitizeFilename(file.name || "upload.bin"),
+      filename,
       contentType: file.type || "application/octet-stream",
       size: file.size,
       project: String(form.get("project") || "general"),
@@ -465,26 +554,47 @@ async function parseUploadPayload(request, maxBytes) {
   }
 
   const buffer = await request.arrayBuffer();
+  const pathMode = request.headers.get("X-SMAI-Path-Mode") === "custom" ? "custom" : "filename";
+  const customPath = request.headers.get("X-SMAI-Object-Path") || "";
+  const cleanCustomPath = sanitizeObjectPath(customPath);
+  let filename = sanitizeFilename(request.headers.get("X-SMAI-Filename"));
+  if (pathMode === "custom") {
+    if (!cleanCustomPath) {
+      return {
+        status: 400,
+        error: { error: "PATH_REQUIRED", message: "请提供保存路径" },
+      };
+    }
+  }
+  if (!filename) {
+    return {
+      status: 400,
+      error: { error: "FILENAME_REQUIRED", message: "请提供文件名" },
+    };
+  }
+
   return {
     body: buffer,
-    filename: sanitizeFilename(request.headers.get("X-SMAI-Filename") || "upload.bin"),
+    filename,
     contentType: contentType || "application/octet-stream",
     size: buffer.byteLength,
     project: request.headers.get("X-SMAI-Project") || "general",
     label: sanitizeLabel(request.headers.get("X-SMAI-Label") || ""),
-    pathMode: request.headers.get("X-SMAI-Path-Mode") || "filename",
-    customPath: request.headers.get("X-SMAI-Object-Path") || "",
+    pathMode,
+    customPath,
   };
 }
 
 function buildObjectPath(parsed, project) {
   const custom = parsed.pathMode === "custom" ? sanitizeObjectPath(parsed.customPath) : "";
   if (custom) return custom;
-  return `${project}/${sanitizeFilename(parsed.filename)}`;
+  const filename = sanitizeFilename(parsed.filename);
+  return filename ? `${project}/${filename}` : "";
 }
 
 async function chooseAvailablePath(env, spaceId, requestedPath) {
-  const cleanPath = sanitizeObjectPath(requestedPath) || "general/upload.bin";
+  const cleanPath = sanitizeObjectPath(requestedPath);
+  if (!cleanPath) throw new Error("Missing upload object path");
   const exists = async (path) => {
     const row = await env.UPLOAD_DB.prepare(
       "SELECT id FROM upload_files WHERE space_id = ? AND object_path = ? AND deleted_at IS NULL LIMIT 1"
@@ -513,7 +623,18 @@ async function getOrCreateSpace(env, user) {
   const existing = await env.UPLOAD_DB.prepare(
     "SELECT * FROM user_spaces WHERE username = ?"
   ).bind(user.username).first();
-  if (existing) return existing;
+  if (existing) {
+    const displayName = user.displayName || user.username;
+    const role = user.effectiveRole || user.role || existing.role;
+    if (existing.display_name !== displayName || existing.role !== role) {
+      const now = Date.now();
+      await env.UPLOAD_DB.prepare(
+        "UPDATE user_spaces SET display_name = ?, role = ?, updated_at = ? WHERE username = ?"
+      ).bind(displayName, role, now, user.username).run();
+      return { ...existing, display_name: displayName, role, updated_at: now };
+    }
+    return existing;
+  }
 
   for (let attempt = 0; attempt < 10; attempt += 1) {
     const spaceId = crypto.randomUUID();
@@ -574,6 +695,23 @@ async function getFileById(env, id, spaceId) {
   return env.UPLOAD_DB.prepare(
     "SELECT * FROM upload_files WHERE id = ? AND space_id = ? LIMIT 1"
   ).bind(id, spaceId).first();
+}
+
+async function listApiTokens(env, username) {
+  const { results } = await env.UPLOAD_DB.prepare(
+    `SELECT id, username, name, token_prefix, created_at, last_used_at, revoked_at
+     FROM upload_api_tokens
+     WHERE username = ? AND revoked_at IS NULL
+     ORDER BY created_at DESC`
+  ).bind(username).all();
+  return results || [];
+}
+
+async function countActiveApiTokens(env, username) {
+  const row = await env.UPLOAD_DB.prepare(
+    "SELECT COUNT(*) AS count FROM upload_api_tokens WHERE username = ? AND revoked_at IS NULL"
+  ).bind(username).first();
+  return row?.count || 0;
 }
 
 async function deleteFileObject(env, file) {
@@ -693,7 +831,11 @@ async function verifyNotePassword(note, password) {
 }
 
 async function hashSecret(value, salt) {
-  const data = new TextEncoder().encode(`${salt}:${value}`);
+  return sha256Hex(`${salt}:${value}`);
+}
+
+async function sha256Hex(value) {
+  const data = new TextEncoder().encode(String(value || ""));
   const digest = await crypto.subtle.digest("SHA-256", data);
   return [...new Uint8Array(digest)].map((byte) => byte.toString(16).padStart(2, "0")).join("");
 }
@@ -726,6 +868,44 @@ async function getLoginUser(request, env) {
   }
 }
 
+async function getApiTokenUser(request, env) {
+  const token = getBearerToken(request);
+  if (!token) return null;
+
+  const tokenHash = await sha256Hex(token);
+  const row = await env.UPLOAD_DB.prepare(
+    `SELECT
+      t.id,
+      t.username,
+      s.display_name,
+      s.role,
+      s.space_id
+     FROM upload_api_tokens t
+     INNER JOIN user_spaces s ON s.username = t.username
+     WHERE t.token_hash = ? AND t.revoked_at IS NULL
+     LIMIT 1`
+  ).bind(tokenHash).first();
+  if (!row) return null;
+
+  await env.UPLOAD_DB.prepare(
+    "UPDATE upload_api_tokens SET last_used_at = ? WHERE id = ?"
+  ).bind(Date.now(), row.id).run();
+
+  return {
+    username: String(row.username),
+    displayName: String(row.display_name || row.username),
+    role: normalizeRole(row.role),
+    effectiveRole: normalizeRole(row.role),
+    authMethod: "token",
+  };
+}
+
+function getBearerToken(request) {
+  const authorization = request.headers.get("Authorization") || "";
+  const match = authorization.match(/^Bearer\s+(.+)$/i);
+  return match ? match[1].trim() : "";
+}
+
 function canUpload(user) {
   const role = normalizeRole(user.effectiveRole || user.role);
   return (ROLE_LEVELS[role] ?? 0) > 0;
@@ -750,9 +930,10 @@ function normalizeProject(value) {
 }
 
 function sanitizeFilename(value) {
-  const raw = String(value || "upload.bin").normalize("NFKC").split(/[\\/]/).pop() || "upload.bin";
+  const raw = String(value || "").normalize("NFKC").split(/[\\/]/).pop() || "";
+  if (!raw) return "";
   const cleaned = raw.replace(/[^\p{L}\p{N}._ -]+/gu, "_").replace(/\s+/g, "-").slice(0, 120);
-  return cleaned.replace(/^\.+/, "") || "upload.bin";
+  return cleaned.replace(/^\.+/, "") || "";
 }
 
 function sanitizeObjectPath(value) {
@@ -837,6 +1018,16 @@ function publicFile(file, request, env) {
   };
 }
 
+function publicApiToken(token) {
+  return {
+    id: token.id,
+    name: token.name || "脚本令牌",
+    tokenPrefix: token.token_prefix,
+    createdAt: new Date(Number(token.created_at || Date.now())).toISOString(),
+    lastUsedAt: token.last_used_at ? new Date(Number(token.last_used_at)).toISOString() : null,
+  };
+}
+
 function publicNote(note, space, content, env, editable = false) {
   return {
     space: publicSpace(space),
@@ -881,7 +1072,7 @@ function corsHeaders(request, env) {
   const origin = request.headers.get("Origin");
   const headers = new Headers();
   headers.set("Access-Control-Allow-Methods", "GET, POST, DELETE, OPTIONS");
-  headers.set("Access-Control-Allow-Headers", "Content-Type, X-SMAI-Project, X-SMAI-Filename, X-SMAI-Label, X-SMAI-Path-Mode, X-SMAI-Object-Path");
+  headers.set("Access-Control-Allow-Headers", "Authorization, Content-Type, X-SMAI-Project, X-SMAI-Filename, X-SMAI-Label, X-SMAI-Path-Mode, X-SMAI-Object-Path");
   headers.set("Access-Control-Allow-Credentials", "true");
   headers.set("Access-Control-Max-Age", "86400");
   if (origin && isAllowedRequestOrigin(request, env)) {
