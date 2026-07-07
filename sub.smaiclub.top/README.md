@@ -30,6 +30,12 @@ Secrets / Variables:
 - `REALITY_FLOW`
 - `REALITY_FINGERPRINT`
 - `REALITY_NODE_NAME`
+- `HY2_HOST`: 可选，默认复用 `REALITY_HOST`
+- `HY2_PORT`: 可选，默认 `443`
+- `HY2_SNI`: 可选，IP 证书节点可留空
+- `HY2_ALPN`: 可选，默认 `h3`
+- `HY2_INSECURE`: 可选，只有需要跳过证书校验时设为 `true`
+- `HY2_NODE_NAME`: 可选，默认 `VPS-Japan-HY2`
 
 用户和管理员页面使用 SmaiClub 统一登录。`sub_token` 只作为代理客户端无法携带 Cookie 时使用的订阅密钥，由服务端自动生成并与 SmaiClub 用户名绑定。
 

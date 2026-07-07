@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { detectClientFormat, parseEdgetunnelSubscription, renderSubscription } from '../functions/_shared/subscription.ts';
-import type { ProxyNode, UserSubscriptionRow } from '../functions/_shared/types.ts';
+import { buildHy2Node, detectClientFormat, parseEdgetunnelSubscription, renderSubscription } from '../functions/_shared/subscription.ts';
+import type { Env, ProxyNode, UserSubscriptionRow } from '../functions/_shared/types.ts';
 import { buildSubscriptionUserinfo } from '../functions/_shared/subscription.ts';
 import { isBlocked } from '../functions/_shared/db.ts';
 
@@ -66,16 +66,25 @@ test('renderSubscription emits clash yaml and raw base64', () => {
       name: 'VPS-Japan',
       uri: 'vless://uuid@example.com:443?type=tcp&encryption=none&security=reality&pbk=pub&fp=chrome&sni=www.softbank.jp&sid=ad&flow=xtls-rprx-vision#VPS-Japan',
     },
+    {
+      id: 'vps-hy2',
+      kind: 'vps',
+      name: 'VPS-Japan-HY2',
+      uri: 'hysteria2://uuid@example.com:443?security=tls&alpn=h3#VPS-Japan-HY2',
+    },
   ];
 
   const clash = renderSubscription(nodes, { kind: 'clash', contentType: 'text/yaml' });
   assert.match(clash, /reality-opts/);
+  assert.match(clash, /type: hysteria2/);
+  assert.match(clash, /password: "uuid"/);
   assert.match(clash, /rule-providers:/);
   assert.match(clash, /name: SMAICLUB/);
   assert.match(clash, /name: SMAICLUB Auto/);
   assert.match(clash, /RULE-SET,OpenAI_No_Resolve,OpenAI/);
   assert.match(clash, /MATCH,Final/);
   assert.match(atob(renderSubscription(nodes, { kind: 'raw', contentType: 'text/plain' })), /vless:\/\/uuid/);
+  assert.match(atob(renderSubscription(nodes, { kind: 'raw', contentType: 'text/plain' })), /hysteria2:\/\/uuid/);
 });
 
 test('renderSubscription emits sing-box route rules', () => {
@@ -86,6 +95,12 @@ test('renderSubscription emits sing-box route rules', () => {
       name: 'VPS-Japan',
       uri: 'vless://uuid@example.com:443?type=tcp&encryption=none&security=reality&pbk=pub&fp=chrome&sni=www.softbank.jp&sid=ad&flow=xtls-rprx-vision#VPS-Japan',
     },
+    {
+      id: 'vps-hy2',
+      kind: 'vps',
+      name: 'VPS-Japan-HY2',
+      uri: 'hysteria2://uuid@example.com:443?security=tls&alpn=h3#VPS-Japan-HY2',
+    },
   ], { kind: 'sing-box', contentType: 'application/json' });
   const config = JSON.parse(rendered) as {
     outbounds: Array<{ type: string; tag: string }>;
@@ -94,8 +109,27 @@ test('renderSubscription emits sing-box route rules', () => {
 
   assert.equal(config.outbounds[0].type, 'selector');
   assert.equal(config.outbounds[0].tag, 'SMAICLUB');
+  assert.ok(config.outbounds.some(outbound => outbound.type === 'hysteria2' && outbound.tag === 'VPS-Japan-HY2'));
   assert.equal(config.route.final, 'SMAICLUB');
   assert.ok(config.route.rule_set.some(ruleSet => ruleSet.tag === 'geosite-cn'));
+});
+
+test('buildHy2Node uses xui uuid and defaults to reality host', () => {
+  const node = buildHy2Node({
+    REALITY_HOST: '45.202.255.218',
+  } as Env, {
+    username: 'fish',
+    xui_uuid: 'client-uuid',
+    sub_status: 'active',
+    sub_expired_at: 0,
+    traffic_total: -1,
+    traffic_used_vps: 0,
+    traffic_updated_at: 0,
+  });
+
+  assert.ok(node);
+  assert.equal(node.name, 'VPS-Japan-HY2');
+  assert.match(node.uri, /^hysteria2:\/\/client-uuid@45\.202\.255\.218:443\?security=tls&alpn=h3#VPS-Japan-HY2$/);
 });
 
 test('isBlocked enforces expiration and quota', () => {

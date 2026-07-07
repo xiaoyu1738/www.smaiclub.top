@@ -30,6 +30,12 @@ export interface Env {
   REALITY_FLOW?: string;
   REALITY_FINGERPRINT?: string;
   REALITY_NODE_NAME?: string;
+  HY2_HOST?: string;
+  HY2_PORT?: string;
+  HY2_SNI?: string;
+  HY2_ALPN?: string;
+  HY2_INSECURE?: string;
+  HY2_NODE_NAME?: string;
 }
 
 export interface UserSubscriptionRow {

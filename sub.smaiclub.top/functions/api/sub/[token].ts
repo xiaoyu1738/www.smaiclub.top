@@ -2,6 +2,7 @@ import { getUserByToken, isBlocked } from '../../_shared/db.ts';
 import { jsonResponse } from '../../_shared/http.ts';
 import {
   buildSubscriptionUserinfo,
+  buildHy2Node,
   buildVpsNode,
   detectClientFormat,
   fetchEdgetunnelNodes,
@@ -22,6 +23,8 @@ export const onRequestGet: PagesFunction<Env> = async ({ request, env, params })
   const nodes: ProxyNode[] = [];
   const vpsNode = buildVpsNode(env, user);
   if (vpsNode) nodes.push(vpsNode);
+  const hy2Node = buildHy2Node(env, user);
+  if (hy2Node) nodes.push(hy2Node);
   nodes.push(...await fetchEdgetunnelNodes(env, user));
 
   if (nodes.length === 0) {

@@ -118,6 +118,28 @@ export function buildVpsNode(env: Env, user: UserSubscriptionRow): ProxyNode | n
   };
 }
 
+/** Build the self-hosted VPS Hysteria2 node using the same 3x-ui client identity. */
+export function buildHy2Node(env: Env, user: UserSubscriptionRow): ProxyNode | null {
+  const host = env.HY2_HOST || env.REALITY_HOST;
+  if (!user.xui_uuid || !host) return null;
+
+  const params = new URLSearchParams({
+    security: 'tls',
+    alpn: env.HY2_ALPN || 'h3',
+  });
+  if (env.HY2_SNI) params.set('sni', env.HY2_SNI);
+  if (env.HY2_INSECURE === 'true') params.set('insecure', '1');
+
+  const port = env.HY2_PORT || '443';
+  const name = env.HY2_NODE_NAME || 'VPS-Japan-HY2';
+  return {
+    id: 'vps-hy2',
+    name,
+    kind: 'vps',
+    uri: `hysteria2://${encodeURIComponent(user.xui_uuid)}@${formatUrlHost(host)}:${port}?${params.toString()}#${encodeURIComponent(name)}`,
+  };
+}
+
 function selectRealityShortId(env: Env): string {
   const candidates = (env.REALITY_SHORT_IDS || env.REALITY_SHORT_ID || '')
     .split(',')
@@ -381,6 +403,11 @@ function dedupeStrings(values: string[]): string[] {
 }
 
 function renderClashProxy(node: ProxyNode): string {
+  if (node.uri.startsWith('hysteria2://')) return renderClashHysteria2Proxy(node);
+  return renderClashVlessProxy(node);
+}
+
+function renderClashVlessProxy(node: ProxyNode): string {
   const parsed = parseVlessUrl(node.uri);
   const lines = [
     `  - name: ${yamlString(node.name)}`,
@@ -409,6 +436,22 @@ function renderClashProxy(node: ProxyNode): string {
   return lines.join('\n');
 }
 
+function renderClashHysteria2Proxy(node: ProxyNode): string {
+  const parsed = parseHysteria2Url(node.uri);
+  const lines = [
+    `  - name: ${yamlString(node.name)}`,
+    '    type: hysteria2',
+    `    server: ${yamlString(parsed.host)}`,
+    `    port: ${parsed.port}`,
+    `    password: ${yamlString(parsed.password)}`,
+    '    udp: true',
+  ];
+  if (parsed.params.get('sni')) lines.push(`    sni: ${yamlString(parsed.params.get('sni') || '')}`);
+  if (parsed.params.get('alpn')) lines.push(`    alpn: [${parsed.params.get('alpn')!.split(',').map(yamlString).join(', ')}]`);
+  if (parsed.params.get('insecure') === '1') lines.push('    skip-cert-verify: true');
+  return lines.join('\n');
+}
+
 function renderSingBox(nodes: ProxyNode[]): string {
   const proxyNodes = nodes.filter(node => !isDisplayOnlyNodeName(node.name));
   const proxyNames = proxyNodes.map(node => node.name);
@@ -422,39 +465,7 @@ function renderSingBox(nodes: ProxyNode[]): string {
       },
       { type: 'direct', tag: 'DIRECT' },
       { type: 'block', tag: 'REJECT' },
-      ...proxyNodes.map(node => {
-      const parsed = parseVlessUrl(node.uri);
-      const outbound: Record<string, unknown> = {
-        type: 'vless',
-        tag: node.name,
-        server: parsed.host,
-        server_port: parsed.port,
-        uuid: parsed.uuid,
-        flow: parsed.params.get('flow') || undefined,
-        tls: parsed.security === 'tls' || parsed.security === 'reality'
-          ? {
-              enabled: true,
-              server_name: parsed.params.get('sni') || parsed.host,
-              utls: { enabled: true, fingerprint: parsed.params.get('fp') || 'chrome' },
-              reality: parsed.security === 'reality'
-                ? {
-                    enabled: true,
-                    public_key: parsed.params.get('pbk') || '',
-                    short_id: parsed.params.get('sid') || '',
-                  }
-                : undefined,
-            }
-          : undefined,
-      };
-      if (parsed.network === 'ws') {
-        outbound.transport = {
-          type: 'ws',
-          path: parsed.params.get('path') || '/',
-          headers: { Host: parsed.params.get('host') || parsed.host },
-        };
-      }
-      return outbound;
-    }),
+      ...proxyNodes.map(renderSingBoxProxy),
     ],
     route: {
       auto_detect_interface: true,
@@ -473,6 +484,58 @@ function renderSingBox(nodes: ProxyNode[]): string {
       final: CLASH_GROUP,
     },
   }, null, 2);
+}
+
+function renderSingBoxProxy(node: ProxyNode): Record<string, unknown> {
+  if (node.uri.startsWith('hysteria2://')) {
+    const parsed = parseHysteria2Url(node.uri);
+    const alpn = parsed.params.get('alpn')?.split(',').map(value => value.trim()).filter(Boolean) || [];
+    return {
+      type: 'hysteria2',
+      tag: node.name,
+      server: parsed.host,
+      server_port: parsed.port,
+      password: parsed.password,
+      tls: {
+        enabled: true,
+        server_name: parsed.params.get('sni') || undefined,
+        alpn: alpn.length ? alpn : undefined,
+        insecure: parsed.params.get('insecure') === '1' || undefined,
+      },
+    };
+  }
+
+  const parsed = parseVlessUrl(node.uri);
+  const outbound: Record<string, unknown> = {
+    type: 'vless',
+    tag: node.name,
+    server: parsed.host,
+    server_port: parsed.port,
+    uuid: parsed.uuid,
+    flow: parsed.params.get('flow') || undefined,
+    tls: parsed.security === 'tls' || parsed.security === 'reality'
+      ? {
+          enabled: true,
+          server_name: parsed.params.get('sni') || parsed.host,
+          utls: { enabled: true, fingerprint: parsed.params.get('fp') || 'chrome' },
+          reality: parsed.security === 'reality'
+            ? {
+                enabled: true,
+                public_key: parsed.params.get('pbk') || '',
+                short_id: parsed.params.get('sid') || '',
+              }
+            : undefined,
+        }
+      : undefined,
+  };
+  if (parsed.network === 'ws') {
+    outbound.transport = {
+      type: 'ws',
+      path: parsed.params.get('path') || '/',
+      headers: { Host: parsed.params.get('host') || parsed.host },
+    };
+  }
+  return outbound;
 }
 
 function renderSingBoxRuleSet(tag: string, path: string): Record<string, string> {
@@ -495,6 +558,21 @@ function parseVlessUrl(uri: string) {
     network: url.searchParams.get('type') || 'tcp',
     security: url.searchParams.get('security') || 'none',
   };
+}
+
+function parseHysteria2Url(uri: string) {
+  const url = new URL(uri);
+  return {
+    password: decodeURIComponent(url.username),
+    host: url.hostname,
+    port: Number(url.port || 443),
+    params: url.searchParams,
+  };
+}
+
+function formatUrlHost(address: string): string {
+  const bare = address.replace(/^\[|\]$/g, '');
+  return bare.includes(':') ? `[${bare}]` : bare;
 }
 
 function yamlString(value: string): string {
