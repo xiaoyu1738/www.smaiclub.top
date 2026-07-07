@@ -59,7 +59,7 @@ export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
         error: 'XUI_SYNC_FAILED',
         message: xui.message || '3x-ui client sync failed',
         xui,
-      }, { status: 502 });
+      }, { status: 424 });
     }
 
     await env.DB.prepare(`
