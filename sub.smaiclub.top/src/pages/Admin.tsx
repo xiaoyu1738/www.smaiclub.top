@@ -161,13 +161,25 @@ function formatBytes(value: number): string {
   return `${current.toFixed(unit === 0 ? 0 : 1)} ${units[unit]}`;
 }
 
-async function readApiResponse<T>(response: Response): Promise<T & { rawText?: string }> {
+interface ApiRawPayload {
+  rawText?: string;
+  rawStatus?: number;
+  rawContentType?: string | null;
+  retryAfter?: string | null;
+}
+
+async function readApiResponse<T>(response: Response): Promise<T & ApiRawPayload> {
   const text = await response.text();
-  if (!text) return {} as T & { rawText?: string };
+  if (!text) return {} as T & ApiRawPayload;
   try {
-    return JSON.parse(text) as T & { rawText?: string };
+    return JSON.parse(text) as T & ApiRawPayload;
   } catch {
-    return { rawText: text } as T & { rawText?: string };
+    return {
+      rawText: summarizeRawApiText(response, text),
+      rawStatus: response.status,
+      rawContentType: response.headers.get('content-type'),
+      retryAfter: response.headers.get('retry-after'),
+    } as T & ApiRawPayload;
   }
 }
 
@@ -180,17 +192,20 @@ function getErrorCode(payload: unknown): string | undefined {
 function formatAdminError(
   error: string | undefined,
   fallback: string,
-  payload?: { message?: string; rawText?: string; xui?: { message?: string; body?: string; status?: number } },
+  payload?: { message?: string; rawText?: string; rawStatus?: number; retryAfter?: string | null; xui?: { message?: string; body?: string; status?: number } },
 ): string {
   if (error === 'LOGIN_REQUIRED') return '请先登录 SmaiClub 账号';
   if (error === 'FORBIDDEN') return '当前账号没有管理员权限';
+  if (error === 'USERNAME_REQUIRED') return '请输入用户名';
+  if (error === 'USER_NOT_FOUND') return '用户不存在';
+  if (error === 'INVALID_TRAFFIC_TOTAL') return '流量额度不合法';
   if (error === 'XUI_SYNC_FAILED') {
     const status = payload?.xui?.status ? `HTTP ${payload.xui.status}: ` : '';
     const config = formatXuiConfig(payload?.xui);
     return `3x-ui 同步失败：${status}${payload?.xui?.message || payload?.message || payload?.xui?.body || fallback}${config}`;
   }
   if (payload?.message) return payload.message;
-  if (payload?.rawText) return `${fallback}：${payload.rawText.replace(/\s+/g, ' ').trim().slice(0, 160)}`;
+  if (payload?.rawText) return `${fallback}：${payload.rawText}`;
   return error || fallback;
 }
 
@@ -199,4 +214,27 @@ function formatXuiConfig(xui: unknown): string {
   const config = (xui as { config?: Record<string, boolean> }).config;
   if (!config) return '';
   return `（配置：base=${Boolean(config.hasBaseUrl)}, inbound=${Boolean(config.hasInboundId)}, hy2=${Boolean(config.hasHy2InboundId)}, user=${Boolean(config.hasUsername)}, pass=${Boolean(config.hasPassword)}, cookie=${Boolean(config.hasCookie)}）`;
+}
+
+function summarizeRawApiText(response: Response, text: string): string {
+  const compact = text.replace(/\s+/g, ' ').trim();
+  if (!compact) return `HTTP ${response.status}`;
+  if (isHtmlResponse(response.headers.get('content-type'), compact)) {
+    const title = extractHtmlTitle(compact);
+    const retryAfter = response.headers.get('retry-after');
+    const retryText = retryAfter ? `，${retryAfter} 秒后再试` : '';
+    return `Cloudflare 返回 HTML 错误页（HTTP ${response.status}${title ? `：${title}` : ''}${retryText}）`;
+  }
+  return compact.slice(0, 160);
+}
+
+function isHtmlResponse(contentType: string | null, text: string): boolean {
+  const normalizedContentType = (contentType || '').toLowerCase();
+  const start = text.trimStart().slice(0, 32).toLowerCase();
+  return normalizedContentType.includes('text/html') || start.startsWith('<!doctype html') || start.startsWith('<html');
+}
+
+function extractHtmlTitle(text: string): string | undefined {
+  const match = /<title[^>]*>([\s\S]*?)<\/title>/i.exec(text);
+  return match?.[1]?.replace(/\s+/g, ' ').trim().slice(0, 80);
 }

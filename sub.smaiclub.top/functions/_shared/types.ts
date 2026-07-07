@@ -18,6 +18,7 @@ export interface Env {
   XUI_COOKIE?: string;
   XUI_INBOUND_ID?: string;
   XUI_HY2_INBOUND_ID?: string;
+  XUI_FETCH_TIMEOUT_MS?: string;
   XUI_ACCESS_CLIENT_ID?: string;
   XUI_ACCESS_CLIENT_SECRET?: string;
   XUI_ACCESS_AUTH_HEADER?: string;

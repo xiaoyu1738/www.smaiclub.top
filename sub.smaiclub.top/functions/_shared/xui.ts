@@ -1,6 +1,8 @@
 import type { Env } from './types.ts';
 
 const DEFAULT_HY2_INBOUND_ID = '2';
+const DEFAULT_XUI_FETCH_TIMEOUT_MS = 6_000;
+const MAX_XUI_FETCH_TIMEOUT_MS = 12_000;
 
 interface XuiClientStat {
   uuid: string;
@@ -53,6 +55,7 @@ export interface XuiConfigDiagnostic {
   hasAccessClientId: boolean;
   hasAccessClientSecret: boolean;
   hasAccessAuthHeader: boolean;
+  fetchTimeoutMs: number;
 }
 
 interface XuiClientOptions {
@@ -122,6 +125,7 @@ export function xuiConfigDiagnostic(env: Env): XuiConfigDiagnostic {
     hasAccessClientId: Boolean(env.XUI_ACCESS_CLIENT_ID),
     hasAccessClientSecret: Boolean(env.XUI_ACCESS_CLIENT_SECRET),
     hasAccessAuthHeader: Boolean(env.XUI_ACCESS_AUTH_HEADER),
+    fetchTimeoutMs: xuiFetchTimeoutMs(env),
   };
 }
 
@@ -130,7 +134,7 @@ export async function fetchXuiClientStats(env: Env): Promise<XuiClientStat[]> {
   const cookie = await getXuiCookie(env);
   if (!cookie.cookie) return [];
 
-  const response = await fetch(`${trimSlash(env.XUI_BASE_URL)}/panel/api/inbounds/list`, {
+  const response = await xuiFetch(env, `${trimSlash(env.XUI_BASE_URL)}/panel/api/inbounds/list`, {
     headers: {
       ...xuiAccessHeaders(env),
       Cookie: cookie.cookie,
@@ -180,41 +184,51 @@ async function syncXuiClientTarget(
   options: XuiClientOptions,
   target: XuiInboundTarget,
 ): Promise<XuiTargetSyncResult> {
-  if (enabled && options.createOnly) {
-    const created = await addXuiClient(env, cookie, uuid, options, target);
-    if (created.ok) return created;
+  try {
+    if (enabled && options.createOnly) {
+      const created = await addXuiClient(env, cookie, uuid, options, target);
+      if (created.ok || !shouldAttemptFallback(created)) return created;
 
-    const attached = await attachExistingXuiClient(env, cookie, uuid, options, target);
-    return attached.ok ? attached : created;
-  }
+      const attached = await attachExistingXuiClient(env, cookie, uuid, options, target);
+      return attached.ok ? attached : created;
+    }
 
-  const client = buildXuiClient(env, uuid, enabled, options, target, 'update');
-  const response = await fetch(`${trimSlash(env.XUI_BASE_URL || '')}/panel/api/inbounds/updateClient/${uuid}`, {
-    method: 'POST',
-    headers: {
-      ...xuiAccessHeaders(env),
-      'Content-Type': 'application/json',
-      Cookie: cookie,
-    },
-    body: JSON.stringify({
-      id: target.id,
-      settings: JSON.stringify({
-        clients: [client],
+    const client = buildXuiClient(env, uuid, enabled, options, target, 'update');
+    const response = await xuiFetch(env, `${trimSlash(env.XUI_BASE_URL || '')}/panel/api/inbounds/updateClient/${uuid}`, {
+      method: 'POST',
+      headers: {
+        ...xuiAccessHeaders(env),
+        'Content-Type': 'application/json',
+        Cookie: cookie,
+      },
+      body: JSON.stringify({
+        id: target.id,
+        settings: JSON.stringify({
+          clients: [client],
+        }),
       }),
-    }),
-  });
-  const updateResult = withTarget(await parseXuiMutationResponse(response, 'updateClient'), target);
-  if (updateResult.ok) return updateResult;
+    });
+    const updateResult = withTarget(await parseXuiMutationResponse(response, 'updateClient'), target);
+    if (updateResult.ok) return updateResult;
 
-  if (enabled) {
-    const attached = await attachExistingXuiClient(env, cookie, uuid, options, target);
-    if (attached.ok) return attached;
+    if (enabled && shouldAttemptFallback(updateResult)) {
+      const attached = await attachExistingXuiClient(env, cookie, uuid, options, target);
+      if (attached.ok) return attached;
 
-    const created = await addXuiClient(env, cookie, uuid, options, target);
-    if (created.ok) return created;
+      const created = await addXuiClient(env, cookie, uuid, options, target);
+      if (created.ok) return created;
+    }
+
+    return updateResult;
+  } catch (error) {
+    return withTarget({
+      attempted: true,
+      ok: false,
+      action: 'syncClient',
+      message: error instanceof Error ? error.message : String(error),
+      config: xuiConfigDiagnostic(env),
+    }, target);
   }
-
-  return updateResult;
 }
 
 async function addXuiClient(
@@ -230,7 +244,7 @@ async function addXuiClient(
     clients: [buildXuiClient(env, uuid, true, options, target, 'create')],
   }));
 
-  const response = await fetch(`${trimSlash(env.XUI_BASE_URL || '')}/panel/api/inbounds/addClient`, {
+  const response = await xuiFetch(env, `${trimSlash(env.XUI_BASE_URL || '')}/panel/api/inbounds/addClient`, {
     method: 'POST',
     headers: {
       ...xuiAccessHeaders(env),
@@ -268,7 +282,7 @@ async function attachExistingXuiClient(
   target: XuiInboundTarget,
 ): Promise<XuiTargetSyncResult> {
   const email = options.email || uuid;
-  const response = await fetch(`${trimSlash(env.XUI_BASE_URL || '')}/panel/api/clients/${encodeURIComponent(email)}/attach`, {
+  const response = await xuiFetch(env, `${trimSlash(env.XUI_BASE_URL || '')}/panel/api/clients/${encodeURIComponent(email)}/attach`, {
     method: 'POST',
     headers: {
       ...xuiAccessHeaders(env),
@@ -339,7 +353,7 @@ async function getXuiCookie(env: Env): Promise<XuiCookieResult> {
     return { error: { attempted: false, ok: false, message: 'XUI auth is not configured', config: xuiConfigDiagnostic(env) } };
   }
 
-  const response = await fetch(`${trimSlash(env.XUI_BASE_URL)}/login`, {
+  const response = await xuiFetch(env, `${trimSlash(env.XUI_BASE_URL)}/login`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/x-www-form-urlencoded',
@@ -504,7 +518,7 @@ async function xuiClientExists(
   target: XuiInboundTarget,
   options: XuiClientOptions,
 ): Promise<boolean> {
-  const response = await fetch(`${trimSlash(env.XUI_BASE_URL || '')}/panel/api/inbounds/list`, {
+  const response = await xuiFetch(env, `${trimSlash(env.XUI_BASE_URL || '')}/panel/api/inbounds/list`, {
     headers: {
       ...xuiAccessHeaders(env),
       Cookie: cookie,
@@ -567,9 +581,17 @@ function summarizeHtmlBody(value: string): string {
 }
 
 function isHtmlResponse(contentType: string | null, value: string): boolean {
-  const normalizedContentType = (contentType || '').toLowerCase();
   const start = value.trimStart().slice(0, 32).toLowerCase();
-  return normalizedContentType.includes('text/html') || start.startsWith('<!doctype html') || start.startsWith('<html');
+  return isHtmlContentType(contentType) || start.startsWith('<!doctype html') || start.startsWith('<html');
+}
+
+function isHtmlContentType(contentType: string | null | undefined): boolean {
+  return (contentType || '').toLowerCase().includes('text/html');
+}
+
+function shouldAttemptFallback(result: XuiSyncResult): boolean {
+  if (!result.status || isHtmlContentType(result.contentType)) return false;
+  return result.status < 500;
 }
 
 function extractHtmlTitle(value: string): string | undefined {
@@ -615,6 +637,38 @@ function trimSlash(value: string): string {
 function parsePositiveInteger(value: string | undefined): number | null {
   const parsed = Number(value);
   return Number.isInteger(parsed) && parsed > 0 ? parsed : null;
+}
+
+async function xuiFetch(env: Env, input: RequestInfo | URL, init?: RequestInit): Promise<Response> {
+  return fetchWithTimeout(input, init, xuiFetchTimeoutMs(env));
+}
+
+async function fetchWithTimeout(input: RequestInfo | URL, init: RequestInit | undefined, timeoutMs: number): Promise<Response> {
+  const controller = new AbortController();
+  let timedOut = false;
+  const timeout = setTimeout(() => {
+    timedOut = true;
+    controller.abort();
+  }, timeoutMs);
+  try {
+    return await fetch(input, {
+      ...init,
+      signal: controller.signal,
+    });
+  } catch (error) {
+    if (timedOut) {
+      throw new Error(`3x-ui request timed out after ${timeoutMs}ms`);
+    }
+    throw error;
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
+function xuiFetchTimeoutMs(env: Env): number {
+  const parsed = Number(env.XUI_FETCH_TIMEOUT_MS);
+  if (!Number.isFinite(parsed) || parsed <= 0) return DEFAULT_XUI_FETCH_TIMEOUT_MS;
+  return Math.min(Math.floor(parsed), MAX_XUI_FETCH_TIMEOUT_MS);
 }
 
 function generateXuiSubId(): string {

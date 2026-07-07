@@ -21,6 +21,7 @@ Secrets / Variables:
 - `XUI_USERNAME` / `XUI_PASSWORD` 或 `XUI_COOKIE`
 - `XUI_INBOUND_ID`: 需要更新 client 的 Reality inbound id
 - `XUI_HY2_INBOUND_ID`: 可选，HY2 inbound id，默认 `2`
+- `XUI_FETCH_TIMEOUT_MS`: 可选，3x-ui API 请求超时，默认 `6000`，最大 `12000`
 - `REALITY_HOST`
 - `REALITY_PORT`
 - `REALITY_PUBLIC_KEY`
