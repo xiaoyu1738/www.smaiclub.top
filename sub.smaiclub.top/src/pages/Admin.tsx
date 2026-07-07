@@ -198,5 +198,5 @@ function formatXuiConfig(xui: unknown): string {
   if (!xui || typeof xui !== 'object' || !('config' in xui)) return '';
   const config = (xui as { config?: Record<string, boolean> }).config;
   if (!config) return '';
-  return `（配置：base=${Boolean(config.hasBaseUrl)}, inbound=${Boolean(config.hasInboundId)}, user=${Boolean(config.hasUsername)}, pass=${Boolean(config.hasPassword)}, cookie=${Boolean(config.hasCookie)}）`;
+  return `（配置：base=${Boolean(config.hasBaseUrl)}, inbound=${Boolean(config.hasInboundId)}, hy2=${Boolean(config.hasHy2InboundId)}, user=${Boolean(config.hasUsername)}, pass=${Boolean(config.hasPassword)}, cookie=${Boolean(config.hasCookie)}）`;
 }

@@ -12,7 +12,8 @@ Secrets / Variables:
 
 - `XUI_BASE_URL`
 - `XUI_USERNAME` / `XUI_PASSWORD` 或 `XUI_COOKIE`
-- `XUI_INBOUND_ID`
+- `XUI_INBOUND_ID`: Reality inbound id
+- `XUI_HY2_INBOUND_ID`: 可选，HY2 inbound id，默认 `2`
 
 ## Scripts
 

@@ -1,8 +1,33 @@
 import type { Env } from './types.ts';
 
+const DEFAULT_HY2_INBOUND_ID = '2';
+
 interface XuiClientStat {
   uuid: string;
   used: number;
+}
+
+type XuiInboundProtocol = 'vless' | 'hysteria2';
+
+interface XuiInboundTarget {
+  id: number;
+  protocol: XuiInboundProtocol;
+  label: string;
+}
+
+interface XuiTargetSyncResult {
+  attempted: boolean;
+  ok: boolean;
+  action?: string;
+  message?: string;
+  status?: number;
+  body?: string;
+  config?: XuiConfigDiagnostic;
+  contentType?: string | null;
+  hasSetCookie?: boolean;
+  inboundId: number;
+  protocol: XuiInboundProtocol;
+  label: string;
 }
 
 export interface XuiSyncResult {
@@ -15,11 +40,13 @@ export interface XuiSyncResult {
   config?: XuiConfigDiagnostic;
   contentType?: string | null;
   hasSetCookie?: boolean;
+  targets?: XuiTargetSyncResult[];
 }
 
 export interface XuiConfigDiagnostic {
   hasBaseUrl: boolean;
   hasInboundId: boolean;
+  hasHy2InboundId: boolean;
   hasUsername: boolean;
   hasPassword: boolean;
   hasCookie: boolean;
@@ -31,6 +58,12 @@ export interface XuiConfigDiagnostic {
 interface XuiClientOptions {
   email?: string;
   createOnly?: boolean;
+  subId?: string;
+}
+
+interface XuiCookieResult {
+  cookie?: string;
+  error?: XuiSyncResult;
 }
 
 export async function setXuiClientEnabled(
@@ -39,7 +72,8 @@ export async function setXuiClientEnabled(
   enabled: boolean,
   options: XuiClientOptions = {},
 ): Promise<XuiSyncResult> {
-  if (!env.XUI_BASE_URL || !env.XUI_INBOUND_ID) {
+  const targets = xuiInboundTargets(env);
+  if (!env.XUI_BASE_URL || !parsePositiveInteger(env.XUI_INBOUND_ID)) {
     return {
       attempted: false,
       ok: false,
@@ -50,39 +84,23 @@ export async function setXuiClientEnabled(
 
   try {
     const cookie = await getXuiCookie(env);
-    if (!cookie) {
-      return {
+    if (!cookie.cookie) {
+      return cookie.error || {
         attempted: true,
         ok: false,
         message: 'XUI auth is not configured',
         config: xuiConfigDiagnostic(env),
       };
     }
-    if (enabled && options.createOnly) {
-      return addXuiClient(env, cookie, uuid, options);
+
+    const syncOptions = enabled && options.createOnly
+      ? { ...options, subId: options.subId || generateXuiSubId() }
+      : options;
+    const results: XuiTargetSyncResult[] = [];
+    for (const target of targets) {
+      results.push(await syncXuiClientTarget(env, cookie.cookie, uuid, enabled, syncOptions, target));
     }
-    const client = buildXuiClient(env, uuid, enabled, options);
-    const response = await fetch(`${trimSlash(env.XUI_BASE_URL)}/panel/api/inbounds/updateClient/${uuid}`, {
-      method: 'POST',
-      headers: {
-        ...xuiAccessHeaders(env),
-        'Content-Type': 'application/json',
-        Cookie: cookie,
-      },
-      body: JSON.stringify({
-        id: Number(env.XUI_INBOUND_ID),
-        settings: JSON.stringify({
-          clients: [client],
-        }),
-      }),
-    });
-    const updateResult = await parseXuiMutationResponse(response, 'updateClient');
-    if (updateResult.ok) return updateResult;
-    if (enabled) {
-      const created = await addXuiClient(env, cookie, uuid, options);
-      if (created.ok) return created;
-    }
-    return updateResult;
+    return summarizeXuiTargetResults(results, env);
   } catch (error) {
     return {
       attempted: true,
@@ -96,7 +114,8 @@ export async function setXuiClientEnabled(
 export function xuiConfigDiagnostic(env: Env): XuiConfigDiagnostic {
   return {
     hasBaseUrl: Boolean(env.XUI_BASE_URL),
-    hasInboundId: Boolean(env.XUI_INBOUND_ID),
+    hasInboundId: Boolean(parsePositiveInteger(env.XUI_INBOUND_ID)),
+    hasHy2InboundId: Boolean(parsePositiveInteger(env.XUI_HY2_INBOUND_ID || DEFAULT_HY2_INBOUND_ID)),
     hasUsername: Boolean(env.XUI_USERNAME),
     hasPassword: Boolean(env.XUI_PASSWORD),
     hasCookie: Boolean(env.XUI_COOKIE),
@@ -106,52 +125,15 @@ export function xuiConfigDiagnostic(env: Env): XuiConfigDiagnostic {
   };
 }
 
-async function addXuiClient(
-  env: Env,
-  cookie: string,
-  uuid: string,
-  options: XuiClientOptions,
-): Promise<XuiSyncResult> {
-  const body = new URLSearchParams();
-  body.set('id', String(Number(env.XUI_INBOUND_ID)));
-  body.set('settings', JSON.stringify({ clients: [buildXuiClient(env, uuid, true, options)] }));
-
-  const response = await fetch(`${trimSlash(env.XUI_BASE_URL || '')}/panel/api/inbounds/addClient`, {
-    method: 'POST',
-    headers: {
-      ...xuiAccessHeaders(env),
-      Accept: 'application/json, text/plain, */*',
-      'Content-Type': 'application/x-www-form-urlencoded',
-      Cookie: cookie,
-    },
-    body,
-  });
-
-  const result = await parseXuiMutationResponse(response, 'addClient');
-  if (result.ok) return result;
-
-  if (response.ok && await xuiClientExists(env, cookie, uuid)) {
-    return {
-      attempted: true,
-      ok: true,
-      action: 'addClient',
-      status: response.status,
-      contentType: result.contentType,
-      message: 'addClient verified by inbound list',
-    };
-  }
-  return result;
-}
-
 export async function fetchXuiClientStats(env: Env): Promise<XuiClientStat[]> {
   if (!env.XUI_BASE_URL) return [];
   const cookie = await getXuiCookie(env);
-  if (!cookie) return [];
+  if (!cookie.cookie) return [];
 
   const response = await fetch(`${trimSlash(env.XUI_BASE_URL)}/panel/api/inbounds/list`, {
     headers: {
       ...xuiAccessHeaders(env),
-      Cookie: cookie,
+      Cookie: cookie.cookie,
     },
   });
   if (!response.ok) return [];
@@ -169,7 +151,7 @@ export function parseXuiClientStats(payload: unknown): XuiClientStat[] {
     for (const stat of clientStats) {
       if (!stat || typeof stat !== 'object') continue;
       const candidate = stat as Record<string, unknown>;
-      const uuid = String(candidate.uuid || candidate.id || candidate.email || '').trim();
+      const uuid = String(candidate.uuid || candidate.id || candidate.auth || candidate.email || '').trim();
       const up = Number(candidate.up || candidate.upload || 0);
       const down = Number(candidate.down || candidate.download || 0);
       if (uuid) stats.push({ uuid, used: Math.max(0, up + down) });
@@ -180,7 +162,7 @@ export function parseXuiClientStats(payload: unknown): XuiClientStat[] {
       ? (settings as { clients: Record<string, unknown>[] }).clients
       : [];
     for (const client of clients) {
-      const uuid = String(client.id || client.uuid || '').trim();
+      const uuid = String(client.id || client.uuid || client.auth || '').trim();
       const up = Number(client.up || client.upload || 0);
       const down = Number(client.down || client.download || 0);
       if (uuid && up + down > 0) stats.push({ uuid, used: Math.max(0, up + down) });
@@ -190,10 +172,152 @@ export function parseXuiClientStats(payload: unknown): XuiClientStat[] {
   return dedupeStats(stats);
 }
 
+async function syncXuiClientTarget(
+  env: Env,
+  cookie: string,
+  uuid: string,
+  enabled: boolean,
+  options: XuiClientOptions,
+  target: XuiInboundTarget,
+): Promise<XuiTargetSyncResult> {
+  if (enabled && options.createOnly) {
+    const created = await addXuiClient(env, cookie, uuid, options, target);
+    if (created.ok) return created;
+
+    const attached = await attachExistingXuiClient(env, cookie, uuid, options, target);
+    return attached.ok ? attached : created;
+  }
+
+  const client = buildXuiClient(env, uuid, enabled, options, target, 'update');
+  const response = await fetch(`${trimSlash(env.XUI_BASE_URL || '')}/panel/api/inbounds/updateClient/${uuid}`, {
+    method: 'POST',
+    headers: {
+      ...xuiAccessHeaders(env),
+      'Content-Type': 'application/json',
+      Cookie: cookie,
+    },
+    body: JSON.stringify({
+      id: target.id,
+      settings: JSON.stringify({
+        clients: [client],
+      }),
+    }),
+  });
+  const updateResult = withTarget(await parseXuiMutationResponse(response, 'updateClient'), target);
+  if (updateResult.ok) return updateResult;
+
+  if (enabled) {
+    const attached = await attachExistingXuiClient(env, cookie, uuid, options, target);
+    if (attached.ok) return attached;
+
+    const created = await addXuiClient(env, cookie, uuid, options, target);
+    if (created.ok) return created;
+  }
+
+  return updateResult;
+}
+
+async function addXuiClient(
+  env: Env,
+  cookie: string,
+  uuid: string,
+  options: XuiClientOptions,
+  target: XuiInboundTarget,
+): Promise<XuiTargetSyncResult> {
+  const body = new URLSearchParams();
+  body.set('id', String(target.id));
+  body.set('settings', JSON.stringify({
+    clients: [buildXuiClient(env, uuid, true, options, target, 'create')],
+  }));
+
+  const response = await fetch(`${trimSlash(env.XUI_BASE_URL || '')}/panel/api/inbounds/addClient`, {
+    method: 'POST',
+    headers: {
+      ...xuiAccessHeaders(env),
+      Accept: 'application/json, text/plain, */*',
+      'Content-Type': 'application/x-www-form-urlencoded',
+      Cookie: cookie,
+    },
+    body,
+  });
+
+  const result = withTarget(await parseXuiMutationResponse(response, 'addClient'), target);
+  if (result.ok) return result;
+
+  if (response.ok && await xuiClientExists(env, cookie, uuid, target, options)) {
+    return {
+      attempted: true,
+      ok: true,
+      action: 'addClient',
+      status: response.status,
+      contentType: result.contentType,
+      message: 'addClient verified by inbound list',
+      inboundId: target.id,
+      protocol: target.protocol,
+      label: target.label,
+    };
+  }
+  return result;
+}
+
+async function attachExistingXuiClient(
+  env: Env,
+  cookie: string,
+  uuid: string,
+  options: XuiClientOptions,
+  target: XuiInboundTarget,
+): Promise<XuiTargetSyncResult> {
+  const email = options.email || uuid;
+  const response = await fetch(`${trimSlash(env.XUI_BASE_URL || '')}/panel/api/clients/${encodeURIComponent(email)}/attach`, {
+    method: 'POST',
+    headers: {
+      ...xuiAccessHeaders(env),
+      Accept: 'application/json, text/plain, */*',
+      'Content-Type': 'application/json',
+      Cookie: cookie,
+    },
+    body: JSON.stringify({
+      inboundIds: [target.id],
+    }),
+  });
+
+  const result = withTarget(await parseXuiMutationResponse(response, 'attachClient'), target);
+  if (result.ok) return result;
+
+  if (response.ok && await xuiClientExists(env, cookie, uuid, target, options)) {
+    return {
+      attempted: true,
+      ok: true,
+      action: 'attachClient',
+      status: response.status,
+      contentType: result.contentType,
+      message: 'attachClient verified by inbound list',
+      inboundId: target.id,
+      protocol: target.protocol,
+      label: target.label,
+    };
+  }
+  return result;
+}
+
 async function parseXuiMutationResponse(response: Response, action: string): Promise<XuiSyncResult> {
   const text = await response.clone().text().catch(() => '');
-  const payload = safeJson(text) as { success?: boolean; msg?: string } | null;
+  const payload = safeJson(text) as { success?: boolean; msg?: string; message?: string } | null;
   const contentType = response.headers.get('content-type');
+
+  if (isHtmlResponse(contentType, text)) {
+    const title = extractHtmlTitle(text);
+    return {
+      attempted: true,
+      ok: false,
+      action,
+      status: response.status,
+      contentType,
+      message: `3x-ui ${action} returned HTML (${response.status})${title ? `: ${title}` : ''}`,
+      body: summarizeHtmlBody(text),
+    };
+  }
+
   const businessOk = payload ? payload.success !== false : false;
   const ok = response.ok && businessOk;
   return {
@@ -202,17 +326,17 @@ async function parseXuiMutationResponse(response: Response, action: string): Pro
     action,
     status: response.status,
     contentType,
-    message: ok ? action : payload?.msg || `3x-ui ${action} returned ${response.status}`,
+    message: ok ? action : xuiPayloadMessage(payload) || `3x-ui ${action} returned ${response.status}`,
     body: ok ? undefined : summarizeBody(text),
   };
 }
 
-async function getXuiCookie(env: Env): Promise<string | null> {
+async function getXuiCookie(env: Env): Promise<XuiCookieResult> {
   if (env.XUI_COOKIE) {
-    return env.XUI_COOKIE;
+    return { cookie: env.XUI_COOKIE };
   }
   if (!env.XUI_BASE_URL || !env.XUI_USERNAME || !env.XUI_PASSWORD) {
-    return null;
+    return { error: { attempted: false, ok: false, message: 'XUI auth is not configured', config: xuiConfigDiagnostic(env) } };
   }
 
   const response = await fetch(`${trimSlash(env.XUI_BASE_URL)}/login`, {
@@ -229,9 +353,181 @@ async function getXuiCookie(env: Env): Promise<string | null> {
       password: env.XUI_PASSWORD,
     }),
   });
-  const cookie = response.headers.get('set-cookie');
-  if (!response.ok) return null;
-  return cookie;
+
+  const cookie = response.headers.get('set-cookie') || undefined;
+  const text = await response.clone().text().catch(() => '');
+  const contentType = response.headers.get('content-type');
+  const payload = safeJson(text) as { success?: boolean; msg?: string; message?: string } | null;
+
+  if (isHtmlResponse(contentType, text)) {
+    const title = extractHtmlTitle(text);
+    return {
+      error: {
+        attempted: true,
+        ok: false,
+        action: 'login',
+        status: response.status,
+        contentType,
+        hasSetCookie: Boolean(cookie),
+        message: `3x-ui login returned HTML (${response.status})${title ? `: ${title}` : ''}`,
+        body: summarizeHtmlBody(text),
+        config: xuiConfigDiagnostic(env),
+      },
+    };
+  }
+
+  if (!response.ok || !cookie || payload?.success === false) {
+    return {
+      error: {
+        attempted: true,
+        ok: false,
+        action: 'login',
+        status: response.status,
+        contentType,
+        hasSetCookie: Boolean(cookie),
+        message: xuiPayloadMessage(payload) || (!cookie ? '3x-ui login did not return a session cookie' : `3x-ui login returned ${response.status}`),
+        body: summarizeBody(text),
+        config: xuiConfigDiagnostic(env),
+      },
+    };
+  }
+
+  return { cookie };
+}
+
+function summarizeXuiTargetResults(results: XuiTargetSyncResult[], env: Env): XuiSyncResult {
+  const failed = results.filter(result => !result.ok);
+  if (failed.length === 0) {
+    return {
+      attempted: results.some(result => result.attempted),
+      ok: true,
+      action: results.map(result => `${result.label}:${result.action || 'sync'}`).join(','),
+      message: `synced ${results.length} x-ui inbound${results.length === 1 ? '' : 's'}`,
+      config: xuiConfigDiagnostic(env),
+      targets: results,
+    };
+  }
+
+  const first = failed[0];
+  return {
+    attempted: results.some(result => result.attempted),
+    ok: false,
+    action: first.action,
+    status: first.status,
+    body: first.body,
+    contentType: first.contentType,
+    message: `${failed.length}/${results.length} x-ui target sync failed: ${failed.map(formatTargetFailure).join('; ')}`,
+    config: xuiConfigDiagnostic(env),
+    targets: results,
+  };
+}
+
+function formatTargetFailure(result: XuiTargetSyncResult): string {
+  return `${result.label}/${result.inboundId}(${result.action || 'sync'}): ${result.message || 'failed'}`;
+}
+
+function withTarget(result: XuiSyncResult, target: XuiInboundTarget): XuiTargetSyncResult {
+  return {
+    attempted: result.attempted,
+    ok: result.ok,
+    action: result.action,
+    message: result.message,
+    status: result.status,
+    body: result.body,
+    config: result.config,
+    contentType: result.contentType,
+    hasSetCookie: result.hasSetCookie,
+    inboundId: target.id,
+    protocol: target.protocol,
+    label: target.label,
+  };
+}
+
+function xuiInboundTargets(env: Env): XuiInboundTarget[] {
+  const targets: XuiInboundTarget[] = [];
+  const realityInboundId = parsePositiveInteger(env.XUI_INBOUND_ID);
+  if (realityInboundId) {
+    targets.push({ id: realityInboundId, protocol: 'vless', label: 'reality' });
+  }
+
+  const hy2InboundId = parsePositiveInteger(env.XUI_HY2_INBOUND_ID || DEFAULT_HY2_INBOUND_ID);
+  if (hy2InboundId && !targets.some(target => target.id === hy2InboundId)) {
+    targets.push({ id: hy2InboundId, protocol: 'hysteria2', label: 'hy2' });
+  }
+
+  return targets;
+}
+
+function buildXuiClient(
+  env: Env,
+  uuid: string,
+  enabled: boolean,
+  options: XuiClientOptions,
+  target: XuiInboundTarget,
+  mode: 'create' | 'update',
+): Record<string, unknown> {
+  const client: Record<string, unknown> = {
+    id: uuid,
+    email: options.email || uuid,
+    limitIp: 0,
+    totalGB: 0,
+    expiryTime: 0,
+    enable: enabled,
+    tgId: 0,
+    comment: '',
+    reset: 0,
+  };
+
+  if (mode === 'create') {
+    client.subId = options.subId || generateXuiSubId();
+  }
+
+  if (target.protocol === 'hysteria2') {
+    return {
+      ...client,
+      auth: uuid,
+    };
+  }
+
+  return {
+    ...client,
+    security: '',
+    password: '',
+    flow: env.REALITY_FLOW || 'xtls-rprx-vision',
+  };
+}
+
+async function xuiClientExists(
+  env: Env,
+  cookie: string,
+  uuid: string,
+  target: XuiInboundTarget,
+  options: XuiClientOptions,
+): Promise<boolean> {
+  const response = await fetch(`${trimSlash(env.XUI_BASE_URL || '')}/panel/api/inbounds/list`, {
+    headers: {
+      ...xuiAccessHeaders(env),
+      Cookie: cookie,
+    },
+  });
+  if (!response.ok) return false;
+
+  const payload = await response.json().catch(() => null);
+  const inbounds = extractInbounds(payload);
+  const email = options.email || uuid;
+  for (const inbound of inbounds) {
+    if (Number(inbound.id) !== target.id) continue;
+    const settings = typeof inbound.settings === 'string' ? safeJson(inbound.settings) : inbound.settings;
+    const clients = settings && typeof settings === 'object' && Array.isArray((settings as { clients?: unknown[] }).clients)
+      ? (settings as { clients: Record<string, unknown>[] }).clients
+      : [];
+    if (clients.some(client => {
+      const clientId = String(client.id || client.uuid || client.auth || '').trim();
+      const clientEmail = String(client.email || '').trim();
+      return clientId === uuid || clientEmail === email;
+    })) return true;
+  }
+  return false;
 }
 
 function extractInbounds(payload: unknown): Record<string, unknown>[] {
@@ -251,44 +547,6 @@ function dedupeStats(stats: XuiClientStat[]): XuiClientStat[] {
   return Array.from(merged, ([uuid, used]) => ({ uuid, used }));
 }
 
-function buildXuiClient(env: Env, uuid: string, enabled: boolean, options: XuiClientOptions): Record<string, unknown> {
-  return {
-    id: uuid,
-    security: '',
-    password: '',
-    flow: env.REALITY_FLOW || 'xtls-rprx-vision',
-    email: options.email || uuid,
-    limitIp: 0,
-    totalGB: 0,
-    expiryTime: 0,
-    enable: enabled,
-    tgId: 0,
-    subId: generateXuiSubId(),
-    comment: '',
-    reset: 0,
-  };
-}
-
-async function xuiClientExists(env: Env, cookie: string, uuid: string): Promise<boolean> {
-  const response = await fetch(`${trimSlash(env.XUI_BASE_URL || '')}/panel/api/inbounds/list`, {
-    headers: {
-      ...xuiAccessHeaders(env),
-      Cookie: cookie,
-    },
-  });
-  if (!response.ok) return false;
-  const payload = await response.json().catch(() => null);
-  const inbounds = extractInbounds(payload);
-  for (const inbound of inbounds) {
-    const settings = typeof inbound.settings === 'string' ? safeJson(inbound.settings) : inbound.settings;
-    const clients = settings && typeof settings === 'object' && Array.isArray((settings as { clients?: unknown[] }).clients)
-      ? (settings as { clients: Record<string, unknown>[] }).clients
-      : [];
-    if (clients.some(client => String(client.id || client.uuid || '').trim() === uuid)) return true;
-  }
-  return false;
-}
-
 function safeJson(value: string): unknown {
   try {
     return JSON.parse(value);
@@ -301,6 +559,37 @@ function summarizeBody(value: string): string | undefined {
   const compact = value.replace(/\s+/g, ' ').trim();
   if (!compact) return undefined;
   return compact.slice(0, 240);
+}
+
+function summarizeHtmlBody(value: string): string {
+  const title = extractHtmlTitle(value);
+  return title ? `html_response:${title}` : 'html_response';
+}
+
+function isHtmlResponse(contentType: string | null, value: string): boolean {
+  const normalizedContentType = (contentType || '').toLowerCase();
+  const start = value.trimStart().slice(0, 32).toLowerCase();
+  return normalizedContentType.includes('text/html') || start.startsWith('<!doctype html') || start.startsWith('<html');
+}
+
+function extractHtmlTitle(value: string): string | undefined {
+  const match = /<title[^>]*>([\s\S]*?)<\/title>/i.exec(value);
+  if (!match) return undefined;
+  const title = decodeHtmlEntities(match[1].replace(/\s+/g, ' ').trim());
+  return title ? title.slice(0, 120) : undefined;
+}
+
+function decodeHtmlEntities(value: string): string {
+  return value
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&amp;/g, '&')
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'");
+}
+
+function xuiPayloadMessage(payload: { msg?: string; message?: string } | null): string | undefined {
+  return payload?.msg || payload?.message;
 }
 
 function xuiAccessHeaders(env: Env, mode: 'paired' | 'authorization' = 'paired'): Record<string, string> {
@@ -321,6 +610,11 @@ function xuiAccessHeaders(env: Env, mode: 'paired' | 'authorization' = 'paired')
 
 function trimSlash(value: string): string {
   return value.replace(/\/+$/, '');
+}
+
+function parsePositiveInteger(value: string | undefined): number | null {
+  const parsed = Number(value);
+  return Number.isInteger(parsed) && parsed > 0 ? parsed : null;
 }
 
 function generateXuiSubId(): string {

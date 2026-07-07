@@ -19,7 +19,8 @@ Secrets / Variables:
 - `EDGETUNNEL_GEO_API_URL`: 优选 IP 批量 Geo 查询接口，默认 `http://ip-api.com/batch?fields=status,message,country,countryCode,city,query`
 - `XUI_BASE_URL`: 3x-ui 面板 origin，不含末尾斜杠
 - `XUI_USERNAME` / `XUI_PASSWORD` 或 `XUI_COOKIE`
-- `XUI_INBOUND_ID`: 需要更新 client 的 inbound id
+- `XUI_INBOUND_ID`: 需要更新 client 的 Reality inbound id
+- `XUI_HY2_INBOUND_ID`: 可选，HY2 inbound id，默认 `2`
 - `REALITY_HOST`
 - `REALITY_PORT`
 - `REALITY_PUBLIC_KEY`

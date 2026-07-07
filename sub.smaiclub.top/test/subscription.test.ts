@@ -4,6 +4,7 @@ import { buildHy2Node, detectClientFormat, parseEdgetunnelSubscription, renderSu
 import type { Env, ProxyNode, UserSubscriptionRow } from '../functions/_shared/types.ts';
 import { buildSubscriptionUserinfo } from '../functions/_shared/subscription.ts';
 import { isBlocked } from '../functions/_shared/db.ts';
+import { setXuiClientEnabled } from '../functions/_shared/xui.ts';
 
 test('detectClientFormat handles mainstream clients', () => {
   assert.equal(detectClientFormat('Clash Verge/2.0').kind, 'clash');
@@ -173,4 +174,75 @@ test('buildSubscriptionUserinfo exposes unlimited quota fields', () => {
   });
 
   assert.equal(header, 'upload=0; download=40; total=0; expire=0');
+});
+
+test('setXuiClientEnabled creates the same user on reality and hy2 inbounds', async () => {
+  const originalFetch = globalThis.fetch;
+  const calls: Array<{ url: string; body: string }> = [];
+  globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
+    const body = init?.body instanceof URLSearchParams ? init.body.toString() : String(init?.body || '');
+    calls.push({ url: String(input), body });
+    return new Response(JSON.stringify({ success: true, msg: 'ok' }), {
+      status: 200,
+      headers: { 'content-type': 'application/json' },
+    });
+  }) as typeof fetch;
+
+  try {
+    const result = await setXuiClientEnabled({
+      XUI_BASE_URL: 'https://xui.example',
+      XUI_COOKIE: 'sid=ok',
+      XUI_INBOUND_ID: '1',
+      XUI_HY2_INBOUND_ID: '2',
+    } as Env, 'client-uuid', true, {
+      email: 'fish',
+      createOnly: true,
+    });
+
+    assert.equal(result.ok, true);
+    assert.equal(result.targets?.length, 2);
+
+    const addCalls = calls.filter(call => call.url.endsWith('/panel/api/inbounds/addClient'));
+    assert.equal(addCalls.length, 2);
+
+    const forms = addCalls.map(call => new URLSearchParams(call.body));
+    assert.deepEqual(forms.map(form => form.get('id')), ['1', '2']);
+
+    const clients = forms.map(form => {
+      const settings = JSON.parse(String(form.get('settings'))) as { clients: Array<Record<string, string>> };
+      return settings.clients[0];
+    });
+
+    assert.equal(clients[0].id, 'client-uuid');
+    assert.equal(clients[0].flow, 'xtls-rprx-vision');
+    assert.equal(clients[1].id, 'client-uuid');
+    assert.equal(clients[1].auth, 'client-uuid');
+    assert.equal(clients[0].subId, clients[1].subId);
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+test('setXuiClientEnabled summarizes html responses without leaking html bodies', async () => {
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = (async () => new Response('<!doctype html><html><head><title>Login Required</title></head><body><main>session expired</main></body></html>', {
+    status: 200,
+    headers: { 'content-type': 'text/html; charset=utf-8' },
+  })) as typeof fetch;
+
+  try {
+    const result = await setXuiClientEnabled({
+      XUI_BASE_URL: 'https://xui.example',
+      XUI_COOKIE: 'sid=expired',
+      XUI_INBOUND_ID: '1',
+      XUI_HY2_INBOUND_ID: '2',
+    } as Env, 'client-uuid', false, { email: 'fish' });
+
+    assert.equal(result.ok, false);
+    assert.match(result.message || '', /returned HTML/);
+    assert.equal(result.body, 'html_response:Login Required');
+    assert.ok(!JSON.stringify(result).includes('<main>'));
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
 });
