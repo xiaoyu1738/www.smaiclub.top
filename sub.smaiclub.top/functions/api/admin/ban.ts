@@ -26,6 +26,6 @@ export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
     WHERE username = ?
   `).bind(Date.now(), username).run();
 
-  const xui = user.xui_uuid ? await setXuiClientEnabled(env, user.xui_uuid, false) : { attempted: false, ok: false };
+  const xui = user.xui_uuid ? await setXuiClientEnabled(env, user.xui_uuid, false, { email: username }) : { attempted: false, ok: false };
   return jsonResponse({ ok: true, username, admin: admin.username, xui });
 };

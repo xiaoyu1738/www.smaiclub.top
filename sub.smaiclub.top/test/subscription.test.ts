@@ -202,16 +202,13 @@ test('setXuiClientEnabled creates the same user on reality and hy2 inbounds', as
     assert.equal(result.ok, true);
     assert.equal(result.targets?.length, 2);
 
-    const addCalls = calls.filter(call => call.url.endsWith('/panel/api/inbounds/addClient'));
+    const addCalls = calls.filter(call => call.url.endsWith('/panel/api/clients/add'));
     assert.equal(addCalls.length, 2);
 
-    const forms = addCalls.map(call => new URLSearchParams(call.body));
-    assert.deepEqual(forms.map(form => form.get('id')), ['1', '2']);
+    const payloads = addCalls.map(call => JSON.parse(call.body) as { client: Record<string, string>; inboundIds: number[] });
+    assert.deepEqual(payloads.map(payload => payload.inboundIds), [[1], [2]]);
 
-    const clients = forms.map(form => {
-      const settings = JSON.parse(String(form.get('settings'))) as { clients: Array<Record<string, string>> };
-      return settings.clients[0];
-    });
+    const clients = payloads.map(payload => payload.client);
 
     assert.equal(clients[0].id, 'client-uuid');
     assert.equal(clients[0].flow, 'xtls-rprx-vision');
@@ -275,7 +272,7 @@ test('setXuiClientEnabled logs in with csrf before mutating 3x-ui clients', asyn
     assert.equal(loginCall.headers.get('X-Requested-With'), 'XMLHttpRequest');
     assert.equal(loginCall.headers.get('Cookie'), 'csrf=seed');
 
-    const updateCall = calls.find(call => call.url.endsWith('/panel/api/inbounds/updateClient/client-uuid'));
+    const updateCall = calls.find(call => call.url === 'https://xui.example/panel/api/clients/bulkDisable');
     assert.ok(updateCall);
     assert.equal(updateCall.headers.get('X-CSRF-Token'), 'login-token');
     assert.equal(updateCall.headers.get('X-Requested-With'), 'XMLHttpRequest');

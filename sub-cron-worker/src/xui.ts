@@ -11,15 +11,6 @@ export interface Env {
   XUI_ACCESS_AUTH_HEADER?: string;
 }
 
-const DEFAULT_HY2_INBOUND_ID = '2';
-
-type XuiInboundProtocol = 'vless' | 'hysteria2';
-
-interface XuiInboundTarget {
-  id: number;
-  protocol: XuiInboundProtocol;
-}
-
 interface XuiSession {
   cookie: string;
   csrfToken?: string;
@@ -30,12 +21,11 @@ export interface XuiClientStat {
   used: number;
 }
 
-export async function setXuiClientEnabled(env: Env, uuid: string, enabled: boolean): Promise<boolean> {
+export async function setXuiClientEnabled(env: Env, uuid: string, enabled: boolean, email = uuid): Promise<boolean> {
   if (!env.XUI_BASE_URL || !parsePositiveInteger(env.XUI_INBOUND_ID)) return false;
   const session = await getXuiSession(env);
   if (!session) return false;
-  const results = await Promise.all(xuiInboundTargets(env).map(target => updateXuiClientTarget(env, session, uuid, enabled, target)));
-  return results.every(Boolean);
+  return setXuiClientEnabledByEmail(env, session, email, enabled);
 }
 
 export async function fetchXuiClientStats(env: Env): Promise<XuiClientStat[]> {
@@ -108,46 +98,22 @@ async function getXuiSession(env: Env): Promise<XuiSession | null> {
   return response.ok && cookie && payload?.success !== false ? { cookie, csrfToken } : null;
 }
 
-async function updateXuiClientTarget(
+async function setXuiClientEnabledByEmail(
   env: Env,
   session: XuiSession,
-  uuid: string,
+  email: string,
   enabled: boolean,
-  target: XuiInboundTarget,
 ): Promise<boolean> {
-  const response = await fetch(`${trimSlash(env.XUI_BASE_URL || '')}/panel/api/inbounds/updateClient/${uuid}`, {
+  const action = enabled ? 'bulkEnable' : 'bulkDisable';
+  const response = await fetch(`${trimSlash(env.XUI_BASE_URL || '')}/panel/api/clients/${action}`, {
     method: 'POST',
     headers: xuiSessionHeaders(env, session, 'application/json'),
-    body: JSON.stringify({
-      id: target.id,
-      settings: JSON.stringify({ clients: [buildClientUpdate(uuid, enabled, target.protocol)] }),
-    }),
+    body: JSON.stringify({ emails: [email] }),
   });
   if (!response.ok) return false;
 
   const payload = await response.json().catch(() => null) as { success?: boolean } | null;
   return payload ? payload.success !== false : true;
-}
-
-function buildClientUpdate(uuid: string, enabled: boolean, protocol: XuiInboundProtocol): Record<string, unknown> {
-  const client: Record<string, unknown> = {
-    id: uuid,
-    enable: enabled,
-  };
-  if (protocol === 'hysteria2') client.auth = uuid;
-  return client;
-}
-
-function xuiInboundTargets(env: Env): XuiInboundTarget[] {
-  const targets: XuiInboundTarget[] = [];
-  const realityInboundId = parsePositiveInteger(env.XUI_INBOUND_ID);
-  if (realityInboundId) targets.push({ id: realityInboundId, protocol: 'vless' });
-
-  const hy2InboundId = parsePositiveInteger(env.XUI_HY2_INBOUND_ID || DEFAULT_HY2_INBOUND_ID);
-  if (hy2InboundId && !targets.some(target => target.id === hy2InboundId)) {
-    targets.push({ id: hy2InboundId, protocol: 'hysteria2' });
-  }
-  return targets;
 }
 
 function xuiAccessHeaders(env: Env): Record<string, string> {

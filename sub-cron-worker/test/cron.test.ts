@@ -20,7 +20,7 @@ test('parseXuiClientStats extracts client traffic from 3x-ui list payload', () =
   ]);
 });
 
-test('setXuiClientEnabled updates reality and hy2 inbounds', async () => {
+test('setXuiClientEnabled toggles clients through 3x-ui bulk enable API', async () => {
   const originalFetch = globalThis.fetch;
   const calls: Array<{ url: string; body: string }> = [];
   globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
@@ -37,21 +37,14 @@ test('setXuiClientEnabled updates reality and hy2 inbounds', async () => {
       XUI_COOKIE: 'sid=ok',
       XUI_INBOUND_ID: '1',
       XUI_HY2_INBOUND_ID: '2',
-    } as Env, 'client-uuid', false);
+    } as Env, 'client-uuid', false, 'fish');
 
     assert.equal(ok, true);
-    const updateCalls = calls.filter(call => call.url.endsWith('/panel/api/inbounds/updateClient/client-uuid'));
-    assert.equal(updateCalls.length, 2);
+    const updateCalls = calls.filter(call => call.url.endsWith('/panel/api/clients/bulkDisable'));
+    assert.equal(updateCalls.length, 1);
 
-    const payloads = updateCalls.map(call => JSON.parse(call.body) as { id: number; settings: string });
-    assert.deepEqual(payloads.map(payload => payload.id), [1, 2]);
-
-    const clients = payloads.map(payload => {
-      const settings = JSON.parse(payload.settings) as { clients: Array<Record<string, unknown>> };
-      return settings.clients[0];
-    });
-    assert.deepEqual(clients[0], { id: 'client-uuid', enable: false });
-    assert.deepEqual(clients[1], { id: 'client-uuid', enable: false, auth: 'client-uuid' });
+    const payload = JSON.parse(updateCalls[0].body) as { emails: string[] };
+    assert.deepEqual(payload.emails, ['fish']);
   } finally {
     globalThis.fetch = originalFetch;
   }
@@ -98,7 +91,7 @@ test('setXuiClientEnabled logs in with csrf before cron mutations', async () => 
       XUI_PASSWORD: 'secret',
       XUI_INBOUND_ID: '1',
       XUI_HY2_INBOUND_ID: '1',
-    } as Env, 'client-uuid', false);
+    } as Env, 'client-uuid', false, 'fish');
 
     assert.equal(ok, true);
 
@@ -107,7 +100,7 @@ test('setXuiClientEnabled logs in with csrf before cron mutations', async () => 
     assert.equal(loginCall.headers.get('X-CSRF-Token'), 'login-token');
     assert.equal(loginCall.headers.get('Cookie'), 'csrf=seed');
 
-    const updateCall = calls.find(call => call.url.endsWith('/panel/api/inbounds/updateClient/client-uuid'));
+    const updateCall = calls.find(call => call.url === 'https://xui.example/panel/api/clients/bulkDisable');
     assert.ok(updateCall);
     assert.equal(updateCall.headers.get('X-CSRF-Token'), 'login-token');
     assert.equal(updateCall.headers.get('Cookie'), 'csrf=seed; sid=ok');

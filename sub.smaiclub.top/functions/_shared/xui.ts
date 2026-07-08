@@ -195,19 +195,16 @@ async function syncXuiClientTarget(
       return attached.ok ? attached : created;
     }
 
-    const client = buildXuiClient(env, uuid, enabled, options, target, 'update');
-    const response = await xuiFetch(env, `${trimSlash(env.XUI_BASE_URL || '')}/panel/api/inbounds/updateClient/${uuid}`, {
-      method: 'POST',
-      headers: xuiSessionHeaders(env, session, 'application/json'),
-      body: JSON.stringify({
-        id: target.id,
-        settings: JSON.stringify({
-          clients: [client],
-        }),
-      }),
-    });
-    const updateResult = withTarget(await parseXuiMutationResponse(response, 'updateClient'), target);
-    if (updateResult.ok) return updateResult;
+    const updateResult = await setXuiClientEnabledByEmail(env, session, xuiClientEmail(uuid, options), enabled, target);
+    if (updateResult.ok) {
+      if (!enabled || await xuiClientExists(env, session, uuid, target, options)) return updateResult;
+
+      const attached = await attachExistingXuiClient(env, session, uuid, options, target);
+      if (attached.ok) return attached;
+
+      const created = await addXuiClient(env, session, uuid, options, target);
+      return created.ok ? created : attached;
+    }
 
     if (enabled && shouldAttemptFallback(updateResult)) {
       const attached = await attachExistingXuiClient(env, session, uuid, options, target);
@@ -229,6 +226,22 @@ async function syncXuiClientTarget(
   }
 }
 
+async function setXuiClientEnabledByEmail(
+  env: Env,
+  session: XuiSession,
+  email: string,
+  enabled: boolean,
+  target: XuiInboundTarget,
+): Promise<XuiTargetSyncResult> {
+  const action = enabled ? 'bulkEnable' : 'bulkDisable';
+  const response = await xuiFetch(env, `${trimSlash(env.XUI_BASE_URL || '')}/panel/api/clients/${action}`, {
+    method: 'POST',
+    headers: xuiSessionHeaders(env, session, 'application/json'),
+    body: JSON.stringify({ emails: [email] }),
+  });
+  return withTarget(await parseXuiMutationResponse(response, action), target);
+}
+
 async function addXuiClient(
   env: Env,
   session: XuiSession,
@@ -236,16 +249,13 @@ async function addXuiClient(
   options: XuiClientOptions,
   target: XuiInboundTarget,
 ): Promise<XuiTargetSyncResult> {
-  const body = new URLSearchParams();
-  body.set('id', String(target.id));
-  body.set('settings', JSON.stringify({
-    clients: [buildXuiClient(env, uuid, true, options, target, 'create')],
-  }));
-
-  const response = await xuiFetch(env, `${trimSlash(env.XUI_BASE_URL || '')}/panel/api/inbounds/addClient`, {
+  const response = await xuiFetch(env, `${trimSlash(env.XUI_BASE_URL || '')}/panel/api/clients/add`, {
     method: 'POST',
-    headers: xuiSessionHeaders(env, session, 'application/x-www-form-urlencoded'),
-    body,
+    headers: xuiSessionHeaders(env, session, 'application/json'),
+    body: JSON.stringify({
+      client: buildXuiClient(env, uuid, true, options, target, 'create'),
+      inboundIds: [target.id],
+    }),
   });
 
   const result = withTarget(await parseXuiMutationResponse(response, 'addClient'), target);
@@ -537,6 +547,10 @@ function buildXuiClient(
     password: '',
     flow: env.REALITY_FLOW || 'xtls-rprx-vision',
   };
+}
+
+function xuiClientEmail(uuid: string, options: XuiClientOptions): string {
+  return options.email || uuid;
 }
 
 async function xuiClientExists(

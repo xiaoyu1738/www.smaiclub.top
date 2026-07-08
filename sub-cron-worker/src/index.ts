@@ -52,7 +52,7 @@ export async function runSubscriptionSweep(env: Env, now = Date.now()) {
           traffic_updated_at = ?
       WHERE username = ?
     `).bind(nextStatus, now, user.username).run();
-    if (user.xui_uuid && await setXuiClientEnabled(env, user.xui_uuid, false)) {
+    if (user.xui_uuid && await setXuiClientEnabled(env, user.xui_uuid, false, user.username)) {
       disabled += 1;
     }
   }
