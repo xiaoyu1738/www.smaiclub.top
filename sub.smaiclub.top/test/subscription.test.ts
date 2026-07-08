@@ -223,6 +223,68 @@ test('setXuiClientEnabled creates the same user on reality and hy2 inbounds', as
   }
 });
 
+test('setXuiClientEnabled logs in with csrf before mutating 3x-ui clients', async () => {
+  const originalFetch = globalThis.fetch;
+  const calls: Array<{ url: string; method: string; headers: Headers; body: string }> = [];
+  globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
+    const url = String(input);
+    const headers = new Headers(init?.headers);
+    const body = init?.body instanceof URLSearchParams ? init.body.toString() : String(init?.body || '');
+    calls.push({ url, method: init?.method || 'GET', headers, body });
+
+    if (url === 'https://xui.example/') {
+      return new Response('<!doctype html><html><head><meta name="csrf-token" content="login-token"></head></html>', {
+        status: 200,
+        headers: {
+          'content-type': 'text/html; charset=utf-8',
+          'set-cookie': 'csrf=seed; Path=/; HttpOnly',
+        },
+      });
+    }
+
+    if (url === 'https://xui.example/login') {
+      return new Response(JSON.stringify({ success: true, msg: 'ok' }), {
+        status: 200,
+        headers: {
+          'content-type': 'application/json',
+          'set-cookie': 'sid=ok; Path=/; HttpOnly',
+        },
+      });
+    }
+
+    return new Response(JSON.stringify({ success: true, msg: 'ok' }), {
+      status: 200,
+      headers: { 'content-type': 'application/json' },
+    });
+  }) as typeof fetch;
+
+  try {
+    const result = await setXuiClientEnabled({
+      XUI_BASE_URL: 'https://xui.example',
+      XUI_USERNAME: 'admin',
+      XUI_PASSWORD: 'secret',
+      XUI_INBOUND_ID: '1',
+      XUI_HY2_INBOUND_ID: '1',
+    } as Env, 'client-uuid', false, { email: 'fish' });
+
+    assert.equal(result.ok, true);
+
+    const loginCall = calls.find(call => call.url === 'https://xui.example/login');
+    assert.ok(loginCall);
+    assert.equal(loginCall.headers.get('X-CSRF-Token'), 'login-token');
+    assert.equal(loginCall.headers.get('X-Requested-With'), 'XMLHttpRequest');
+    assert.equal(loginCall.headers.get('Cookie'), 'csrf=seed');
+
+    const updateCall = calls.find(call => call.url.endsWith('/panel/api/inbounds/updateClient/client-uuid'));
+    assert.ok(updateCall);
+    assert.equal(updateCall.headers.get('X-CSRF-Token'), 'login-token');
+    assert.equal(updateCall.headers.get('X-Requested-With'), 'XMLHttpRequest');
+    assert.equal(updateCall.headers.get('Cookie'), 'csrf=seed; sid=ok');
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
 test('setXuiClientEnabled summarizes html responses without leaking html bodies', async () => {
   const originalFetch = globalThis.fetch;
   globalThis.fetch = (async () => new Response('<!doctype html><html><head><title>Login Required</title></head><body><main>session expired</main></body></html>', {

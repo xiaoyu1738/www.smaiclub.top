@@ -20,6 +20,11 @@ interface XuiInboundTarget {
   protocol: XuiInboundProtocol;
 }
 
+interface XuiSession {
+  cookie: string;
+  csrfToken?: string;
+}
+
 export interface XuiClientStat {
   uuid: string;
   used: number;
@@ -27,21 +32,18 @@ export interface XuiClientStat {
 
 export async function setXuiClientEnabled(env: Env, uuid: string, enabled: boolean): Promise<boolean> {
   if (!env.XUI_BASE_URL || !parsePositiveInteger(env.XUI_INBOUND_ID)) return false;
-  const cookie = await getXuiCookie(env);
-  if (!cookie) return false;
-  const results = await Promise.all(xuiInboundTargets(env).map(target => updateXuiClientTarget(env, cookie, uuid, enabled, target)));
+  const session = await getXuiSession(env);
+  if (!session) return false;
+  const results = await Promise.all(xuiInboundTargets(env).map(target => updateXuiClientTarget(env, session, uuid, enabled, target)));
   return results.every(Boolean);
 }
 
 export async function fetchXuiClientStats(env: Env): Promise<XuiClientStat[]> {
   if (!env.XUI_BASE_URL) return [];
-  const cookie = await getXuiCookie(env);
-  if (!cookie) return [];
+  const session = await getXuiSession(env);
+  if (!session) return [];
   const response = await fetch(`${trimSlash(env.XUI_BASE_URL)}/panel/api/inbounds/list`, {
-    headers: {
-      ...xuiAccessHeaders(env),
-      Cookie: cookie,
-    },
+    headers: xuiSessionHeaders(env, session),
   });
   if (!response.ok) return [];
   const payload = await response.json().catch(() => null);
@@ -64,37 +66,58 @@ export function parseXuiClientStats(payload: unknown): XuiClientStat[] {
   return stats;
 }
 
-async function getXuiCookie(env: Env): Promise<string | null> {
-  if (env.XUI_COOKIE) return env.XUI_COOKIE;
+async function getXuiSession(env: Env): Promise<XuiSession | null> {
+  if (env.XUI_COOKIE) {
+    const csrfToken = env.XUI_BASE_URL
+      ? await fetchXuiCsrfToken(env, trimSlash(env.XUI_BASE_URL), env.XUI_COOKIE).catch(() => undefined)
+      : undefined;
+    return { cookie: env.XUI_COOKIE, csrfToken };
+  }
   if (!env.XUI_BASE_URL || !env.XUI_USERNAME || !env.XUI_PASSWORD) return null;
-  const response = await fetch(`${trimSlash(env.XUI_BASE_URL)}/login`, {
-    method: 'POST',
+
+  const baseUrl = trimSlash(env.XUI_BASE_URL);
+  const bootstrap = await fetch(`${baseUrl}/`, {
     headers: {
+      Accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
       ...xuiAccessHeaders(env),
-      'Content-Type': 'application/x-www-form-urlencoded',
-      Accept: 'application/json, text/plain, */*',
-      Origin: trimSlash(env.XUI_BASE_URL),
-      Referer: `${trimSlash(env.XUI_BASE_URL)}/login`,
     },
+  });
+  const bootstrapText = await bootstrap.clone().text().catch(() => '');
+  const bootstrapCookie = cookieHeaderFromResponse(bootstrap.headers);
+  const csrfToken = extractCsrfToken(bootstrapText)
+    || await fetchXuiCsrfToken(env, baseUrl, bootstrapCookie).catch(() => undefined);
+
+  const headers: Record<string, string> = {
+    ...xuiAccessHeaders(env),
+    'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
+    Accept: 'application/json, text/plain, */*',
+    Origin: xuiOrigin(baseUrl),
+    Referer: `${baseUrl}/`,
+    'X-Requested-With': 'XMLHttpRequest',
+  };
+  if (bootstrapCookie) headers.Cookie = bootstrapCookie;
+  if (csrfToken) headers['X-CSRF-Token'] = csrfToken;
+
+  const response = await fetch(`${baseUrl}/login`, {
+    method: 'POST',
+    headers,
     body: new URLSearchParams({ username: env.XUI_USERNAME, password: env.XUI_PASSWORD }),
   });
-  return response.ok ? response.headers.get('set-cookie') : null;
+  const payload = await response.clone().json().catch(() => null) as { success?: boolean } | null;
+  const cookie = mergeCookieHeaders(bootstrapCookie, cookieHeaderFromResponse(response.headers));
+  return response.ok && cookie && payload?.success !== false ? { cookie, csrfToken } : null;
 }
 
 async function updateXuiClientTarget(
   env: Env,
-  cookie: string,
+  session: XuiSession,
   uuid: string,
   enabled: boolean,
   target: XuiInboundTarget,
 ): Promise<boolean> {
   const response = await fetch(`${trimSlash(env.XUI_BASE_URL || '')}/panel/api/inbounds/updateClient/${uuid}`, {
     method: 'POST',
-    headers: {
-      ...xuiAccessHeaders(env),
-      'Content-Type': 'application/json',
-      Cookie: cookie,
-    },
+    headers: xuiSessionHeaders(env, session, 'application/json'),
     body: JSON.stringify({
       id: target.id,
       settings: JSON.stringify({ clients: [buildClientUpdate(uuid, enabled, target.protocol)] }),
@@ -143,6 +166,107 @@ function xuiAccessHeaders(env: Env): Record<string, string> {
   };
 }
 
+async function fetchXuiCsrfToken(env: Env, baseUrl: string, cookie?: string): Promise<string | undefined> {
+  const headers: Record<string, string> = {
+    Accept: 'application/json, text/plain, */*',
+    'X-Requested-With': 'XMLHttpRequest',
+    ...xuiAccessHeaders(env),
+  };
+  if (cookie) headers.Cookie = cookie;
+
+  const response = await fetch(`${baseUrl}/csrf-token`, { headers });
+  if (!response.ok) return undefined;
+  const text = await response.text().catch(() => '');
+  return extractCsrfTokenFromPayload(safeJson(text)) || extractCsrfToken(text);
+}
+
+function xuiSessionHeaders(env: Env, session: XuiSession, contentType?: string): Record<string, string> {
+  const headers: Record<string, string> = {
+    ...xuiAccessHeaders(env),
+    Accept: 'application/json, text/plain, */*',
+    Cookie: session.cookie,
+    'X-Requested-With': 'XMLHttpRequest',
+  };
+  if (contentType) headers['Content-Type'] = contentType;
+  if (session.csrfToken) headers['X-CSRF-Token'] = session.csrfToken;
+  return headers;
+}
+
+function extractCsrfToken(value: string): string | undefined {
+  const match = /<meta\b(?=[^>]*\bname=["']csrf-token["'])(?=[^>]*\bcontent=["']([^"']+)["'])[^>]*>/i.exec(value);
+  if (!match) return undefined;
+  const token = decodeHtmlEntities(match[1]).trim();
+  return token || undefined;
+}
+
+function extractCsrfTokenFromPayload(payload: unknown): string | undefined {
+  if (!payload) return undefined;
+  if (typeof payload === 'string') return payload.trim() || undefined;
+  if (typeof payload !== 'object') return undefined;
+
+  const object = payload as Record<string, unknown>;
+  for (const key of ['csrfToken', 'csrf_token', 'token', 'csrf']) {
+    const value = object[key];
+    if (typeof value === 'string' && value.trim()) return value.trim();
+  }
+  return extractCsrfTokenFromPayload(object.obj) || extractCsrfTokenFromPayload(object.data);
+}
+
+function cookieHeaderFromResponse(headers: Headers): string | undefined {
+  const headersWithCookies = headers as Headers & { getSetCookie?: () => string[] };
+  const setCookies = typeof headersWithCookies.getSetCookie === 'function'
+    ? headersWithCookies.getSetCookie()
+    : splitSetCookieHeader(headers.get('set-cookie') || '');
+  return mergeCookieHeaders(...setCookies.map(cookiePairFromSetCookie));
+}
+
+function cookiePairFromSetCookie(value: string): string | undefined {
+  const pair = value.split(';', 1)[0]?.trim();
+  return pair && pair.includes('=') ? pair : undefined;
+}
+
+function splitSetCookieHeader(value: string): string[] {
+  return value ? value.split(/,(?=\s*[^;,]+=)/).map(cookie => cookie.trim()).filter(Boolean) : [];
+}
+
+function mergeCookieHeaders(...headers: Array<string | undefined>): string | undefined {
+  const pairs = new Map<string, string>();
+  for (const header of headers) {
+    if (!header) continue;
+    for (const rawPair of header.split(/;\s*/)) {
+      const pair = rawPair.trim();
+      const separator = pair.indexOf('=');
+      if (separator <= 0) continue;
+      const name = pair.slice(0, separator).trim();
+      if (!name || isCookieAttribute(name)) continue;
+      pairs.set(name, `${name}=${pair.slice(separator + 1).trim()}`);
+    }
+  }
+  const cookie = Array.from(pairs.values()).join('; ');
+  return cookie || undefined;
+}
+
+function isCookieAttribute(name: string): boolean {
+  return /^(path|expires|max-age|domain|secure|httponly|samesite)$/i.test(name);
+}
+
+function decodeHtmlEntities(value: string): string {
+  return value
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&amp;/g, '&')
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'");
+}
+
+function xuiOrigin(baseUrl: string): string {
+  try {
+    return new URL(baseUrl).origin;
+  } catch {
+    return baseUrl;
+  }
+}
+
 function extractInbounds(payload: unknown): Record<string, unknown>[] {
   if (!payload || typeof payload !== 'object') return [];
   const object = payload as Record<string, unknown>;
@@ -153,6 +277,14 @@ function extractInbounds(payload: unknown): Record<string, unknown>[] {
 
 function trimSlash(value: string): string {
   return value.replace(/\/+$/, '');
+}
+
+function safeJson(value: string): unknown {
+  try {
+    return JSON.parse(value);
+  } catch {
+    return null;
+  }
 }
 
 function parsePositiveInteger(value: string | undefined): number | null {
